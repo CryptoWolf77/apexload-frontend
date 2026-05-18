@@ -6,6 +6,7 @@ import 'package:apexload/core/routing/app_router.dart';
 import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
+import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
@@ -29,86 +30,135 @@ class _DownloadProgressScreenState
     extends ConsumerState<DownloadProgressScreen> {
   Timer? _timer;
   double _progress = 0;
-  var _status = 'Analyzing';
+  var _status = 'Queued';
+  var _statusMessage = 'Queued';
   var _saved = false;
   var _failed = false;
   DownloadItemModel? _completedItem;
+  ApiDownloadFile? _completedFile;
+  String? _localSavedPath;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 280), (_) => _tick());
+    _startPolling();
   }
 
-  Future<void> _tick() async {
-    if (!mounted) return;
-    if (_progress >= 1) return;
-    setState(() {
-      _progress = (_progress + 0.045).clamp(0, 1);
-      _status = _progress < 0.2
-          ? 'Analyzing'
-          : _progress < 0.42
-          ? 'Preparing'
-          : _progress < 1
-          ? 'Downloading'
-          : 'Completed';
-    });
-    if (_progress >= 1 && !_saved) {
-      _timer?.cancel();
-      if (widget.args.apiJobId != null) {
-        try {
-          final status = await ref
-              .read(apiDownloadServiceProvider)
-              .getStatus(widget.args.apiJobId!);
-          if (status.progress < 100 ||
-              status.status.toLowerCase() == 'failed') {
-            throw StateError('Download job not complete.');
-          }
-        } on Object {
-          if (mounted) {
-            setState(() {
-              _failed = true;
-              _saved = true;
-              _status = AppLocalizations.of(context).t('downloadFailed');
-            });
-            AppNotification.error(
-              context,
-              message: AppLocalizations.of(context).t('downloadFailed'),
-            );
-          }
-          return;
-        }
-      }
-      final items = [
-        for (final format in widget.args.formats)
-          ref
-              .read(downloadServiceProvider)
-              .createCompletedItem(
-                media: widget.args.media,
-                format: format,
-                fileName: _fileNameFor(format),
-              ),
-      ];
-      for (final item in items.reversed) {
-        ref.read(libraryControllerProvider.notifier).add(item);
-      }
-      final showAd = await ref
-          .read(subscriptionControllerProvider.notifier)
-          .recordSuccessfulDownload(count: items.length);
+  void _startPolling() {
+    if (widget.args.apiJobId == null || widget.args.apiJobId!.isEmpty) {
+      _markFailed(AppLocalizations.of(context).t('downloadJobFailed'));
+      return;
+    }
+    unawaited(_pollStatus());
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _pollStatus());
+  }
+
+  Future<void> _pollStatus() async {
+    if (!mounted || _saved) return;
+    try {
+      final status = await ref
+          .read(apiDownloadServiceProvider)
+          .getStatus(widget.args.apiJobId!);
       if (!mounted) return;
       setState(() {
-        _status = 'Completed';
-        _saved = true;
-        _completedItem = _firstVideoItem(items);
+        _progress = (status.progress / 100).clamp(0, 1);
+        _status = status.status;
+        _statusMessage = status.message.isEmpty
+            ? status.status
+            : status.message;
       });
-      AppNotification.success(
-        context,
-        message: AppLocalizations.of(context).t('downloadCompleted'),
-      );
-      if (showAd) {
-        await showMockAdDialog(context);
+
+      final normalizedStatus = status.status.toLowerCase();
+      if (normalizedStatus == 'failed' || status.success == false) {
+        _timer?.cancel();
+        _markFailed(status.error ?? status.message);
+        return;
+      }
+      if (normalizedStatus == 'completed') {
+        _timer?.cancel();
+        await _completeFromStatus(status);
+      }
+    } on Object catch (error) {
+      if (!mounted) return;
+      _timer?.cancel();
+      _markFailed(error.toString());
+    }
+  }
+
+  Future<void> _completeFromStatus(ApiDownloadStatus status) async {
+    final l = AppLocalizations.of(context);
+    if (status.files.isEmpty) {
+      _markFailed(l.t('downloadFailedNoFiles'));
+      return;
+    }
+
+    final apiService = ref.read(apiDownloadServiceProvider);
+    final firstFile = status.files.first;
+    String? savedPath;
+    if (widget.args.saveToGallery) {
+      try {
+        savedPath = await apiService.saveOrOpenFile(firstFile);
+      } on Object catch (error) {
+        if (!mounted) return;
+        AppNotification.warning(
+          context,
+          message: '${l.t('downloadCompleted')} ${error.toString()}',
+        );
       }
     }
+
+    final items = [
+      for (var i = 0; i < status.files.length; i++)
+        ref
+            .read(downloadServiceProvider)
+            .createCompletedItem(
+              media: widget.args.media,
+              format: i < widget.args.formats.length
+                  ? widget.args.formats[i]
+                  : widget.args.primaryFormat,
+              fileName: status.files[i].fileName.isEmpty
+                  ? _fileNameFor(widget.args.primaryFormat)
+                  : status.files[i].fileName,
+              sizeLabel: status.files[i].size,
+            ),
+    ];
+    for (final item in items.reversed) {
+      ref.read(libraryControllerProvider.notifier).add(item);
+    }
+    final showAd = await ref
+        .read(subscriptionControllerProvider.notifier)
+        .recordSuccessfulDownload(count: items.length);
+    if (!mounted) return;
+    setState(() {
+      _progress = 1;
+      _status = 'completed';
+      _statusMessage = status.message.isEmpty
+          ? l.t('downloadCompleted')
+          : status.message;
+      _saved = true;
+      _completedItem = _firstVideoItem(items);
+      _completedFile = firstFile;
+      _localSavedPath = savedPath;
+    });
+    AppNotification.success(context, message: l.t('downloadCompleted'));
+    if (showAd) {
+      await showMockAdDialog(context);
+    }
+  }
+
+  void _markFailed(String message) {
+    final l = AppLocalizations.of(context);
+    setState(() {
+      _failed = true;
+      _saved = true;
+      _progress = 1;
+      _status = l.t('downloadFailed');
+      _statusMessage = message.trim().isEmpty ? l.t('downloadFailed') : message;
+    });
+    AppNotification.error(
+      context,
+      message: message.trim().isEmpty ? l.t('downloadFailed') : message,
+    );
   }
 
   @override
@@ -166,7 +216,7 @@ class _DownloadProgressScreenState
                   ? l.t('downloadFailed')
                   : completed
                   ? l.t('downloadCompleted')
-                  : _status,
+                  : _statusLabel(l),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -185,8 +235,10 @@ class _DownloadProgressScreenState
               value: failed
                   ? l.t('downloadFailed')
                   : completed
-                  ? l.t('savedLocally')
-                  : '4.8 MB/s',
+                  ? (_localSavedPath == null
+                        ? l.t('readyToOpen')
+                        : l.t('savedLocally'))
+                  : _statusMessage,
             ),
             _ProgressInfo(
               label: l.t('queuePosition'),
@@ -217,6 +269,14 @@ class _DownloadProgressScreenState
                       : () => _openQuickEditor(_completedItem!),
                   icon: const Icon(Icons.auto_fix_high_rounded),
                   label: Text(l.t('editVideo')),
+                ),
+              ],
+              if (_completedFile != null) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _openCompletedFile,
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: Text(l.t('open')),
                 ),
               ],
             ] else if (!completed)
@@ -250,6 +310,30 @@ class _DownloadProgressScreenState
       return;
     }
     context.push('/quick-editor', extra: item);
+  }
+
+  Future<void> _openCompletedFile() async {
+    final file = _completedFile;
+    if (file == null) return;
+    try {
+      await ref.read(apiDownloadServiceProvider).saveOrOpenFile(file);
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('connectionProblem'),
+      );
+    }
+  }
+
+  String _statusLabel(AppLocalizations l) {
+    return switch (_status.toLowerCase()) {
+      'queued' => l.t('queued'),
+      'processing' => l.t('downloading'),
+      'completed' => l.t('downloadCompleted'),
+      'failed' => l.t('downloadFailed'),
+      _ => _statusMessage,
+    };
   }
 
   DownloadItemModel? _firstVideoItem(List<DownloadItemModel> items) {

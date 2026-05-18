@@ -142,7 +142,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
           .startDownload(
             url: widget.media.sourceUrl,
             selectedFormats: selected,
-            premium: premiumActive,
+            premium: false,
             noWatermark: premiumActive && _isVideo,
           );
       apiJobId = job.jobId.isEmpty ? null : job.jobId;
@@ -163,6 +163,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
         fileName: _fileController.text.trim().isEmpty
             ? _defaultFileName
             : _fileController.text.trim(),
+        saveToGallery: _saveToGallery,
         apiJobId: apiJobId,
       ),
     );

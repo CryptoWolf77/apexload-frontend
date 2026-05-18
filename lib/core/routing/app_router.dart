@@ -137,12 +137,14 @@ class DownloadProgressArgs {
     required this.media,
     required this.formats,
     required this.fileName,
+    required this.saveToGallery,
     this.apiJobId,
   });
 
   final MediaInfoModel media;
   final List<DownloadFormatModel> formats;
   final String fileName;
+  final bool saveToGallery;
   final String? apiJobId;
 
   DownloadFormatModel get primaryFormat => formats.first;

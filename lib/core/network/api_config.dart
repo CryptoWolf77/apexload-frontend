@@ -1,9 +1,11 @@
+import 'package:apexload/core/constants/app_config.dart';
+
 class ApiConfig {
   const ApiConfig._();
 
   static const baseUrl = String.fromEnvironment(
     'APEXLOAD_API_BASE_URL',
-    defaultValue: 'https://api.apexload.org',
+    defaultValue: AppConfig.apiBaseUrl,
   );
 
   static const healthPath = '/api/health';
@@ -19,6 +21,6 @@ class ApiConfig {
 
   static const enableMockAnalyzeFallback = bool.fromEnvironment(
     'APEXLOAD_ENABLE_MOCK_ANALYZE_FALLBACK',
-    defaultValue: true,
+    defaultValue: AppConfig.useMockFallback,
   );
 }

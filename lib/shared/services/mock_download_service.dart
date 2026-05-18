@@ -7,13 +7,14 @@ class MockDownloadService {
     required MediaInfoModel media,
     required DownloadFormatModel format,
     required String fileName,
+    String? sizeLabel,
   }) {
     return DownloadItemModel(
       id: '${media.id}_${format.id}_${DateTime.now().millisecondsSinceEpoch}',
       title: media.title,
       platform: media.platform,
       date: DateTime.now(),
-      sizeLabel: format.sizeLabel,
+      sizeLabel: sizeLabel ?? format.sizeLabel,
       type: format.type,
       thumbnailUrl: media.thumbnailUrl,
       fileName: fileName,

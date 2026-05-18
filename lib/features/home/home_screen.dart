@@ -2,6 +2,7 @@ import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/core/utils/platform_detector.dart';
 import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
+import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/download_item_card.dart';
@@ -74,12 +75,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       }
       context.push('/download-options', extra: result.media);
+    } on AnalyzeException catch (error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      AppNotification.error(
+        context,
+        message: error.message.isEmpty
+            ? AppLocalizations.of(context).t('analyzeFailed')
+            : error.message,
+      );
     } on Object {
       if (!mounted) return;
       setState(() => _loading = false);
       AppNotification.error(
         context,
-        message: AppLocalizations.of(context).t('analyzeFailed'),
+        message: AppLocalizations.of(context).t('connectionProblem'),
       );
     }
   }

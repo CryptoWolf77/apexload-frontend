@@ -3,6 +3,7 @@ import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/shared/services/mock_analyze_service.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiAnalyzeService {
   ApiAnalyzeService({ApiClient? client, MockAnalyzeService? mockAnalyzeService})
@@ -14,10 +15,19 @@ class ApiAnalyzeService {
 
   Future<AnalyzeResult> analyze(String url) async {
     try {
+      if (kDebugMode) {
+        debugPrint('ApexLoad analyze request URL: $url');
+      }
       final data = await _client.post(
         ApiConfig.analyzePath,
         data: {'url': url},
       );
+      if (kDebugMode) {
+        debugPrint(
+          'ApexLoad analyze response: success=${data['success']} '
+          'source=${data['source']} platform=${data['platform']}',
+        );
+      }
       final media = _mediaFromApi(url, data);
       return AnalyzeResult(media: media, usedMockFallback: false);
     } on Object catch (error) {
@@ -35,7 +45,13 @@ class ApiAnalyzeService {
 
   MediaInfoModel _mediaFromApi(String sourceUrl, Map<String, dynamic> data) {
     if (data['success'] != true) {
-      throw const AnalyzeException('Backend analyze returned success=false.');
+      final message =
+          (data['message'] as String?) ?? (data['error'] as String?);
+      throw AnalyzeException(
+        message?.trim().isNotEmpty == true
+            ? message!
+            : 'Could not analyze this link. Please try again.',
+      );
     }
     final mediaType = _mediaType(data['mediaType'] as String?);
     final formatsData = data['formats'];
