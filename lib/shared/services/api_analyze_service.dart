@@ -105,6 +105,7 @@ class ApiAnalyzeService {
       'original' => 'original_image',
       'jpg' => 'jpg_image',
       'png' => 'png_image',
+      'webp' => 'webp_image',
       'high_quality' => 'high_quality_image',
       'compressed' => 'compressed_image',
       'mp3' => 'mp3_audio',

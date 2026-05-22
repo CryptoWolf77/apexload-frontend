@@ -11,6 +11,7 @@ import 'package:apexload/shared/widgets/legal_notice_card.dart';
 import 'package:apexload/shared/widgets/platform_chip.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -322,6 +323,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         const SizedBox(height: 14),
         const LegalNoticeCard(compact: true),
+        const SizedBox(height: 22),
+        const YahyazLabSignature(compact: true),
       ],
     );
   }

@@ -1,3 +1,6 @@
+import 'package:apexload/core/routing/app_router.dart';
+import 'package:apexload/shared/models/download_format_model.dart';
+import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
@@ -18,8 +21,70 @@ class AudioExtractionScreen extends ConsumerStatefulWidget {
 }
 
 class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
+  final _urlController = TextEditingController();
   var _format = 'MP3';
   var _quality = 'Standard';
+  var _loading = false;
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _extract() async {
+    final l = AppLocalizations.of(context);
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      AppNotification.info(context, message: l.t('pasteFirst'));
+      return;
+    }
+
+    final format = DownloadFormatModel(
+      id: _format == 'M4A' ? 'm4a' : 'mp3',
+      label: _format == 'M4A' ? 'M4A Audio' : 'MP3 Audio',
+      extension: _format.toLowerCase(),
+      type: DownloadType.audio,
+      isPremium: true,
+      sizeLabel: 'Unknown',
+    );
+    setState(() => _loading = true);
+    try {
+      final job = await ref
+          .read(apiDownloadServiceProvider)
+          .startDownload(
+            url: url,
+            selectedFormats: [format],
+            premium: false,
+            noWatermark: false,
+          );
+      if (!mounted) return;
+      setState(() => _loading = false);
+      context.push(
+        '/download-progress',
+        extra: DownloadProgressArgs(
+          media: MediaInfoModel(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            title: 'Audio extraction',
+            mediaType: MediaType.audio,
+            platform: 'Unknown',
+            duration: '',
+            thumbnailUrl: '',
+            sourceUrl: url,
+            formats: [format],
+          ),
+          formats: [format],
+          fileName: 'apexload_audio.${format.extension}',
+          saveToGallery: true,
+          apiJobId: job.jobId,
+        ),
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      AppNotification.error(context, message: error.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +101,7 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
               padding: const EdgeInsets.all(18),
               children: [
                 TextField(
+                  controller: _urlController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.link_rounded),
                     hintText: l.t('pasteMediaLink'),
@@ -89,12 +155,8 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
                 PrimaryGradientButton(
                   label: l.t('extractAudio'),
                   icon: Icons.graphic_eq_rounded,
-                  onPressed: () => AppNotification.success(
-                    context,
-                    message: l
-                        .t('demoExtractionPrepared')
-                        .replaceFirst('{format}', _format),
-                  ),
+                  isLoading: _loading,
+                  onPressed: _loading ? null : _extract,
                 ),
               ],
             )

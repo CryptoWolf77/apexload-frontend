@@ -22,21 +22,26 @@ class ApiDownloadService {
     if (selectedFormats.isEmpty) {
       throw const ApiDownloadException('No download options selected.');
     }
+    if (selectedFormats.length > 1) {
+      throw const ApiDownloadException(
+        'Only one download option can be selected per request.',
+      );
+    }
     final selectedItems = [
       for (final format in selectedFormats)
-        {'formatId': _apiFormatId(format), 'type': _apiType(format.type)},
+        DownloadSelectedItem.fromFormat(format),
     ];
-    if (selectedItems.any((item) => (item['formatId'] ?? '').isEmpty)) {
+    if (selectedItems.any((item) => item.formatId.isEmpty)) {
       throw const ApiDownloadException('Download request has empty formatId.');
     }
     final requestBody = {
       'url': trimmedUrl,
-      'selectedItems': selectedItems,
+      'selectedItems': [for (final item in selectedItems) item.toJson()],
       'premium': premium,
       'noWatermark': noWatermark,
     };
     if (kDebugMode) {
-      debugPrint('ApexLoad download request: $requestBody');
+      debugPrint('ApexLoad download request body: $requestBody');
     }
     final data = await _client.post(ApiConfig.downloadPath, data: requestBody);
     if (kDebugMode) {
@@ -109,30 +114,6 @@ class ApiDownloadService {
     return FileDownloadHelper.saveOrOpen(url: url, fileName: fileName);
   }
 
-  String _apiFormatId(DownloadFormatModel format) {
-    return switch (format.id) {
-      'mp4_480' => '480p',
-      'mp4_720' => '720p',
-      'mp4_1080' => '1080p',
-      'mp4_2160' => '2160p',
-      'mp3_audio' => 'mp3',
-      'original_image' => 'original',
-      'jpg_image' => 'jpg',
-      'png_image' => 'png',
-      'high_quality_image' => 'high_quality',
-      'compressed_image' => 'compressed',
-      _ => format.id,
-    };
-  }
-
-  String _apiType(DownloadType type) {
-    return switch (type) {
-      DownloadType.audio => 'audio',
-      DownloadType.image => 'image',
-      DownloadType.video => 'video',
-    };
-  }
-
   int _intValue(Object? value) {
     if (value is int) return value.clamp(0, 100);
     if (value is num) return value.round().clamp(0, 100);
@@ -145,6 +126,81 @@ class ApiDownloadService {
         .replaceAll(RegExp(r'^\.+'), '')
         .trim();
     return sanitized.isEmpty ? 'apexload_download' : sanitized;
+  }
+}
+
+class DownloadSelectedItem {
+  const DownloadSelectedItem({required this.formatId, required this.type});
+
+  factory DownloadSelectedItem.fromFormat(DownloadFormatModel format) {
+    final normalizedId = _apiFormatId(format);
+    if (_isAudioFormat(format, normalizedId)) {
+      return DownloadSelectedItem(
+        formatId: _audioFormatId(format, normalizedId),
+        type: 'audio',
+      );
+    }
+    return DownloadSelectedItem(
+      formatId: normalizedId,
+      type: _apiType(format.type),
+    );
+  }
+
+  final String formatId;
+  final String type;
+
+  Map<String, String> toJson() => {'formatId': formatId, 'type': type};
+
+  @override
+  String toString() => toJson().toString();
+
+  static String _apiFormatId(DownloadFormatModel format) {
+    return switch (format.id) {
+      'mp4_480' => '480p',
+      'mp4_720' => '720p',
+      'mp4_1080' => '1080p',
+      'mp4_2160' => '2160p',
+      'mp3_audio' => 'mp3',
+      'original_image' => 'original',
+      'jpg_image' => 'jpg',
+      'png_image' => 'png',
+      'webp_image' => 'webp',
+      'high_quality_image' => 'high_quality',
+      'compressed_image' => 'compressed',
+      _ => format.id,
+    };
+  }
+
+  static bool _isAudioFormat(DownloadFormatModel format, String normalizedId) {
+    final extension = format.extension.toLowerCase();
+    final label = format.label.toLowerCase();
+    return format.type == DownloadType.audio ||
+        normalizedId == 'mp3' ||
+        normalizedId == 'm4a' ||
+        extension == 'mp3' ||
+        extension == 'm4a' ||
+        label.contains('mp3') ||
+        label.contains('m4a');
+  }
+
+  static String _audioFormatId(
+    DownloadFormatModel format,
+    String normalizedId,
+  ) {
+    final extension = format.extension.toLowerCase();
+    final label = format.label.toLowerCase();
+    if (normalizedId == 'm4a' || extension == 'm4a' || label.contains('m4a')) {
+      return 'm4a';
+    }
+    return 'mp3';
+  }
+
+  static String _apiType(DownloadType type) {
+    return switch (type) {
+      DownloadType.audio => 'audio',
+      DownloadType.image => 'image',
+      DownloadType.video => 'video',
+    };
   }
 }
 

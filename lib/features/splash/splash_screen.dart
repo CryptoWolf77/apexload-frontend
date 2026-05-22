@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
+import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,56 +46,73 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.easeOutBack,
     );
     return GradientScaffold(
-      child: Center(
-        child: FadeTransition(
-          opacity: _controller,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.86, end: 1).animate(curved),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primaryStart, AppColors.primaryEnd],
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: FadeTransition(
+                  opacity: _controller,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.86, end: 1).animate(curved),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.primaryStart,
+                                AppColors.primaryEnd,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryStart.withValues(
+                                  alpha: 0.35,
+                                ),
+                                blurRadius: 30,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded,
+                            size: 52,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          AppConstants.appName,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppConstants.subtitle,
+                          style: TextStyle(
+                            color: AppTone.textSecondary(context),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          AppConstants.tagline,
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryStart.withValues(alpha: 0.35),
-                        blurRadius: 30,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.bolt_rounded,
-                    size: 52,
-                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  AppConstants.appName,
-                  style: Theme.of(context).textTheme.headlineLarge,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  AppConstants.subtitle,
-                  style: TextStyle(
-                    color: AppTone.textSecondary(context),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  AppConstants.tagline,
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
+              ),
             ),
-          ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 8, 18, 24),
+              child: YahyazLabSignature(compact: true),
+            ),
+          ],
         ),
       ),
     );

@@ -12,6 +12,7 @@ import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/mock_ad_dialog.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +38,7 @@ class _DownloadProgressScreenState
   DownloadItemModel? _completedItem;
   ApiDownloadFile? _completedFile;
   String? _localSavedPath;
+  List<ApiDownloadFile> _latestFiles = const [];
 
   @override
   void initState() {
@@ -66,22 +68,32 @@ class _DownloadProgressScreenState
         _statusMessage = status.message.isEmpty
             ? status.status
             : status.message;
+        _latestFiles = status.files;
       });
 
       final normalizedStatus = status.status.toLowerCase();
       if (normalizedStatus == 'failed' || status.success == false) {
         _timer?.cancel();
-        _markFailed(status.error ?? status.message);
+        _markFailed(_friendlyFailureMessage(status.error ?? status.message));
         return;
       }
       if (normalizedStatus == 'completed') {
         _timer?.cancel();
         await _completeFromStatus(status);
       }
-    } on Object catch (error) {
+    } on ApiDownloadException catch (error) {
       if (!mounted) return;
       _timer?.cancel();
-      _markFailed(error.toString());
+      final message =
+          error.message.toLowerCase().contains('connect') ||
+              error.message.toLowerCase().contains('timed out')
+          ? AppLocalizations.of(context).t('connectionProblem')
+          : error.message;
+      _markFailed(_friendlyFailureMessage(message));
+    } on Object {
+      if (!mounted) return;
+      _timer?.cancel();
+      _markFailed(AppLocalizations.of(context).t('connectionProblem'));
     }
   }
 
@@ -113,9 +125,12 @@ class _DownloadProgressScreenState
             .read(downloadServiceProvider)
             .createCompletedItem(
               media: widget.args.media,
-              format: i < widget.args.formats.length
-                  ? widget.args.formats[i]
-                  : widget.args.primaryFormat,
+              format: _formatForBackendFile(
+                status.files[i],
+                i < widget.args.formats.length
+                    ? widget.args.formats[i]
+                    : widget.args.primaryFormat,
+              ),
               fileName: status.files[i].fileName.isEmpty
                   ? _fileNameFor(widget.args.primaryFormat)
                   : status.files[i].fileName,
@@ -146,12 +161,25 @@ class _DownloadProgressScreenState
     }
   }
 
+  String _friendlyFailureMessage(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('login required') ||
+        lower.contains('rate-limit') ||
+        lower.contains('rate limit') ||
+        lower.contains('content is not available') ||
+        lower.contains('instagram blocked') ||
+        lower.contains('refresh instagram cookies')) {
+      return AppLocalizations.of(context).t('instagramBlocked');
+    }
+    return message;
+  }
+
   void _markFailed(String message) {
     final l = AppLocalizations.of(context);
     setState(() {
       _failed = true;
       _saved = true;
-      _progress = 1;
+      _progress = _progress.clamp(0, 0.95);
       _status = l.t('downloadFailed');
       _statusMessage = message.trim().isEmpty ? l.t('downloadFailed') : message;
     });
@@ -169,9 +197,11 @@ class _DownloadProgressScreenState
 
   @override
   Widget build(BuildContext context) {
-    final completed = _progress >= 1;
+    final completed = _saved && !_failed;
     final failed = _failed;
-    final percent = (_progress * 100).round();
+    final percent = failed
+        ? (_progress * 100).round().clamp(0, 99)
+        : (_progress * 100).round();
     final l = AppLocalizations.of(context);
 
     return GradientScaffold(
@@ -248,6 +278,13 @@ class _DownloadProgressScreenState
                   ? l.t('done')
                   : '#1',
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 12),
+              _DebugDownloadInfo(
+                requestedFormats: widget.args.formats,
+                returnedFiles: _latestFiles,
+              ),
+            ],
             const Spacer(),
             if (completed && !failed) ...[
               PrimaryGradientButton(
@@ -355,6 +392,37 @@ class _DownloadProgressScreenState
         .replaceAll(RegExp(r'_+$'), '');
     return '${base}_$suffix.${format.extension}';
   }
+
+  DownloadFormatModel _formatForBackendFile(
+    ApiDownloadFile file,
+    DownloadFormatModel fallback,
+  ) {
+    final type = switch (file.type.toLowerCase()) {
+      'audio' => DownloadType.audio,
+      'image' => DownloadType.image,
+      'video' => DownloadType.video,
+      _ => fallback.type,
+    };
+    final extension = _extensionFromFileName(file.fileName, fallback.extension);
+    return DownloadFormatModel(
+      id: file.fileId.isEmpty ? fallback.id : file.fileId,
+      label: fallback.label,
+      extension: extension,
+      type: type,
+      isPremium: fallback.isPremium,
+      sizeLabel: file.size.isEmpty ? fallback.sizeLabel : file.size,
+      isAvailable: fallback.isAvailable,
+      unavailableReasonKey: fallback.unavailableReasonKey,
+    );
+  }
+
+  String _extensionFromFileName(String fileName, String fallback) {
+    final dot = fileName.lastIndexOf('.');
+    if (dot >= 0 && dot < fileName.length - 1) {
+      return fileName.substring(dot + 1).toLowerCase();
+    }
+    return fallback;
+  }
 }
 
 class _ProgressInfo extends StatelessWidget {
@@ -373,6 +441,54 @@ class _ProgressInfo extends StatelessWidget {
           Text(label, style: TextStyle(color: AppTone.textSecondary(context))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
+      ),
+    );
+  }
+}
+
+class _DebugDownloadInfo extends StatelessWidget {
+  const _DebugDownloadInfo({
+    required this.requestedFormats,
+    required this.returnedFiles,
+  });
+
+  final List<DownloadFormatModel> requestedFormats;
+  final List<ApiDownloadFile> returnedFiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final requested = [
+      for (final format in requestedFormats)
+        DownloadSelectedItem.fromFormat(format),
+    ];
+    final returned = returnedFiles.isEmpty ? null : returnedFiles.first;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTone.cardSecondary(context).withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTone.border(context)),
+      ),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: AppTone.textSecondary(context),
+          fontSize: 11,
+          height: 1.35,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selected type: ${requested.map((item) => item.type).join(', ')}',
+            ),
+            Text(
+              'Requested format: ${requested.map((item) => item.formatId).join(', ')}',
+            ),
+            Text('Returned file type: ${returned?.type ?? '-'}'),
+            Text('Returned filename: ${returned?.fileName ?? '-'}'),
+          ],
+        ),
       ),
     );
   }

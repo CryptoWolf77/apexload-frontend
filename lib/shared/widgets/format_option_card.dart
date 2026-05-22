@@ -106,6 +106,12 @@ class FormatOptionCard extends StatelessWidget {
                 Icons.check_circle_rounded,
                 color: AppColors.success,
                 size: 22,
+              )
+            else
+              Icon(
+                Icons.radio_button_unchecked_rounded,
+                color: AppTone.textSecondary(context),
+                size: 20,
               ),
           ],
         ),

@@ -42,6 +42,8 @@ class AppLocalizations {
       'downloadFailed': 'Download failed. Please try another format or link.',
       'downloadFailedNoFiles':
           'Download completed, but no files were returned.',
+      'instagramBlocked':
+          'Instagram blocked this request. Please refresh Instagram cookies and try again.',
       'connectionProblem': 'Connection problem. Please try again.',
       'queued': 'Queued',
       'downloading': 'Downloading',
@@ -305,6 +307,8 @@ class AppLocalizations {
       'downloadJobFailed': 'تعذر إنشاء مهمة التنزيل، حاول مرة أخرى',
       'downloadFailed': 'فشل التنزيل. جرّب صيغة أو رابطاً آخر.',
       'downloadFailedNoFiles': 'اكتمل التنزيل، لكن لم يتم إرجاع أي ملفات.',
+      'instagramBlocked':
+          'حظر Instagram هذا الطلب. حدّث ملفات تعريف الارتباط وجرب مرة أخرى.',
       'connectionProblem': 'مشكلة في الاتصال. حاول مرة أخرى.',
       'queued': 'في الانتظار',
       'downloading': 'جاري التنزيل',

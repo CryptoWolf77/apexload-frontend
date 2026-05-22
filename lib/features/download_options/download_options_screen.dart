@@ -28,41 +28,38 @@ class DownloadOptionsScreen extends ConsumerStatefulWidget {
 
 class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   late final TextEditingController _fileController;
-  DownloadFormatModel? _selectedPrimary;
-  final Set<String> _selectedAddOns = {};
+  DownloadFormatModel? _selectedFormat;
   var _saveToGallery = true;
   var _creatingDownloadJob = false;
 
   bool get _isVideo => widget.media.mediaType == MediaType.video;
   bool get _isImage => widget.media.mediaType == MediaType.image;
+  bool get _allFormatsUnavailable =>
+      widget.media.formats.isNotEmpty &&
+      widget.media.formats.every((format) => !format.isAvailable);
 
   List<DownloadFormatModel> get _selectedFormats {
-    final formats = <DownloadFormatModel>[];
-    if (_selectedPrimary != null) formats.add(_selectedPrimary!);
-    if (_isVideo) {
-      formats.addAll(
-        widget.media.formats.where(
-          (format) => _selectedAddOns.contains(format.id),
-        ),
-      );
-    }
-    return formats;
+    final selected = _selectedFormat;
+    return selected == null ? <DownloadFormatModel>[] : [selected];
   }
 
   @override
   void initState() {
     super.initState();
-    _selectedPrimary = widget.media.formats.firstWhere(
+    final availableFormats = widget.media.formats.where(
       (format) => format.isAvailable && !format.isPremium,
-      orElse: () => widget.media.formats.first,
     );
+    _selectedFormat = availableFormats.isNotEmpty
+        ? availableFormats.first
+        : null;
     _fileController = TextEditingController(text: _defaultFileName);
   }
 
   String get _defaultFileName {
     final selected = _selectedFormats.isNotEmpty
         ? _selectedFormats.first
-        : widget.media.formats.first;
+        : (widget.media.formats.isNotEmpty ? widget.media.formats.first : null);
+    if (selected == null) return 'apexload_download';
     final safe = widget.media.title
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
@@ -83,19 +80,8 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
     }
 
     setState(() {
-      if (_isVideo && format.type != DownloadType.video) {
-        if (_selectedAddOns.contains(format.id)) {
-          _selectedAddOns.remove(format.id);
-        } else {
-          _selectedAddOns.add(format.id);
-        }
-        _fileController.text = _defaultFileName;
-      } else {
-        _selectedPrimary = _selectedPrimary?.id == format.id && _isVideo
-            ? null
-            : format;
-        _fileController.text = _defaultFileName;
-      }
+      _selectedFormat = format;
+      _fileController.text = _defaultFileName;
     });
   }
 
@@ -149,10 +135,13 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
       AppNotification.success(context, message: l.t('downloadJobCreated'));
-    } on Object {
+    } on Object catch (error) {
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
-      AppNotification.error(context, message: l.t('downloadJobFailed'));
+      AppNotification.error(
+        context,
+        message: _friendlyDownloadError(l, error.toString()),
+      );
       return;
     }
     context.push(
@@ -183,6 +172,19 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
       return l.t('audioExtractionPremiumMessage');
     }
     return l.t('fhd4kPremiumMessage');
+  }
+
+  String _friendlyDownloadError(AppLocalizations l, String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('login required') ||
+        lower.contains('rate-limit') ||
+        lower.contains('rate limit') ||
+        lower.contains('content is not available') ||
+        lower.contains('instagram blocked') ||
+        lower.contains('refresh instagram cookies')) {
+      return l.t('instagramBlocked');
+    }
+    return l.t('downloadJobFailed');
   }
 
   @override
@@ -295,12 +297,35 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
             ),
           ],
           const SizedBox(height: 10),
+          if (_isImage &&
+              widget.media.platform == 'Instagram' &&
+              _allFormatsUnavailable) ...[
+            GlassCard(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_rounded,
+                    color: AppColors.primaryEnd,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _allUnavailableReason(l),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           for (final format in widget.media.formats) ...[
             FormatOptionCard(
               format: format,
-              selected:
-                  _selectedPrimary?.id == format.id ||
-                  _selectedAddOns.contains(format.id),
+              selected: _selectedFormat?.id == format.id,
               isPremiumActive: premiumActive,
               onTap: () => _select(format, premiumActive),
             ),
@@ -323,7 +348,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
           const LegalNoticeCard(),
           const SizedBox(height: 18),
           PrimaryGradientButton(
-            label: _downloadLabel(l, selected.length),
+            label: l.t('download'),
             icon: Icons.download_rounded,
             isLoading: _creatingDownloadJob,
             onPressed: selected.isEmpty || _creatingDownloadJob
@@ -341,11 +366,14 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
     );
   }
 
-  String _downloadLabel(AppLocalizations l, int count) {
-    if (count <= 1) return l.t('downloadSelected');
-    return l
-        .t('downloadSelectedItemsCount')
-        .replaceFirst('{count}', count.toString());
+  String _allUnavailableReason(AppLocalizations l) {
+    for (final format in widget.media.formats) {
+      final reason = format.unavailableReasonKey;
+      if (reason != null && reason.trim().isNotEmpty) {
+        return l.t(reason);
+      }
+    }
+    return l.t('selectDownloadOption');
   }
 }
 
