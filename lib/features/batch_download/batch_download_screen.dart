@@ -18,32 +18,74 @@ class BatchDownloadScreen extends ConsumerStatefulWidget {
 }
 
 class _BatchDownloadScreenState extends ConsumerState<BatchDownloadScreen> {
+  static const _maxBatchLinks = 5;
+
   final _links = TextEditingController();
   List<String> _valid = [];
   List<String> _invalid = [];
 
   @override
+  void initState() {
+    super.initState();
+    _links.addListener(_refreshBatchState);
+  }
+
+  @override
   void dispose() {
+    _links.removeListener(_refreshBatchState);
     _links.dispose();
     super.dispose();
   }
 
-  void _validate() {
-    final lines = _links.text
+  void _refreshBatchState() {
+    if (mounted) setState(() {});
+  }
+
+  List<String> _enteredLinks() {
+    return _links.text
         .split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
+  }
+
+  bool get _hasTooManyLinks => _enteredLinks().length > _maxBatchLinks;
+
+  void _showBatchLimitWarning() {
+    AppNotification.warning(
+      context,
+      message: AppLocalizations.of(context).t('batchLimitExceeded'),
+    );
+  }
+
+  void _validate() {
+    final lines = _enteredLinks();
     setState(() {
       _valid = lines.where((line) => line.startsWith('http')).toList();
       _invalid = lines.where((line) => !line.startsWith('http')).toList();
     });
+    if (lines.length > _maxBatchLinks) {
+      _showBatchLimitWarning();
+    }
+  }
+
+  void _startBatch() {
+    if (_hasTooManyLinks || _valid.length > _maxBatchLinks) {
+      _showBatchLimitWarning();
+      return;
+    }
+
+    AppNotification.success(
+      context,
+      message: AppLocalizations.of(context).t('batchQueueCreated'),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final premium = ref.watch(subscriptionControllerProvider).isPremium;
     final l = AppLocalizations.of(context);
+    final hasTooManyLinks = _hasTooManyLinks || _valid.length > _maxBatchLinks;
     if (!premium) {
       return Center(
         child: Padding(
@@ -89,6 +131,9 @@ class _BatchDownloadScreenState extends ConsumerState<BatchDownloadScreen> {
                             .read(clipboardServiceProvider)
                             .readText();
                         _links.text = text;
+                        if (_hasTooManyLinks && context.mounted) {
+                          _showBatchLimitWarning();
+                        }
                       },
                     ),
                   ),
@@ -125,12 +170,9 @@ class _BatchDownloadScreenState extends ConsumerState<BatchDownloadScreen> {
                   icon: Icons.playlist_add_check_rounded,
                   // TODO: Replace this mock queue action with the real VPS
                   // /api/batch endpoint after backend integration.
-                  onPressed: _valid.isEmpty
+                  onPressed: _valid.isEmpty || hasTooManyLinks
                       ? null
-                      : () => AppNotification.success(
-                          context,
-                          message: l.t('batchQueueCreated'),
-                        ),
+                      : _startBatch,
                 ),
               ],
             ),

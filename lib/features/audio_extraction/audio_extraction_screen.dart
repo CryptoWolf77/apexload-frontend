@@ -65,7 +65,7 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
         extra: DownloadProgressArgs(
           media: MediaInfoModel(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
-            title: 'Audio extraction',
+            title: l.t('audioExtraction'),
             mediaType: MediaType.audio,
             platform: 'Unknown',
             duration: '',

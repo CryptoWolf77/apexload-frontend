@@ -45,7 +45,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     final l = AppLocalizations.of(context);
     return GradientScaffold(
       appBar: AppBar(
-        title: const Text('Premium'),
+        title: Text(l.t('premium')),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),

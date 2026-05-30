@@ -1,4 +1,5 @@
 import 'package:apexload/core/constants/app_constants.dart';
+import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class YahyazLabSignature extends StatelessWidget {
@@ -14,7 +15,7 @@ class YahyazLabSignature extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Made by',
+            AppLocalizations.of(context).t('madeBy'),
             style: TextStyle(
               color: AppTone.textSecondary(context),
               fontSize: compact ? 11 : 12,

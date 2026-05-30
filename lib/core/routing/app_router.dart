@@ -60,9 +60,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra;
           if (extra is! MediaInfoModel) {
             return const RouteFallbackScreen(
-              title: 'No media to show',
-              message:
-                  'Paste and analyze a link first to choose download options.',
+              title: 'noMediaToShow',
+              message: 'analyzeFirstForOptions',
             );
           }
           return DownloadOptionsScreen(media: extra);
@@ -74,8 +73,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra;
           if (extra is! DownloadProgressArgs) {
             return const RouteFallbackScreen(
-              title: 'No download in progress',
-              message: 'Start a mock download from the options screen first.',
+              title: 'noDownloadInProgress',
+              message: 'startDownloadFirst',
             );
           }
           return DownloadProgressScreen(args: extra);
@@ -99,8 +98,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra;
           if (extra is! DownloadItemModel) {
             return const RouteFallbackScreen(
-              title: 'No video selected',
-              message: 'Open Quick Editor from a downloaded video first.',
+              title: 'noVideoSelected',
+              message: 'openQuickEditorFirst',
             );
           }
           return Consumer(
@@ -162,6 +161,7 @@ class RouteFallbackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return GradientScaffold(
       child: Center(
         child: Padding(
@@ -172,12 +172,12 @@ class RouteFallbackScreen extends StatelessWidget {
               const Icon(Icons.info_rounded, size: 48),
               const SizedBox(height: 16),
               Text(
-                title,
+                l.t(title),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
-              Text(message, textAlign: TextAlign.center),
+              Text(l.t(message), textAlign: TextAlign.center),
               const SizedBox(height: 18),
               FilledButton.icon(
                 onPressed: () => context.go('/home'),

@@ -82,7 +82,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             scrollDirection: Axis.horizontal,
             children: [
               PlatformChip(
-                label: 'All',
+                label: l.t('all'),
                 selected: _platform == 'All',
                 onTap: () => setState(() => _platform = 'All'),
               ),
