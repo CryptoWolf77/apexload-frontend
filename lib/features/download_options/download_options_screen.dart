@@ -184,6 +184,22 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
         lower.contains('refresh instagram cookies')) {
       return l.t('instagramBlocked');
     }
+    if (lower.contains('youtube requires sign-in') ||
+        lower.contains('youtube requested sign-in') ||
+        lower.contains('not a bot') ||
+        lower.contains('refresh youtube cookies')) {
+      return l.t('youtubeRequiresAuth');
+    }
+    if (lower.contains('youtube format is not available') ||
+        lower.contains('requested format is not available')) {
+      return l.t('youtubeFormatUnavailable');
+    }
+    if (lower.contains('youtube video formats are temporarily unavailable') ||
+        lower.contains('only images are available') ||
+        lower.contains('challenge solver') ||
+        lower.contains('javascript runtime')) {
+      return l.t('youtubeFormatsTemporarilyUnavailable');
+    }
     return l.t('downloadJobFailed');
   }
 

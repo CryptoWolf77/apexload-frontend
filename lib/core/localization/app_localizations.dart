@@ -52,6 +52,12 @@ class AppLocalizations {
           'Open Quick Editor from a downloaded video first.',
       'instagramBlocked':
           'Instagram blocked this request. Please refresh Instagram cookies and try again.',
+      'youtubeRequiresAuth':
+          'YouTube requires sign-in verification. Please refresh YouTube cookies from the admin panel.',
+      'youtubeFormatUnavailable':
+          'This YouTube format is not available. Try another quality or link.',
+      'youtubeFormatsTemporarilyUnavailable':
+          'YouTube video formats are temporarily unavailable. Please try another link.',
       'connectionProblem': 'Connection problem. Please try again.',
       'queued': 'Queued',
       'downloading': 'Downloading',
@@ -328,6 +334,12 @@ class AppLocalizations {
       'openQuickEditorFirst': 'افتح المحرر السريع من فيديو تم تحميله أولًا.',
       'instagramBlocked':
           'حظر Instagram هذا الطلب. حدّث ملفات تعريف الارتباط وجرب مرة أخرى.',
+      'youtubeRequiresAuth':
+          'يتطلب يوتيوب التحقق من تسجيل الدخول. يرجى تحديث ملفات تعريف ارتباط يوتيوب من لوحة الإدارة.',
+      'youtubeFormatUnavailable':
+          'صيغة يوتيوب هذه غير متاحة. جرّب جودة أو رابطًا آخر.',
+      'youtubeFormatsTemporarilyUnavailable':
+          'صيغ فيديو يوتيوب غير متاحة مؤقتًا. يرجى تجربة رابط آخر.',
       'connectionProblem': 'مشكلة في الاتصال. حاول مرة أخرى.',
       'queued': 'في الانتظار',
       'downloading': 'جاري التنزيل',

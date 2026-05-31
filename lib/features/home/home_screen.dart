@@ -81,9 +81,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       setState(() => _loading = false);
       AppNotification.error(
         context,
-        message: error.message.isEmpty
-            ? AppLocalizations.of(context).t('analyzeFailed')
-            : error.message,
+        message: _friendlyAnalyzeError(
+          AppLocalizations.of(context),
+          error.message,
+        ),
       );
     } on Object {
       if (!mounted) return;
@@ -93,6 +94,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         message: AppLocalizations.of(context).t('connectionProblem'),
       );
     }
+  }
+
+  String _friendlyAnalyzeError(AppLocalizations l, String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('youtube requires sign-in') ||
+        lower.contains('youtube requested sign-in') ||
+        lower.contains('not a bot') ||
+        lower.contains('refresh youtube cookies')) {
+      return l.t('youtubeRequiresAuth');
+    }
+    return message.isEmpty ? l.t('analyzeFailed') : message;
   }
 
   @override
