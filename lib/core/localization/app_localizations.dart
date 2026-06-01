@@ -52,6 +52,8 @@ class AppLocalizations {
           'Open Quick Editor from a downloaded video first.',
       'instagramBlocked':
           'Instagram blocked this request. Please refresh Instagram cookies and try again.',
+      'facebookPhotoUnavailable':
+          'Facebook photo posts are not available for this link. Try a video link.',
       'youtubeRequiresAuth':
           'YouTube requires sign-in verification. Please refresh YouTube cookies from the admin panel.',
       'youtubeFormatUnavailable':
@@ -59,6 +61,8 @@ class AppLocalizations {
       'youtubeFormatsTemporarilyUnavailable':
           'YouTube video formats are temporarily unavailable. Please try another link.',
       'connectionProblem': 'Connection problem. Please try again.',
+      'serverConnectionProblem':
+          'Could not connect to the server. Please check your internet connection and try again.',
       'queued': 'Queued',
       'downloading': 'Downloading',
       'readyToOpen': 'Ready to open',
@@ -235,6 +239,8 @@ class AppLocalizations {
       'notAvailableForImage': 'Not available for this image',
       'Instagram photo posts are not available for this link. Try a Reel/video link.':
           'Instagram photo posts are not available for this link. Try a Reel/video link.',
+      'Facebook photo posts are not available for this link. Try a video link.':
+          'Facebook photo posts are not available for this link. Try a video link.',
       'noWatermarkApplied': 'No watermark applied when available',
       'downloadSelected': 'Download selected',
       'downloadSelectedItems': 'Download selected items',
@@ -334,6 +340,8 @@ class AppLocalizations {
       'openQuickEditorFirst': 'افتح المحرر السريع من فيديو تم تحميله أولًا.',
       'instagramBlocked':
           'حظر Instagram هذا الطلب. حدّث ملفات تعريف الارتباط وجرب مرة أخرى.',
+      'facebookPhotoUnavailable':
+          'منشورات صور فيسبوك غير متاحة لهذا الرابط. جرّب رابط فيديو.',
       'youtubeRequiresAuth':
           'يتطلب يوتيوب التحقق من تسجيل الدخول. يرجى تحديث ملفات تعريف ارتباط يوتيوب من لوحة الإدارة.',
       'youtubeFormatUnavailable':
@@ -341,6 +349,8 @@ class AppLocalizations {
       'youtubeFormatsTemporarilyUnavailable':
           'صيغ فيديو يوتيوب غير متاحة مؤقتًا. يرجى تجربة رابط آخر.',
       'connectionProblem': 'مشكلة في الاتصال. حاول مرة أخرى.',
+      'serverConnectionProblem':
+          'تعذّر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
       'queued': 'في الانتظار',
       'downloading': 'جاري التنزيل',
       'readyToOpen': 'جاهز للفتح',
@@ -517,6 +527,8 @@ class AppLocalizations {
       'notAvailableForImage': 'غير متوفر لهذه الصورة',
       'Instagram photo posts are not available for this link. Try a Reel/video link.':
           'منشورات الصور في إنستغرام غير متاحة لهذا الرابط. جرّب رابط Reel أو فيديو.',
+      'Facebook photo posts are not available for this link. Try a video link.':
+          'منشورات صور فيسبوك غير متاحة لهذا الرابط. جرّب رابط فيديو.',
       'noWatermarkApplied': 'سيتم التحميل بدون علامة مائية عند توفر ذلك',
       'downloadSelected': 'تحميل المحدد',
       'downloadSelectedItems': 'تحميل العناصر المحددة',

@@ -163,6 +163,18 @@ class _DownloadProgressScreenState
 
   String _friendlyFailureMessage(String message) {
     final lower = message.toLowerCase();
+    if (lower.contains('could not connect to the server') ||
+        lower.contains('could not connect to api') ||
+        lower.contains('api request timed out')) {
+      return AppLocalizations.of(context).t('serverConnectionProblem');
+    }
+    if (lower.contains('facebook photo posts are not available') ||
+        (lower.contains('facebook') &&
+            (lower.contains('registered users') ||
+                lower.contains('cookies-from-browser') ||
+                lower.contains('login required')))) {
+      return AppLocalizations.of(context).t('facebookPhotoUnavailable');
+    }
     if (lower.contains('login required') ||
         lower.contains('rate-limit') ||
         lower.contains('rate limit') ||

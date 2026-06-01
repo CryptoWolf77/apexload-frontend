@@ -176,6 +176,18 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
 
   String _friendlyDownloadError(AppLocalizations l, String message) {
     final lower = message.toLowerCase();
+    if (lower.contains('could not connect to the server') ||
+        lower.contains('could not connect to api') ||
+        lower.contains('api request timed out')) {
+      return l.t('serverConnectionProblem');
+    }
+    if (lower.contains('facebook photo posts are not available') ||
+        (lower.contains('facebook') &&
+            (lower.contains('registered users') ||
+                lower.contains('cookies-from-browser') ||
+                lower.contains('login required')))) {
+      return l.t('facebookPhotoUnavailable');
+    }
     if (lower.contains('login required') ||
         lower.contains('rate-limit') ||
         lower.contains('rate limit') ||
@@ -314,7 +326,8 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
           ],
           const SizedBox(height: 10),
           if (_isImage &&
-              widget.media.platform == 'Instagram' &&
+              (widget.media.platform == 'Instagram' ||
+                  widget.media.platform == 'Facebook') &&
               _allFormatsUnavailable) ...[
             GlassCard(
               padding: const EdgeInsets.all(12),

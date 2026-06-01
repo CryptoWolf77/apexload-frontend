@@ -78,7 +78,8 @@ class ApiClientException implements Exception {
       DioExceptionType.receiveTimeout => 'API request timed out',
       DioExceptionType.badResponse =>
         'API returned ${error.response?.statusCode}',
-      DioExceptionType.connectionError => 'Could not connect to API',
+      DioExceptionType.connectionError =>
+        'Could not connect to the server. Please check your internet connection and try again.',
       _ => 'API request failed',
     };
     return ApiClientException(type);

@@ -98,6 +98,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _friendlyAnalyzeError(AppLocalizations l, String message) {
     final lower = message.toLowerCase();
+    if (lower.contains('could not connect to the server') ||
+        lower.contains('could not connect to api') ||
+        lower.contains('api request timed out')) {
+      return l.t('serverConnectionProblem');
+    }
+    if (lower.contains('facebook photo posts are not available') ||
+        (lower.contains('facebook') &&
+            (lower.contains('registered users') ||
+                lower.contains('cookies-from-browser') ||
+                lower.contains('login required')))) {
+      return l.t('facebookPhotoUnavailable');
+    }
     if (lower.contains('youtube requires sign-in') ||
         lower.contains('youtube requested sign-in') ||
         lower.contains('not a bot') ||
