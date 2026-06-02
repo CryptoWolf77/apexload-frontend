@@ -10,6 +10,8 @@ class DownloadItemModel {
     required this.type,
     required this.thumbnailUrl,
     required this.fileName,
+    this.fileId = '',
+    this.downloadUrl = '',
   });
 
   final String id;
@@ -20,6 +22,8 @@ class DownloadItemModel {
   final DownloadType type;
   final String thumbnailUrl;
   final String fileName;
+  final String fileId;
+  final String downloadUrl;
 
   DownloadItemModel copyWith({
     String? id,
@@ -27,6 +31,8 @@ class DownloadItemModel {
     DateTime? date,
     String? sizeLabel,
     String? fileName,
+    String? fileId,
+    String? downloadUrl,
   }) {
     return DownloadItemModel(
       id: id ?? this.id,
@@ -37,6 +43,8 @@ class DownloadItemModel {
       type: type,
       thumbnailUrl: thumbnailUrl,
       fileName: fileName ?? this.fileName,
+      fileId: fileId ?? this.fileId,
+      downloadUrl: downloadUrl ?? this.downloadUrl,
     );
   }
 }

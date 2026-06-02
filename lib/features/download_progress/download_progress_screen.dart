@@ -135,6 +135,8 @@ class _DownloadProgressScreenState
                   ? _fileNameFor(widget.args.primaryFormat)
                   : status.files[i].fileName,
               sizeLabel: status.files[i].size,
+              fileId: status.files[i].fileId,
+              downloadUrl: status.files[i].downloadUrl,
             ),
     ];
     for (final item in items.reversed) {

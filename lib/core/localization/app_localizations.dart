@@ -232,6 +232,8 @@ class AppLocalizations {
       'shareDemoAction': 'Share is a demo action for now.',
       'openDemoAction': 'Open is a demo action for now.',
       'saveGalleryDemoAction': 'Save to gallery is a demo action for now.',
+      'sharingSoon': 'Sharing will be added soon.',
+      'couldNotOpenFile': 'Could not open this file. Please try again.',
       'demoExtractionPrepared': 'Demo {format} extraction prepared.',
       'batchQueueCreated': 'Demo queue created. Backend will run this later.',
       'batchLimitExceeded': 'You can download up to 5 links at a time.',
@@ -519,6 +521,8 @@ class AppLocalizations {
       'shareDemoAction': 'المشاركة حالياً مجرد تجربة',
       'openDemoAction': 'الفتح حالياً مجرد تجربة',
       'saveGalleryDemoAction': 'الحفظ في المعرض حالياً مجرد تجربة',
+      'sharingSoon': 'ستتم إضافة المشاركة قريبًا.',
+      'couldNotOpenFile': 'تعذّر فتح هذا الملف. يرجى المحاولة مرة أخرى.',
       'demoExtractionPrepared': 'تم تجهيز استخراج {format} كتجربة.',
       'batchQueueCreated':
           'تم إنشاء قائمة تجريبية. سيتم تشغيلها من الخادم لاحقاً.',

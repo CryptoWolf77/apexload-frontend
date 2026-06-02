@@ -8,6 +8,8 @@ class MockDownloadService {
     required DownloadFormatModel format,
     required String fileName,
     String? sizeLabel,
+    String? fileId,
+    String? downloadUrl,
   }) {
     return DownloadItemModel(
       id: '${media.id}_${format.id}_${DateTime.now().millisecondsSinceEpoch}',
@@ -18,6 +20,8 @@ class MockDownloadService {
       type: format.type,
       thumbnailUrl: media.thumbnailUrl,
       fileName: fileName,
+      fileId: fileId ?? '',
+      downloadUrl: downloadUrl ?? '',
     );
   }
 }

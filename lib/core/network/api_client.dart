@@ -17,6 +17,7 @@ class ApiClient {
               headers: const {'Accept': 'application/json'},
             ),
           ) {
+    _logApiConfigOnce();
     if (kDebugMode && _dio.interceptors.whereType<LogInterceptor>().isEmpty) {
       _dio.interceptors.add(
         LogInterceptor(
@@ -30,12 +31,29 @@ class ApiClient {
   }
 
   final Dio _dio;
+  static var _configLogged = false;
+
+  void _logApiConfigOnce() {
+    if (_configLogged) return;
+    _configLogged = true;
+    debugPrint('ApexLoad API_BASE_URL=${ApiConfig.baseUrl}');
+  }
+
+  void _logDioFailure(String path, DioException error) {
+    debugPrint('ApexLoad API connection failure');
+    debugPrint('ApexLoad API base URL: ${ApiConfig.baseUrl}');
+    debugPrint('ApexLoad API request path: $path');
+    debugPrint('ApexLoad DioException type: ${error.type}');
+    debugPrint('ApexLoad API status code: ${error.response?.statusCode}');
+    debugPrint('ApexLoad DioException message: ${error.message}');
+  }
 
   Future<Map<String, dynamic>> get(String path) async {
     try {
       final response = await _dio.get<Object?>(path);
       return _asMap(response.data);
     } on DioException catch (error) {
+      _logDioFailure(path, error);
       throw ApiClientException.fromDio(error);
     } on Object catch (error) {
       throw ApiClientException('Unexpected API error: $error');
@@ -50,6 +68,7 @@ class ApiClient {
       final response = await _dio.post<Object?>(path, data: data);
       return _asMap(response.data);
     } on DioException catch (error) {
+      _logDioFailure(path, error);
       throw ApiClientException.fromDio(error);
     } on Object catch (error) {
       throw ApiClientException('Unexpected API error: $error');
