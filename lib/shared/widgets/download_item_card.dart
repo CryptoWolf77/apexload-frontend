@@ -1,23 +1,25 @@
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
-import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
-import 'package:apexload/shared/widgets/app_notification.dart';
+import 'package:apexload/shared/widgets/local_thumbnail_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class DownloadItemCard extends StatelessWidget {
   const DownloadItemCard({
     super.key,
     required this.item,
+    required this.onOpen,
+    required this.onShare,
     required this.onDelete,
     required this.onRename,
     this.onEdit,
   });
 
   final DownloadItemModel item;
+  final VoidCallback onOpen;
+  final VoidCallback onShare;
   final VoidCallback onDelete;
   final VoidCallback onRename;
   final VoidCallback? onEdit;
@@ -29,7 +31,7 @@ class DownloadItemCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _openFile(context),
+        onTap: onOpen,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -49,16 +51,14 @@ class DownloadItemCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
+              SizedBox(
                 width: 64,
                 height: 64,
-                decoration: BoxDecoration(
+                child: LocalThumbnailView(
+                  path: item.thumbnailPath,
                   borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryStart, AppColors.primaryEnd],
-                  ),
+                  fallback: _FallbackThumb(type: item.type),
                 ),
-                child: Icon(_typeIcon, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -72,14 +72,70 @@ class DownloadItemCard extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      '${item.platform} - ${DateFormat.MMMd().format(item.date)} - ${item.sizeLabel}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppTone.textSecondary(context),
-                        fontSize: 12,
-                      ),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 5,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          item.platform,
+                          style: TextStyle(
+                            color: AppTone.textSecondary(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          item.type.name.toUpperCase(),
+                          style: TextStyle(
+                            color: AppTone.textSecondary(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (item.quality.isNotEmpty)
+                          Text(
+                            item.quality,
+                            style: TextStyle(
+                              color: AppTone.textSecondary(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                        Text(
+                          item.sizeLabel,
+                          style: TextStyle(
+                            color: AppTone.textSecondary(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          DateFormat.MMMd().format(item.date),
+                          style: TextStyle(
+                            color: AppTone.textSecondary(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (item.isEdited)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryEnd.withValues(
+                                alpha: 0.16,
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: AppColors.primaryEnd),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context).t('edited'),
+                              style: const TextStyle(
+                                color: AppColors.primaryEnd,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 5),
                     Text(
@@ -98,18 +154,11 @@ class DownloadItemCard extends StatelessWidget {
                 icon: const Icon(Icons.more_vert_rounded),
                 onSelected: (value) {
                   if (value == 'open') {
-                    _openFile(context);
-                    return;
-                  }
-                  if (value == 'save_gallery') {
-                    _openFile(context);
+                    onOpen();
                     return;
                   }
                   if (value == 'share') {
-                    AppNotification.info(
-                      context,
-                      message: AppLocalizations.of(context).t('sharingSoon'),
-                    );
+                    onShare();
                     return;
                   }
                   if (value == 'delete') onDelete();
@@ -124,10 +173,6 @@ class DownloadItemCard extends StatelessWidget {
                     if (item.type == DownloadType.video && onEdit != null)
                       PopupMenuItem(value: 'edit', child: Text(l.t('edit'))),
                     PopupMenuItem(value: 'rename', child: Text(l.t('rename'))),
-                    PopupMenuItem(
-                      value: 'save_gallery',
-                      child: Text(l.t('saveToGallery')),
-                    ),
                     PopupMenuItem(value: 'delete', child: Text(l.t('delete'))),
                   ];
                 },
@@ -138,39 +183,34 @@ class DownloadItemCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _openFile(BuildContext context) async {
-    final l = AppLocalizations.of(context);
-    final url = _fileUrl;
-    if (url == null) {
-      AppNotification.error(context, message: l.t('couldNotOpenFile'));
-      return;
-    }
-    final opened = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
+class _FallbackThumb extends StatelessWidget {
+  const _FallbackThumb({required this.type});
+
+  final DownloadType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = switch (type) {
+      DownloadType.audio => const [Color(0xFF6C63FF), Color(0xFFEF3E88)],
+      DownloadType.image => const [Color(0xFF00B8D9), Color(0xFF16A34A)],
+      DownloadType.video => const [
+        AppColors.primaryStart,
+        AppColors.primaryEnd,
+      ],
+    };
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(colors: colors),
+      ),
+      child: Icon(_icon, color: Colors.white),
     );
-    if (!opened && context.mounted) {
-      AppNotification.error(context, message: l.t('couldNotOpenFile'));
-    }
   }
 
-  String? get _fileUrl {
-    final value = item.downloadUrl.trim();
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-    if (value.startsWith('/')) return '${ApiConfig.baseUrl}$value';
-    if (value.isNotEmpty) return '${ApiConfig.baseUrl}/$value';
-    final fileId = item.fileId.trim();
-    if (fileId.isNotEmpty) {
-      return '${ApiConfig.baseUrl}${ApiConfig.filePath(fileId)}';
-    }
-    return null;
-  }
-
-  IconData get _typeIcon {
-    return switch (item.type) {
+  IconData get _icon {
+    return switch (type) {
       DownloadType.video => Icons.play_arrow_rounded,
       DownloadType.audio => Icons.music_note_rounded,
       DownloadType.image => Icons.image_rounded,

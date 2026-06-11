@@ -4,6 +4,7 @@ import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/download_item_card.dart';
 import 'package:apexload/shared/widgets/empty_state.dart';
 import 'package:apexload/shared/widgets/platform_chip.dart';
@@ -42,10 +43,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           _type == 'All' ||
           (_type == 'Video' && item.type == DownloadType.video) ||
           (_type == 'Audio' && item.type == DownloadType.audio) ||
-          (_type == 'Images' && item.type == DownloadType.image);
+          (_type == 'Images' && item.type == DownloadType.image) ||
+          (_type == 'Edited' && item.isEdited);
       final matchesPlatform = _platform == 'All' || item.platform == _platform;
       return matchesQuery && matchesType && matchesPlatform;
     }).toList();
+    final groups = _groupItems(items);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 104),
@@ -73,6 +76,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 selected: _type == type,
                 onSelected: (_) => setState(() => _type = type),
               ),
+            ChoiceChip(
+              label: Text(l.t('edited')),
+              selected: _type == 'Edited',
+              onSelected: (_) => setState(() => _type = 'Edited'),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -87,9 +95,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 onTap: () => setState(() => _platform = 'All'),
               ),
               const SizedBox(width: 8),
-              for (final platform in AppConstants.supportedPlatforms) ...[
+              for (final platform in [
+                ...AppConstants.supportedPlatforms,
+                'Editor',
+              ]) ...[
                 PlatformChip(
-                  label: platform,
+                  label: platform == 'Editor' ? l.t('editor') : platform,
                   selected: _platform == platform,
                   onTap: () => setState(() => _platform = platform),
                 ),
@@ -109,18 +120,119 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ),
           )
         else
-          for (final item in items) ...[
-            DownloadItemCard(
-              item: item,
-              onDelete: () =>
-                  ref.read(libraryControllerProvider.notifier).delete(item.id),
-              onRename: () => _rename(item.id, item.fileName),
-              onEdit: () => _openQuickEditor(item),
+          for (final group in groups.entries) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10, top: 6),
+              child: Text(
+                group.key,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
-            const SizedBox(height: 10),
+            for (final item in group.value) ...[
+              DownloadItemCard(
+                item: item,
+                onOpen: () => _openItem(item),
+                onShare: () => _shareItem(item),
+                onDelete: () => _confirmDelete(item),
+                onRename: () => _rename(item.id, item.fileName),
+                onEdit: () => _openQuickEditor(item),
+              ),
+              const SizedBox(height: 10),
+            ],
           ],
       ],
     );
+  }
+
+  Map<String, List<DownloadItemModel>> _groupItems(
+    List<DownloadItemModel> items,
+  ) {
+    final l = AppLocalizations.of(context);
+    final now = DateTime.now();
+    final groups = <String, List<DownloadItemModel>>{
+      l.t('today'): [],
+      l.t('yesterday'): [],
+      l.t('older'): [],
+    };
+    for (final item in items) {
+      final date = item.date;
+      final today =
+          date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+      final yesterdayDate = now.subtract(const Duration(days: 1));
+      final yesterday =
+          date.year == yesterdayDate.year &&
+          date.month == yesterdayDate.month &&
+          date.day == yesterdayDate.day;
+      if (today) {
+        groups[l.t('today')]!.add(item);
+      } else if (yesterday) {
+        groups[l.t('yesterday')]!.add(item);
+      } else {
+        groups[l.t('older')]!.add(item);
+      }
+    }
+    groups.removeWhere((_, value) => value.isEmpty);
+    return groups;
+  }
+
+  Future<void> _openItem(DownloadItemModel item) async {
+    try {
+      await ref.read(localMediaServiceProvider).openItem(item);
+    } on Object catch (error) {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t(
+          _isMissingFileError(error)
+              ? 'fileNoLongerAvailable'
+              : 'couldNotOpenFile',
+        ),
+      );
+    }
+  }
+
+  Future<void> _shareItem(DownloadItemModel item) async {
+    try {
+      await ref.read(localMediaServiceProvider).shareItem(item);
+    } on Object catch (error) {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t(
+          _isMissingFileError(error)
+              ? 'fileNoLongerAvailable'
+              : 'sharingFailed',
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDelete(DownloadItemModel item) async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.t('deleteThisFile')),
+        content: Text(item.fileName),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.t('delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(localMediaServiceProvider).deleteItemFiles(item);
+    ref.read(libraryControllerProvider.notifier).delete(item.id);
+    if (!mounted) return;
+    AppNotification.success(context, message: l.t('fileDeleted'));
   }
 
   void _openQuickEditor(DownloadItemModel item) {
@@ -129,7 +241,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       showQuickEditorPremiumSheet(context);
       return;
     }
-    context.push('/quick-editor', extra: item);
+    context.push('/quick-editor/edit', extra: item);
   }
 
   String _typeLabel(AppLocalizations l, String type) {
@@ -137,8 +249,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       'Video' => l.t('video'),
       'Audio' => l.t('audio'),
       'Images' => l.t('images'),
+      'Edited' => l.t('edited'),
       _ => l.t('all'),
     };
+  }
+
+  bool _isMissingFileError(Object error) {
+    return error.toString().contains('localFileMissing');
   }
 
   Future<void> _rename(String id, String current) async {

@@ -41,6 +41,11 @@ dependencies:
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
+  ffmpeg_kit_flutter_new: ^4.2.1
+  share_plus: ^13.1.0
+  open_filex: ^4.7.0
+  video_player: ^2.11.1
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +71,8 @@ flutter:
 
   assets:
     - assets/images/yahyaz_lab_logo.png
+    - assets/tutorials/whatsapp_status/
+    - assets/tutorials/paste_link/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

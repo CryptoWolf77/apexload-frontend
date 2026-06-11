@@ -8,6 +8,7 @@ import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/mock_ad_dialog.dart';
@@ -35,8 +36,8 @@ class _DownloadProgressScreenState
   var _statusMessage = 'Queued';
   var _saved = false;
   var _failed = false;
+  var _preparing = false;
   DownloadItemModel? _completedItem;
-  ApiDownloadFile? _completedFile;
   String? _localSavedPath;
   List<ApiDownloadFile> _latestFiles = const [];
 
@@ -52,7 +53,10 @@ class _DownloadProgressScreenState
       return;
     }
     unawaited(_pollStatus());
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _pollStatus());
+    _timer = Timer.periodic(
+      const Duration(milliseconds: 1500),
+      (_) => _pollStatus(),
+    );
   }
 
   Future<void> _pollStatus() async {
@@ -105,43 +109,118 @@ class _DownloadProgressScreenState
     }
 
     final apiService = ref.read(apiDownloadServiceProvider);
-    final firstFile = status.files.first;
-    String? savedPath;
-    if (widget.args.saveToGallery) {
+    final localMedia = ref.read(localMediaServiceProvider);
+    setState(() {
+      _preparing = true;
+      _progress = 0.96;
+      _status = 'preparing';
+      _statusMessage = l.t('preparingYourFileDescription');
+    });
+    final savedFiles = <String, String>{};
+    final thumbnails = <String, String>{};
+    final savedNames = <String, String>{};
+    final savedSizes = <String, String>{};
+    final galleryUris = <String, String>{};
+    var galleryPublishFailed = false;
+    var lastSaveProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+    for (var i = 0; i < status.files.length; i++) {
+      final file = status.files[i];
       try {
-        savedPath = await apiService.saveOrOpenFile(firstFile);
-      } on Object catch (error) {
-        if (!mounted) return;
-        AppNotification.warning(
-          context,
-          message: '${l.t('downloadCompleted')} ${error.toString()}',
+        if (mounted) {
+          setState(() {
+            _progress = (0.96 + (i / status.files.length) * 0.035).clamp(
+              0,
+              0.995,
+            );
+            _status = 'saving';
+            _statusMessage = l.t('savingFileToDevice');
+          });
+        }
+        final save = await localMedia.saveRemoteFile(
+          url: apiService.fullFileUrl(file),
+          fileName: file.fileName.isEmpty ? file.fileId : file.fileName,
+          type: _downloadTypeForBackendFile(file, widget.args.primaryFormat),
+          onProgress: (saveProgress) {
+            final now = DateTime.now();
+            if (!mounted ||
+                now.difference(lastSaveProgressUpdate).inMilliseconds < 150 &&
+                    saveProgress < 1) {
+              return;
+            }
+            lastSaveProgressUpdate = now;
+            setState(() {
+              final totalProgress = (i + saveProgress) / status.files.length;
+              _progress = (0.96 + totalProgress * 0.035).clamp(0.96, 0.995);
+              _status = 'saving';
+              _statusMessage =
+                  '${l.t('savingFileToDevice')} ${(saveProgress * 100).round().clamp(0, 100)}%';
+            });
+          },
         );
+        savedFiles[file.fileId] = save.localFilePath;
+        thumbnails[file.fileId] = save.thumbnailPath;
+        savedNames[file.fileId] = save.fileName;
+        if (save.sizeLabel.isNotEmpty) {
+          savedSizes[file.fileId] = save.sizeLabel;
+        }
+        if (save.galleryUri.isNotEmpty) {
+          galleryUris[file.fileId] = save.galleryUri;
+        } else if (!kIsWeb) {
+          galleryPublishFailed = true;
+        }
+      } on Object catch (error) {
+        if (kDebugMode) {
+          debugPrint('ApexLoad local save failed: $error');
+        }
+        if (!mounted) return;
+        _markFailed(l.t('downloadSaveFailed'));
+        return;
       }
     }
 
     final items = [
       for (var i = 0; i < status.files.length; i++)
-        ref
-            .read(downloadServiceProvider)
-            .createCompletedItem(
-              media: widget.args.media,
-              format: _formatForBackendFile(
-                status.files[i],
-                i < widget.args.formats.length
-                    ? widget.args.formats[i]
-                    : widget.args.primaryFormat,
+        if ((savedFiles[status.files[i].fileId] ?? '').isNotEmpty ||
+            (kIsWeb && savedNames.containsKey(status.files[i].fileId)))
+          ref
+              .read(downloadServiceProvider)
+              .createCompletedItem(
+                media: widget.args.media,
+                format: _formatForBackendFile(
+                  status.files[i],
+                  i < widget.args.formats.length
+                      ? widget.args.formats[i]
+                      : widget.args.primaryFormat,
+                ),
+                fileName: status.files[i].fileName.isEmpty
+                    ? savedNames[status.files[i].fileId] ??
+                          _fileNameFor(widget.args.primaryFormat)
+                    : savedNames[status.files[i].fileId] ??
+                          status.files[i].fileName,
+                sizeLabel:
+                    savedSizes[status.files[i].fileId] ?? status.files[i].size,
+                fileId: status.files[i].fileId,
+                downloadUrl: status.files[i].downloadUrl,
+                localFilePath: savedFiles[status.files[i].fileId] ?? '',
+                thumbnailPath: thumbnails[status.files[i].fileId] ?? '',
+                galleryUri: galleryUris[status.files[i].fileId] ?? '',
+                duration: widget.args.media.duration,
               ),
-              fileName: status.files[i].fileName.isEmpty
-                  ? _fileNameFor(widget.args.primaryFormat)
-                  : status.files[i].fileName,
-              sizeLabel: status.files[i].size,
-              fileId: status.files[i].fileId,
-              downloadUrl: status.files[i].downloadUrl,
-            ),
     ];
+    if (items.isEmpty) {
+      _markFailed(l.t('downloadSaveFailed'));
+      return;
+    }
     for (final item in items.reversed) {
       ref.read(libraryControllerProvider.notifier).add(item);
     }
+    unawaited(
+      _generateThumbnailsInBackground(
+        items,
+        localMedia,
+        ref.read(libraryControllerProvider.notifier),
+      ),
+    );
     final showAd = await ref
         .read(subscriptionControllerProvider.notifier)
         .recordSuccessfulDownload(count: items.length);
@@ -153,11 +232,14 @@ class _DownloadProgressScreenState
           ? l.t('downloadCompleted')
           : status.message;
       _saved = true;
-      _completedItem = _firstVideoItem(items);
-      _completedFile = firstFile;
-      _localSavedPath = savedPath;
+      _preparing = false;
+      _completedItem = items.first;
+      _localSavedPath = savedFiles[status.files.first.fileId];
     });
-    AppNotification.success(context, message: l.t('downloadCompleted'));
+    AppNotification.success(context, message: l.t('downloadSavedToLibrary'));
+    if (galleryPublishFailed) {
+      AppNotification.warning(context, message: l.t('galleryPublishFailed'));
+    }
     if (showAd) {
       await showMockAdDialog(context);
     }
@@ -211,6 +293,7 @@ class _DownloadProgressScreenState
     setState(() {
       _failed = true;
       _saved = true;
+      _preparing = false;
       _progress = _progress.clamp(0, 0.95);
       _status = l.t('downloadFailed');
       _statusMessage = message.trim().isEmpty ? l.t('downloadFailed') : message;
@@ -242,131 +325,158 @@ class _DownloadProgressScreenState
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            const Spacer(),
-            SizedBox(
-              width: 178,
-              height: 178,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CircularProgressIndicator(
-                    value: _progress,
-                    strokeWidth: 14,
-                    backgroundColor: AppTone.cardSecondary(context),
-                    color: failed
-                        ? AppColors.error
-                        : completed
-                        ? AppColors.success
-                        : AppColors.primaryEnd,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 38).clamp(
+                    0,
+                    double.infinity,
                   ),
-                  Center(
-                    child: Text(
-                      completed ? '100%' : '$percent%',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 172,
+                      height: 172,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CircularProgressIndicator(
+                            value: _progress,
+                            strokeWidth: 14,
+                            backgroundColor: AppTone.cardSecondary(context),
+                            color: failed
+                                ? AppColors.error
+                                : completed
+                                ? AppColors.success
+                                : AppColors.primaryEnd,
+                          ),
+                          Center(
+                            child: Text(
+                              completed ? '100%' : '$percent%',
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              failed
-                  ? l.t('downloadFailed')
-                  : completed
-                  ? l.t('downloadCompleted')
-                  : _statusLabel(l),
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.args.fileName,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTone.textSecondary(context)),
-            ),
-            const SizedBox(height: 20),
-            _ProgressInfo(
-              label: l.t('platform'),
-              value: l.platformName(widget.args.media.platform),
-            ),
-            _ProgressInfo(
-              label: l.t('speed'),
-              value: failed
-                  ? l.t('downloadFailed')
-                  : completed
-                  ? (_localSavedPath == null
-                        ? l.t('readyToOpen')
-                        : l.t('savedLocally'))
-                  : _statusMessage,
-            ),
-            _ProgressInfo(
-              label: l.t('queuePosition'),
-              value: failed
-                  ? l.t('done')
-                  : completed
-                  ? l.t('done')
-                  : '#1',
-            ),
-            if (kDebugMode) ...[
-              const SizedBox(height: 12),
-              _DebugDownloadInfo(
-                requestedFormats: widget.args.formats,
-                returnedFiles: _latestFiles,
-              ),
-            ],
-            const Spacer(),
-            if (completed && !failed) ...[
-              PrimaryGradientButton(
-                label: l.t('openLibrary'),
-                icon: Icons.folder_rounded,
-                onPressed: () => context.go('/downloads'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => context.go('/home'),
-                icon: const Icon(Icons.add_link_rounded),
-                label: Text(l.t('downloadAnother')),
-              ),
-              if (_completedItem != null) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _completedItem == null
-                      ? null
-                      : () => _openQuickEditor(_completedItem!),
-                  icon: const Icon(Icons.auto_fix_high_rounded),
-                  label: Text(l.t('editVideo')),
+                    const SizedBox(height: 24),
+                    Text(
+                      failed
+                          ? l.t('downloadFailed')
+                          : completed
+                          ? l.t('downloadCompleted')
+                          : _statusLabel(l),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _displayStatusMessage(l, completed: completed),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppTone.textSecondary(context),
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _ProgressMetadataCard(
+                      rows: [
+                        _ProgressMetadataRowData(
+                          l.t('platform'),
+                          l.platformName(widget.args.media.platform),
+                        ),
+                        _ProgressMetadataRowData(
+                          l.t('filename'),
+                          widget.args.fileName,
+                        ),
+                        _ProgressMetadataRowData(
+                          l.t('format'),
+                          widget.args.primaryFormat.label,
+                        ),
+                        if (_metadataSizeLabel(l) != null)
+                          _ProgressMetadataRowData(
+                            l.t('size'),
+                            _metadataSizeLabel(l)!,
+                          ),
+                        _ProgressMetadataRowData(
+                          l.t('queuePosition'),
+                          completed || failed ? l.t('done') : '#1',
+                        ),
+                      ],
+                    ),
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 12),
+                      _DebugDownloadInfo(
+                        requestedFormats: widget.args.formats,
+                        returnedFiles: _latestFiles,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    if (_preparing) ...[
+                      LinearProgressIndicator(value: _progress),
+                    ] else if (completed && !failed) ...[
+                      PrimaryGradientButton(
+                        label: l.t('openLibrary'),
+                        icon: Icons.folder_rounded,
+                        onPressed: () => context.go('/downloads'),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/home'),
+                        icon: const Icon(Icons.add_link_rounded),
+                        label: Text(l.t('downloadAnother')),
+                      ),
+                      if (_completedItem != null &&
+                          _completedItem!.type == DownloadType.video) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _completedItem == null
+                              ? null
+                              : () => _openQuickEditor(_completedItem!),
+                          icon: const Icon(Icons.auto_fix_high_rounded),
+                          label: Text(l.t('editVideo')),
+                        ),
+                      ],
+                      if (_completedItem != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _openCompletedFile,
+                          icon: const Icon(Icons.open_in_new_rounded),
+                          label: Text(l.t('open')),
+                        ),
+                      ],
+                    ] else if (!completed)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/home');
+                          }
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                        label: Text(l.t('cancel')),
+                      )
+                    else
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/home'),
+                        icon: const Icon(Icons.add_link_rounded),
+                        label: Text(l.t('downloadAnother')),
+                      ),
+                  ],
                 ),
-              ],
-              if (_completedFile != null) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _openCompletedFile,
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: Text(l.t('open')),
-                ),
-              ],
-            ] else if (!completed)
-              OutlinedButton.icon(
-                onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/home');
-                  }
-                },
-                icon: const Icon(Icons.close_rounded),
-                label: Text(l.t('cancel')),
-              )
-            else
-              OutlinedButton.icon(
-                onPressed: () => context.go('/home'),
-                icon: const Icon(Icons.add_link_rounded),
-                label: Text(l.t('downloadAnother')),
               ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -378,19 +488,19 @@ class _DownloadProgressScreenState
       showQuickEditorPremiumSheet(context);
       return;
     }
-    context.push('/quick-editor', extra: item);
+    context.push('/quick-editor/edit', extra: item);
   }
 
   Future<void> _openCompletedFile() async {
-    final file = _completedFile;
-    if (file == null) return;
+    final item = _completedItem;
+    if (item == null) return;
     try {
-      await ref.read(apiDownloadServiceProvider).saveOrOpenFile(file);
+      await ref.read(localMediaServiceProvider).openItem(item);
     } on Object {
       if (!mounted) return;
       AppNotification.error(
         context,
-        message: AppLocalizations.of(context).t('connectionProblem'),
+        message: AppLocalizations.of(context).t('couldNotOpenFile'),
       );
     }
   }
@@ -399,17 +509,54 @@ class _DownloadProgressScreenState
     return switch (_status.toLowerCase()) {
       'queued' => l.t('queued'),
       'processing' => l.t('downloading'),
+      'preparing' => l.t('preparingYourFile'),
+      'saving' => l.t('savingToDevice'),
       'completed' => l.t('downloadCompleted'),
       'failed' => l.t('downloadFailed'),
       _ => _statusMessage,
     };
   }
 
-  DownloadItemModel? _firstVideoItem(List<DownloadItemModel> items) {
-    for (final item in items) {
-      if (item.type == DownloadType.video) return item;
+  String _displayStatusMessage(AppLocalizations l, {required bool completed}) {
+    if (_failed) return _statusMessage;
+    if (_status.toLowerCase() == 'saving') return _statusMessage;
+    if (_preparing) return l.t('preparingYourFileDescription');
+    if (completed) {
+      return _localSavedPath == null ? l.t('readyToOpen') : l.t('savedLocally');
     }
-    return null;
+    return _statusMessage.trim().isEmpty ? _statusLabel(l) : _statusMessage;
+  }
+
+  String? _metadataSizeLabel(AppLocalizations l) {
+    final label = widget.args.primaryFormat.sizeLabel.trim();
+    if (label.isEmpty) return null;
+    if (label.toLowerCase() == 'unknown') return l.t('calculating');
+    return label;
+  }
+
+  Future<void> _generateThumbnailsInBackground(
+    List<DownloadItemModel> items,
+    LocalMediaService localMedia,
+    LibraryController library,
+  ) async {
+    for (final item in items) {
+      if (item.localFilePath.trim().isEmpty || item.thumbnailPath.isNotEmpty) {
+        continue;
+      }
+      try {
+        final thumbnail = await localMedia.generateThumbnail(
+          localFilePath: item.localFilePath,
+          fileName: item.fileName,
+          type: item.type,
+        );
+        if (thumbnail == null || thumbnail.isEmpty) continue;
+        library.add(item.copyWith(thumbnailPath: thumbnail));
+      } on Object catch (error) {
+        if (kDebugMode) {
+          debugPrint('ApexLoad thumbnail generation skipped: $error');
+        }
+      }
+    }
   }
 
   String _fileNameFor(DownloadFormatModel format) {
@@ -448,6 +595,18 @@ class _DownloadProgressScreenState
     );
   }
 
+  DownloadType _downloadTypeForBackendFile(
+    ApiDownloadFile file,
+    DownloadFormatModel fallback,
+  ) {
+    return switch (file.type.toLowerCase()) {
+      'audio' => DownloadType.audio,
+      'image' => DownloadType.image,
+      'video' => DownloadType.video,
+      _ => fallback.type,
+    };
+  }
+
   String _extensionFromFileName(String fileName, String fallback) {
     final dot = fileName.lastIndexOf('.');
     if (dot >= 0 && dot < fileName.length - 1) {
@@ -457,23 +616,78 @@ class _DownloadProgressScreenState
   }
 }
 
-class _ProgressInfo extends StatelessWidget {
-  const _ProgressInfo({required this.label, required this.value});
+class _ProgressMetadataRowData {
+  const _ProgressMetadataRowData(this.label, this.value);
 
   final String label;
   final String value;
+}
+
+class _ProgressMetadataCard extends StatelessWidget {
+  const _ProgressMetadataCard({required this.rows});
+
+  final List<_ProgressMetadataRowData> rows;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: AppTone.textSecondary(context))),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTone.card(context).withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTone.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            _ProgressMetadataRow(row: rows[i]),
+            if (i < rows.length - 1)
+              Divider(height: 18, color: AppTone.border(context)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressMetadataRow extends StatelessWidget {
+  const _ProgressMetadataRow({required this.row});
+
+  final _ProgressMetadataRowData row;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 112,
+          child: Text(
+            row.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: AppTone.textSecondary(context)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            row.value,
+            textAlign: TextAlign.end,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
     );
   }
 }

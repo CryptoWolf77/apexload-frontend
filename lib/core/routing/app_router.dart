@@ -1,16 +1,18 @@
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/account/account_screen.dart';
 import 'package:apexload/features/audio_extraction/audio_extraction_screen.dart';
-import 'package:apexload/features/batch_download/batch_download_screen.dart';
 import 'package:apexload/features/download_options/download_options_screen.dart';
 import 'package:apexload/features/download_progress/download_progress_screen.dart';
 import 'package:apexload/features/home/home_screen.dart';
 import 'package:apexload/features/library/library_screen.dart';
 import 'package:apexload/features/onboarding/onboarding_screen.dart';
 import 'package:apexload/features/premium/premium_screen.dart';
+import 'package:apexload/features/quick_editor/quick_editor_landing_screen.dart';
 import 'package:apexload/features/quick_editor/quick_editor_screen.dart';
 import 'package:apexload/features/settings/settings_screen.dart';
 import 'package:apexload/features/splash/splash_screen.dart';
+import 'package:apexload/features/video_optimizer/video_optimizer_screen.dart';
+import 'package:apexload/features/whatsapp_status/whatsapp_status_screen.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
@@ -45,8 +47,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const LibraryScreen(),
           ),
           GoRoute(
-            path: '/batch',
-            builder: (context, state) => const BatchDownloadScreen(),
+            path: '/quick-editor',
+            builder: (context, state) => const QuickEditorLandingScreen(),
           ),
           GoRoute(
             path: '/settings',
@@ -93,7 +95,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AudioExtractionScreen(),
       ),
       GoRoute(
-        path: '/quick-editor',
+        path: '/whatsapp-status',
+        builder: (context, state) {
+          return Consumer(
+            builder: (context, ref, child) {
+              final l = AppLocalizations.of(context);
+              final premium = ref
+                  .watch(subscriptionControllerProvider)
+                  .isPremium;
+              if (!premium) {
+                return GradientScaffold(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(22),
+                      child: PremiumLockedCard(
+                        title: l.t('whatsappStatusPremiumTitle'),
+                        description: l.t('whatsappStatusPremiumMessage'),
+                        onUpgrade: () => context.push('/premium'),
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return const WhatsAppStatusScreen();
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/quick-editor/edit',
         builder: (context, state) {
           final extra = state.extra;
           if (extra is! DownloadItemModel) {
@@ -123,6 +153,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 );
               }
               return QuickEditorScreen(item: extra);
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/video-optimizer',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! DownloadItemModel) {
+            return const RouteFallbackScreen(
+              title: 'noVideoSelected',
+              message: 'openQuickEditorFirst',
+            );
+          }
+          return Consumer(
+            builder: (context, ref, child) {
+              final l = AppLocalizations.of(context);
+              final premium = ref
+                  .watch(subscriptionControllerProvider)
+                  .isPremium;
+              if (!premium) {
+                return GradientScaffold(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(22),
+                      child: PremiumLockedCard(
+                        title: l.t('videoOptimizerPremiumTitle'),
+                        description: l.t('videoOptimizerPremiumMessage'),
+                        onUpgrade: () => context.push('/premium'),
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return VideoOptimizerScreen(item: extra);
             },
           );
         },
@@ -217,8 +282,8 @@ class MainShell extends StatelessWidget {
             label: l.t('downloads'),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.playlist_add_check_rounded),
-            label: l.t('batch'),
+            icon: const Icon(Icons.auto_fix_high_rounded),
+            label: l.t('quickEditor'),
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_rounded),
@@ -232,7 +297,7 @@ class MainShell extends StatelessWidget {
 
   int _indexFor(String location) {
     if (location.startsWith('/downloads')) return 1;
-    if (location.startsWith('/batch')) return 2;
+    if (location.startsWith('/quick-editor')) return 2;
     if (location.startsWith('/settings')) return 3;
     return 0;
   }
@@ -240,7 +305,7 @@ class MainShell extends StatelessWidget {
   String _pathFor(int index) {
     return switch (index) {
       1 => '/downloads',
-      2 => '/batch',
+      2 => '/quick-editor',
       3 => '/settings',
       _ => '/home',
     };

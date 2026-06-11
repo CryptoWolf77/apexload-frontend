@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/quick_editor/quick_editor_controller.dart';
@@ -9,8 +11,26 @@ import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:apexload/shared/widgets/video_preview_panel.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+String _formatEditorTime(num seconds) {
+  final totalSeconds = seconds.isFinite
+      ? seconds.round().clamp(0, 2147483647).toInt()
+      : 0;
+  final hours = totalSeconds ~/ 3600;
+  final minutes = (totalSeconds % 3600) ~/ 60;
+  final secs = totalSeconds % 60;
+  final mm = minutes.toString().padLeft(2, '0');
+  final ss = secs.toString().padLeft(2, '0');
+  if (hours > 0) {
+    return '${hours.toString().padLeft(2, '0')}:$mm:$ss';
+  }
+  return '$mm:$ss';
+}
 
 class QuickEditorScreen extends ConsumerStatefulWidget {
   const QuickEditorScreen({super.key, required this.item});
@@ -22,30 +42,31 @@ class QuickEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
-  RangeValues _trimRange = const RangeValues(4, 24);
+  RangeValues _trimRange = const RangeValues(0, 10);
+  var _trimMax = 32.0;
   var _removeAudio = true;
   var _audioFormat = 'MP3';
   var _audioQuality = 'Standard';
   String? _selectedAudioFile;
-  RangeValues _audioSwapRange = const RangeValues(0, 20);
+  String? _selectedAudioPath;
+  double? _selectedAudioDuration;
+  var _loadingAudioDuration = false;
+  var _audioSwapMode = 'replace';
+  var _shortAudioBehavior = 'silent';
   var _audioStartPosition = 0.0;
-  var _removeOriginalForSwap = true;
-  var _keepOriginalSoftly = false;
   var _audioVolume = 0.82;
-  var _compression = 'Balanced';
-  var _exportQuality = 'Highest quality';
-  var _saveToGallery = true;
-  var _noWatermark = true;
-  var _exportAdded = false;
-
-  // TODO: Real Quick Editor processing should be implemented locally on the
-  // device, not through the VPS. Future local processing tasks: trim video
-  // locally, mute video locally, extract audio locally, compress video locally,
-  // export edited video locally, and save edited files to the phone gallery or
-  // local library. Do not send user videos to the VPS for Quick Editor work.
-  // TODO: Real Audio Swap should be processed locally on the phone/device.
-  // TODO: Do not upload user video or selected audio to the VPS for editing.
-  // TODO: Future implementation can use local/native video processing packages.
+  String? _selectedVideoFile;
+  String? _selectedVideoPath;
+  RangeValues _gifRange = const RangeValues(0, 6);
+  var _gifQuality = 'Standard';
+  var _gifSize = 'Medium';
+  var _gifFps = 15;
+  var _gifLoop = true;
+  var _gifSpeed = 1.0;
+  var _reelsPreset = 'instagram';
+  var _reelsResizeMode = 'smart_crop';
+  var _reelsQuality = 'medium';
+  var _reelsMute = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,17 +76,17 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
       previous,
       next,
     ) {
+      final error = next.errorMessage;
+      if (error != null && previous?.errorMessage != error) {
+        AppNotification.error(context, message: _friendlyEditorError(l, error));
+        ref.read(quickEditorControllerProvider.notifier).clearMessage();
+        return;
+      }
+      final completedItem = next.completedItem;
       final messageKey = next.successMessageKey;
       if (messageKey != null && previous?.successMessageKey != messageKey) {
-        if (messageKey == 'exportSuccess' && !_exportAdded) {
-          final edited = widget.item.copyWith(
-            id: '${widget.item.id}_edited_${DateTime.now().millisecondsSinceEpoch}',
-            title: '${widget.item.title} (Edited)',
-            date: DateTime.now(),
-            fileName: _editedFileName(widget.item.fileName),
-          );
-          ref.read(libraryControllerProvider.notifier).add(edited);
-          _exportAdded = true;
+        if (completedItem != null) {
+          ref.read(libraryControllerProvider.notifier).add(completedItem);
         }
         AppNotification.success(context, message: l.t(messageKey));
         ref.read(quickEditorControllerProvider.notifier).clearMessage();
@@ -78,164 +99,583 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      child: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
-            children: [
-              Text(
-                l.t('quickEditor'),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l.t('quickEditorSubtitle'),
-                style: TextStyle(color: AppTone.textSecondary(context)),
-              ),
-              const SizedBox(height: 16),
-              _VideoInfoCard(item: widget.item),
-              const SizedBox(height: 14),
-              _TrimCard(
-                range: _trimRange,
-                onChanged: (value) => setState(() => _trimRange = value),
-                onApply: () => _run(
-                  const QuickEditorJob(
-                    type: QuickEditorJobType.trim,
-                    successMessageKey: 'trimSuccess',
-                  ),
+      child: Theme(
+        data: _editorButtonTheme(context),
+        child: Stack(
+          children: [
+            ListView(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
+              children: [
+                Text(
+                  l.t('quickEditor'),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-              ),
-              const SizedBox(height: 12),
-              _MuteCard(
-                value: _removeAudio,
-                onChanged: (value) => setState(() => _removeAudio = value),
-                onApply: () => _run(
-                  const QuickEditorJob(
-                    type: QuickEditorJobType.mute,
-                    successMessageKey: 'muteSuccess',
-                  ),
+                const SizedBox(height: 6),
+                Text(
+                  l.t('quickEditorSubtitle'),
+                  style: TextStyle(color: AppTone.textSecondary(context)),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _ExtractAudioCard(
-                format: _audioFormat,
-                quality: _audioQuality,
-                onFormatChanged: (value) =>
-                    setState(() => _audioFormat = value),
-                onQualityChanged: (value) =>
-                    setState(() => _audioQuality = value),
-                onApply: () => _run(
-                  const QuickEditorJob(
-                    type: QuickEditorJobType.extractAudio,
-                    successMessageKey: 'audioExtractedSuccess',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _AudioSwapCard(
-                selectedFile: _selectedAudioFile,
-                range: _audioSwapRange,
-                startPosition: _audioStartPosition,
-                removeOriginal: _removeOriginalForSwap,
-                keepOriginalSoftly: _keepOriginalSoftly,
-                volume: _audioVolume,
-                onPickAudio: () =>
-                    setState(() => _selectedAudioFile = 'my_audio_track.mp3'),
-                onRangeChanged: (value) =>
-                    setState(() => _audioSwapRange = value),
-                onStartPositionChanged: (value) =>
-                    setState(() => _audioStartPosition = value),
-                onRemoveOriginalChanged: (value) =>
-                    setState(() => _removeOriginalForSwap = value),
-                onKeepOriginalChanged: (value) =>
-                    setState(() => _keepOriginalSoftly = value),
-                onVolumeChanged: (value) =>
-                    setState(() => _audioVolume = value),
-                onPreview: () => AppNotification.info(
-                  context,
-                  message: l.t('demoPreviewReady'),
-                ),
-                onApply: () {
-                  if (_selectedAudioFile == null) {
-                    AppNotification.warning(
-                      context,
-                      message: l.t('noAudioSelected'),
-                    );
-                    return;
-                  }
-                  _run(
+                const SizedBox(height: 16),
+                _VideoInfoCard(item: widget.item),
+                const SizedBox(height: 14),
+                _TrimCard(
+                  localFilePath: widget.item.localFilePath,
+                  range: _trimRange,
+                  maxDuration: _trimMax,
+                  onDurationChanged: _updateTrimDuration,
+                  onChanged: (value) => setState(() => _trimRange = value),
+                  onApply: () => _run(
                     const QuickEditorJob(
-                      type: QuickEditorJobType.audioSwap,
-                      successMessageKey: 'audioReplacedSuccess',
+                      type: QuickEditorJobType.trim,
+                      operation: 'trim',
+                      successMessageKey: 'trimSuccess',
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              _CompressCard(
-                value: _compression,
-                onChanged: (value) => setState(() => _compression = value),
-                onApply: () => _run(
-                  const QuickEditorJob(
-                    type: QuickEditorJobType.compress,
-                    successMessageKey: 'compressSuccess',
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _ExportSettingsCard(
-                quality: _exportQuality,
-                saveToGallery: _saveToGallery,
-                noWatermark: _noWatermark,
-                onQualityChanged: (value) =>
-                    setState(() => _exportQuality = value),
-                onSaveChanged: (value) =>
-                    setState(() => _saveToGallery = value),
-                onWatermarkChanged: (value) =>
-                    setState(() => _noWatermark = value),
-              ),
-              const SizedBox(height: 18),
-              PrimaryGradientButton(
-                label: l.t('exportEditedVideo'),
-                icon: Icons.ios_share_rounded,
-                isLoading: state.activeJob == QuickEditorJobType.export,
-                onPressed: state.isProcessing
-                    ? null
-                    : () => _run(
+                const SizedBox(height: 12),
+                _MuteCard(
+                  value: _removeAudio,
+                  onChanged: (value) => setState(() => _removeAudio = value),
+                  onApply: () => _run(
+                    const QuickEditorJob(
+                      type: QuickEditorJobType.mute,
+                      operation: 'mute',
+                      successMessageKey: 'muteSuccess',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ExtractAudioCard(
+                  format: _audioFormat,
+                  quality: _audioQuality,
+                  onFormatChanged: (value) =>
+                      setState(() => _audioFormat = value),
+                  onQualityChanged: (value) =>
+                      setState(() => _audioQuality = value),
+                  onApply: () => _run(
+                    const QuickEditorJob(
+                      type: QuickEditorJobType.extractAudio,
+                      operation: 'extract-audio',
+                      successMessageKey: 'audioExtractedSuccess',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _AudioSwapCard(
+                  videoPath: widget.item.localFilePath,
+                  selectedFile: _selectedAudioFile,
+                  mode: _audioSwapMode,
+                  shortAudioBehavior: _shortAudioBehavior,
+                  videoDuration: _trimMax,
+                  audioDuration: _selectedAudioDuration,
+                  loadingAudioDuration: _loadingAudioDuration,
+                  startPosition: _audioStartPosition,
+                  volume: _audioVolume,
+                  onPickAudio: _pickAudioFile,
+                  onClearAudio: () => setState(() {
+                    _selectedAudioFile = null;
+                    _selectedAudioPath = null;
+                    _selectedAudioDuration = null;
+                    _loadingAudioDuration = false;
+                    _audioStartPosition = 0;
+                  }),
+                  onModeChanged: (value) => setState(() {
+                    _audioSwapMode = value;
+                    if (value == 'remove') {
+                      _selectedAudioFile = null;
+                      _selectedAudioPath = null;
+                    }
+                  }),
+                  onShortBehaviorChanged: (value) =>
+                      setState(() => _shortAudioBehavior = value),
+                  onStartPositionChanged: (value) =>
+                      setState(() => _audioStartPosition = value),
+                  onVolumeChanged: (value) =>
+                      setState(() => _audioVolume = value),
+                  onPreview: _previewAudioSwap,
+                  onApply: () {
+                    if (_audioSwapMode == 'remove') {
+                      _run(
                         const QuickEditorJob(
-                          type: QuickEditorJobType.export,
-                          successMessageKey: 'exportSuccess',
+                          type: QuickEditorJobType.mute,
+                          operation: 'mute',
+                          successMessageKey: 'muteSuccess',
                         ),
+                      );
+                      return;
+                    }
+                    if (_selectedAudioPath == null) {
+                      AppNotification.warning(
+                        context,
+                        message: l.t('noAudioSelected'),
+                      );
+                      return;
+                    }
+                    _run(
+                      const QuickEditorJob(
+                        type: QuickEditorJobType.audioSwap,
+                        operation: 'audio-swap',
+                        successMessageKey: 'audioReplacedSuccess',
                       ),
-              ),
-            ],
-          ),
-          if (state.isProcessing)
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 18,
-              child: _ProgressPanel(progress: state.progress),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _VideoToGifCard(
+                  sourceName: _selectedVideoFile ?? widget.item.fileName,
+                  localFilePath:
+                      _selectedVideoPath ?? widget.item.localFilePath,
+                  range: _gifRange,
+                  maxDuration: _trimMax,
+                  quality: _gifQuality,
+                  size: _gifSize,
+                  fps: _gifFps,
+                  loop: _gifLoop,
+                  speed: _gifSpeed,
+                  onPickVideo: _pickVideoFile,
+                  onRangeChanged: (value) => setState(() => _gifRange = value),
+                  onQualityChanged: (value) =>
+                      setState(() => _gifQuality = value),
+                  onSizeChanged: (value) => setState(() => _gifSize = value),
+                  onFpsChanged: (value) => setState(() => _gifFps = value),
+                  onLoopChanged: (value) => setState(() => _gifLoop = value),
+                  onSpeedChanged: (value) => setState(() => _gifSpeed = value),
+                  onPreview: _previewGifRange,
+                  onCreate: () => _run(
+                    const QuickEditorJob(
+                      type: QuickEditorJobType.videoToGif,
+                      operation: 'video-to-gif',
+                      successMessageKey: 'gifCreatedSuccess',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ReelsShortsCard(
+                  sourceName: _selectedVideoFile ?? widget.item.fileName,
+                  localFilePath:
+                      _selectedVideoPath ?? widget.item.localFilePath,
+                  preset: _reelsPreset,
+                  resizeMode: _reelsResizeMode,
+                  quality: _reelsQuality,
+                  mute: _reelsMute,
+                  onPickVideo: _pickVideoFile,
+                  onPresetChanged: (value) => setState(() {
+                    _reelsPreset = value;
+                    if (value == 'snapchat') _reelsResizeMode = 'smart_crop';
+                  }),
+                  onResizeModeChanged: (value) =>
+                      setState(() => _reelsResizeMode = value),
+                  onQualityChanged: (value) =>
+                      setState(() => _reelsQuality = value),
+                  onMuteChanged: (value) => setState(() => _reelsMute = value),
+                  onCreate: () => _run(
+                    const QuickEditorJob(
+                      type: QuickEditorJobType.reelsShorts,
+                      operation: 'reels-shorts',
+                      successMessageKey: 'reelShortCreatedSuccess',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                PrimaryGradientButton(
+                  label: l.t('convertVideoToMp4'),
+                  icon: Icons.ios_share_rounded,
+                  isLoading: state.activeJob == QuickEditorJobType.export,
+                  onPressed: state.isProcessing
+                      ? null
+                      : () => _run(
+                          const QuickEditorJob(
+                            type: QuickEditorJobType.export,
+                            operation: 'convert',
+                            successMessageKey: 'exportSuccess',
+                          ),
+                        ),
+                ),
+              ],
             ),
-        ],
+            if (state.isProcessing)
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 18,
+                child: _ProgressPanel(progress: state.progress),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  ThemeData _editorButtonTheme(BuildContext context) {
+    final base = Theme.of(context);
+    return base.copyWith(
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primaryEnd,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppTone.cardSecondary(
+            context,
+          ).withValues(alpha: 0.88),
+          disabledForegroundColor: AppTone.textSecondary(
+            context,
+          ).withValues(alpha: 0.82),
+          minimumSize: const Size(0, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primaryEnd,
+          disabledForegroundColor: AppTone.textSecondary(
+            context,
+          ).withValues(alpha: 0.72),
+          side: BorderSide(color: AppColors.primaryEnd.withValues(alpha: 0.56)),
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
 
   void _run(QuickEditorJob job) {
-    if (job.type == QuickEditorJobType.export) {
-      _exportAdded = false;
+    if (ref.read(quickEditorControllerProvider).isProcessing) return;
+    final sourceItem = _sourceItemFor(job);
+    if (sourceItem.localFilePath.trim().isEmpty) {
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('fileMustBeSavedBeforeEdit'),
+      );
+      return;
+    }
+    if ((job.type == QuickEditorJobType.trim ||
+            job.type == QuickEditorJobType.videoToGif) &&
+        !_validTrimRangeFor(job)) {
+      AppNotification.warning(
+        context,
+        message: AppLocalizations.of(context).t('validTrimRange'),
+      );
+      return;
+    }
+    if (job.type == QuickEditorJobType.audioSwap &&
+        _audioSwapMode == 'replace' &&
+        _selectedAudioPath == null) {
+      AppNotification.warning(
+        context,
+        message: AppLocalizations.of(context).t('noAudioSelected'),
+      );
+      return;
     }
     final controller = ref.read(quickEditorControllerProvider.notifier);
-    controller.runMockJob(job);
+    if (kDebugMode) {
+      debugPrint(
+        'ApexLoad editor source: fileId=${widget.item.fileId} '
+        'downloadUrl=${widget.item.downloadUrl} '
+        'localFilePath=${widget.item.localFilePath} '
+        'filename=${widget.item.fileName} type=${widget.item.type.name} '
+        'platform=${widget.item.platform}',
+      );
+      if (job.type == QuickEditorJobType.audioSwap) {
+        final audioEnd = ((_audioStartPosition + _trimMax).clamp(
+          0,
+          _selectedAudioDuration ?? _audioStartPosition + _trimMax,
+        )).toDouble();
+        debugPrint(
+          'ApexLoad audio swap: videoDuration=$_trimMax '
+          'audioDuration=$_selectedAudioDuration '
+          'audioStart=$_audioStartPosition audioEnd=$audioEnd '
+          'shortAudioBehavior=$_shortAudioBehavior',
+        );
+      }
+    }
+    unawaited(
+      controller.runJob(
+        job: job,
+        sourceItem: sourceItem,
+        options: _optionsFor(job),
+      ),
+    );
   }
 
-  String _editedFileName(String fileName) {
-    final dot = fileName.lastIndexOf('.');
-    if (dot <= 0) {
-      return '${fileName}_edited.mp4';
+  Map<String, Object?> _optionsFor(QuickEditorJob job) {
+    return switch (job.type) {
+      QuickEditorJobType.trim => {
+        'startTime': _trimRange.start,
+        'endTime': _trimRange.end,
+      },
+      QuickEditorJobType.extractAudio => {'format': _audioFormat.toLowerCase()},
+      QuickEditorJobType.compress => {'quality': 'medium'},
+      QuickEditorJobType.export => {
+        'format': 'mp4',
+        'quality': AppLocalizations.of(context).t('highestQuality'),
+      },
+      QuickEditorJobType.mute => {'mute': _removeAudio},
+      QuickEditorJobType.audioSwap => {
+        'audioPath': _selectedAudioPath,
+        'audioStart': _audioStartPosition,
+        'audioEnd': ((_audioStartPosition + _trimMax).clamp(
+          0,
+          _selectedAudioDuration ?? _audioStartPosition + _trimMax,
+        )).toDouble(),
+        'videoDuration': _trimMax,
+        'audioRangeMode': 'single_start',
+        'shortAudioBehavior': _shortAudioBehavior,
+        'loopAudio': _shortAudioBehavior == 'loop',
+        'audioVolume': _audioVolume,
+        'audioStartPosition': _audioStartPosition,
+        'removeOriginal': true,
+        'keepOriginalSoftly': false,
+      },
+      QuickEditorJobType.videoToGif => {
+        'startTime': _gifRange.start,
+        'endTime': _gifRange.end,
+        'quality': _gifQuality.toLowerCase(),
+        'size': _gifSize.toLowerCase(),
+        'fps': _gifFps,
+        'loop': _gifLoop,
+        'speed': _gifSpeed,
+      },
+      QuickEditorJobType.reelsShorts => {
+        'preset': _reelsPreset,
+        'resizeMode': _reelsResizeMode,
+        'quality': _reelsQuality,
+        'mute': _reelsMute,
+      },
+    };
+  }
+
+  DownloadItemModel _sourceItemFor(QuickEditorJob job) {
+    if ((job.type == QuickEditorJobType.videoToGif ||
+            job.type == QuickEditorJobType.reelsShorts) &&
+        _selectedVideoPath != null) {
+      return widget.item.copyWith(
+        id: '${widget.item.id}_external_source',
+        title: _selectedVideoFile ?? widget.item.title,
+        fileName: _selectedVideoFile ?? widget.item.fileName,
+        localFilePath: _selectedVideoPath,
+      );
     }
-    return '${fileName.substring(0, dot)}_edited${fileName.substring(dot)}';
+    return widget.item;
+  }
+
+  bool _validTrimRange() {
+    return _trimRange.start >= 0 &&
+        _trimRange.end > _trimRange.start &&
+        (_trimRange.end - _trimRange.start) >= 1 &&
+        _trimRange.end <= _trimMax + 0.05;
+  }
+
+  bool _validTrimRangeFor(QuickEditorJob job) {
+    if (job.type == QuickEditorJobType.videoToGif) {
+      return _gifRange.start >= 0 &&
+          _gifRange.end > _gifRange.start &&
+          (_gifRange.end - _gifRange.start) >= 1 &&
+          _gifRange.end <= _trimMax + 0.05;
+    }
+    return _validTrimRange();
+  }
+
+  void _updateTrimDuration(double seconds) {
+    if (seconds <= 0 || !mounted) return;
+    setState(() {
+      _trimMax = seconds;
+      final end = _trimRange.end.clamp(1, seconds).toDouble();
+      final start = _trimRange.start.clamp(0, end - 1).toDouble();
+      _trimRange = RangeValues(start, end);
+    });
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      const audioGroup = XTypeGroup(
+        label: 'Audio',
+        extensions: ['mp3', 'm4a', 'aac', 'wav'],
+        mimeTypes: ['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/wav'],
+      );
+      final file = await openFile(acceptedTypeGroups: [audioGroup]);
+      final path = file?.path;
+      if (file == null || path == null || path.trim().isEmpty) return;
+      setState(() {
+        _selectedAudioFile = file.name;
+        _selectedAudioPath = path;
+        _selectedAudioDuration = null;
+        _loadingAudioDuration = true;
+        _audioStartPosition = 0;
+      });
+      final duration = await ref
+          .read(localEditorServiceProvider)
+          .mediaDuration(path);
+      if (!mounted) return;
+      setState(() {
+        _selectedAudioDuration = duration;
+        _loadingAudioDuration = false;
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() => _loadingAudioDuration = false);
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('couldNotReplaceAudio'),
+      );
+    }
+  }
+
+  Future<void> _pickVideoFile() async {
+    try {
+      const videoGroup = XTypeGroup(
+        label: 'Video',
+        extensions: ['mp4', 'mov', 'm4v', 'webm'],
+        mimeTypes: ['video/mp4', 'video/quicktime', 'video/webm'],
+      );
+      final file = await openFile(acceptedTypeGroups: [videoGroup]);
+      final path = file?.path;
+      if (file == null || path == null || path.trim().isEmpty) return;
+      setState(() {
+        _selectedVideoFile = file.name;
+        _selectedVideoPath = path;
+      });
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('somethingWentWrong'),
+      );
+    }
+  }
+
+  Future<void> _previewGifRange() async {
+    final l = AppLocalizations.of(context);
+    if (_gifRange.end - _gifRange.start < 1) {
+      AppNotification.warning(context, message: l.t('validTrimRange'));
+      return;
+    }
+    final source = _sourceItemFor(
+      const QuickEditorJob(
+        type: QuickEditorJobType.videoToGif,
+        operation: 'video-to-gif-preview',
+        successMessageKey: 'gifCreatedSuccess',
+      ),
+    );
+    try {
+      final path = await ref
+          .read(localEditorServiceProvider)
+          .createGifPreview(
+            source: source,
+            startTime: _gifRange.start,
+            endTime: _gifRange.end,
+            fps: _gifFps,
+            size: _gifSize.toLowerCase(),
+          );
+      await ref
+          .read(localMediaServiceProvider)
+          .openItem(
+            source.copyWith(
+              id: '${source.id}_gif_preview',
+              platform: 'Editor',
+              type: DownloadType.image,
+              fileName: path.split(RegExp(r'[/\\]')).last,
+              localFilePath: path,
+            ),
+          );
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(context, message: l.t('couldNotCreateGif'));
+    }
+  }
+
+  Future<void> _previewAudioSwap() async {
+    final l = AppLocalizations.of(context);
+    if (_audioSwapMode == 'remove') {
+      AppNotification.info(context, message: l.t('removeOriginalAudioOnly'));
+      return;
+    }
+    final audioPath = _selectedAudioPath;
+    if (audioPath == null || audioPath.trim().isEmpty) {
+      AppNotification.warning(context, message: l.t('noAudioSelected'));
+      return;
+    }
+    if (widget.item.localFilePath.trim().isEmpty) {
+      AppNotification.error(context, message: l.t('fileMustBeSavedBeforeEdit'));
+      return;
+    }
+    try {
+      final previewPath = await ref
+          .read(localEditorServiceProvider)
+          .createAudioSwapPreview(
+            source: widget.item,
+            audioPath: audioPath,
+            audioStartTime: _audioStartPosition,
+            previewDuration: _previewDurationForAudioSwap,
+          );
+      final previewItem = widget.item.copyWith(
+        id: '${widget.item.id}_audio_swap_preview',
+        title: '${l.t('preview')} ${widget.item.title}',
+        platform: 'Editor',
+        localFilePath: previewPath,
+        fileName: previewPath.split(RegExp(r'[/\\]')).last,
+      );
+      await ref.read(localMediaServiceProvider).openItem(previewItem);
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(context, message: l.t('couldNotReplaceAudio'));
+    }
+  }
+
+  String _friendlyEditorError(AppLocalizations l, String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('missing fileid') ||
+        lower.contains('original_file_missing') ||
+        lower.contains('local_editor_unavailable') ||
+        lower.contains('editor_tool_soon') ||
+        lower.contains('could_not_replace_audio') ||
+        lower.contains('could_not_create_gif') ||
+        lower.contains('could_not_create_reel') ||
+        lower.contains('invalid_trim_range') ||
+        lower.contains('original file could not be found') ||
+        lower.contains('source file does not exist') ||
+        lower.contains('unsupported') ||
+        lower.contains('invalid trim') ||
+        lower.contains('api returned') ||
+        lower.contains('could_not_edit') ||
+        lower.contains('could not edit')) {
+      if (lower.contains('original_file_missing') ||
+          lower.contains('original file') ||
+          lower.contains('source file')) {
+        return l.t('originalFileMissing');
+      }
+      if (lower.contains('local_editor_unavailable') ||
+          lower.contains('editor_tool_soon')) {
+        return l.t('editorToolSoon');
+      }
+      if (lower.contains('could_not_replace_audio')) {
+        return l.t('couldNotReplaceAudio');
+      }
+      if (lower.contains('could_not_create_gif')) {
+        return l.t('couldNotCreateGif');
+      }
+      if (lower.contains('could_not_create_reel')) {
+        return l.t('couldNotCreateReelShort');
+      }
+      if (lower.contains('invalid_trim_range')) {
+        return l.t('validTrimRange');
+      }
+      return l.t('couldNotEditFile');
+    }
+    return message.trim().isEmpty ? l.t('couldNotEditFile') : message;
+  }
+
+  double get _previewDurationForAudioSwap {
+    final remaining =
+        (_selectedAudioDuration ?? _trimMax) - _audioStartPosition;
+    return remaining.clamp(1, _trimMax < 12 ? _trimMax : 12).toDouble();
   }
 }
 
@@ -356,12 +796,18 @@ class _ToolCard extends StatelessWidget {
 
 class _TrimCard extends StatelessWidget {
   const _TrimCard({
+    required this.localFilePath,
     required this.range,
+    required this.maxDuration,
+    required this.onDurationChanged,
     required this.onChanged,
     required this.onApply,
   });
 
+  final String localFilePath;
   final RangeValues range;
+  final double maxDuration;
+  final ValueChanged<double> onDurationChanged;
   final ValueChanged<RangeValues> onChanged;
   final VoidCallback onApply;
 
@@ -375,19 +821,25 @@ class _TrimCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          VideoPreviewPanel(
+            localFilePath: localFilePath,
+            range: range,
+            onDurationChanged: onDurationChanged,
+          ),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  '${l.t('startTime')}: 00:${range.start.round().toString().padLeft(2, '0')}',
+                  '${l.t('startTime')}: ${_formatEditorTime(range.start)}',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${l.t('endTime')}: 00:${range.end.round().toString().padLeft(2, '0')}',
+                  '${l.t('endTime')}: ${_formatEditorTime(range.end)}',
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
                 ),
@@ -397,12 +849,15 @@ class _TrimCard extends StatelessWidget {
           RangeSlider(
             values: range,
             min: 0,
-            max: 32,
-            divisions: 32,
-            onChanged: onChanged,
+            max: maxDuration <= 1 ? 1 : maxDuration,
+            divisions: maxDuration.round().clamp(1, 600),
+            onChanged: (value) {
+              if (value.end - value.start < 1) return;
+              onChanged(value);
+            },
           ),
           Text(
-            '${l.t('trimDuration')}: $duration ${l.t('seconds')}',
+            '${l.t('trimDuration')}: ${_formatEditorTime(duration)}',
             style: TextStyle(color: AppTone.textSecondary(context)),
           ),
           const SizedBox(height: 12),
@@ -512,90 +967,41 @@ class _ExtractAudioCard extends StatelessWidget {
   }
 }
 
-class _CompressCard extends StatelessWidget {
-  const _CompressCard({
-    required this.value,
-    required this.onChanged,
-    required this.onApply,
-  });
-
-  final String value;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onApply;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return _ToolCard(
-      icon: Icons.compress_rounded,
-      title: l.t('compressVideo'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'Small file',
-                  label: Text(l.t('smallFile')),
-                ),
-                ButtonSegment(value: 'Balanced', label: Text(l.t('balanced'))),
-                ButtonSegment(
-                  value: 'High quality',
-                  label: Text(l.t('highQuality')),
-                ),
-              ],
-              selected: {value},
-              onSelectionChanged: (value) => onChanged(value.first),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            l.t('estimatedReduction'),
-            style: TextStyle(color: AppTone.textSecondary(context)),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: onApply,
-            icon: const Icon(Icons.compress_rounded),
-            label: Text(l.t('compress')),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AudioSwapCard extends StatelessWidget {
   const _AudioSwapCard({
+    required this.videoPath,
     required this.selectedFile,
-    required this.range,
+    required this.mode,
+    required this.shortAudioBehavior,
+    required this.videoDuration,
+    required this.audioDuration,
+    required this.loadingAudioDuration,
     required this.startPosition,
-    required this.removeOriginal,
-    required this.keepOriginalSoftly,
     required this.volume,
     required this.onPickAudio,
-    required this.onRangeChanged,
+    required this.onClearAudio,
+    required this.onModeChanged,
+    required this.onShortBehaviorChanged,
     required this.onStartPositionChanged,
-    required this.onRemoveOriginalChanged,
-    required this.onKeepOriginalChanged,
     required this.onVolumeChanged,
     required this.onPreview,
     required this.onApply,
   });
 
+  final String videoPath;
   final String? selectedFile;
-  final RangeValues range;
+  final String mode;
+  final String shortAudioBehavior;
+  final double videoDuration;
+  final double? audioDuration;
+  final bool loadingAudioDuration;
   final double startPosition;
-  final bool removeOriginal;
-  final bool keepOriginalSoftly;
   final double volume;
   final VoidCallback onPickAudio;
-  final ValueChanged<RangeValues> onRangeChanged;
+  final VoidCallback onClearAudio;
+  final ValueChanged<String> onModeChanged;
+  final ValueChanged<String> onShortBehaviorChanged;
   final ValueChanged<double> onStartPositionChanged;
-  final ValueChanged<bool> onRemoveOriginalChanged;
-  final ValueChanged<bool> onKeepOriginalChanged;
   final ValueChanged<double> onVolumeChanged;
   final VoidCallback onPreview;
   final VoidCallback onApply;
@@ -603,7 +1009,6 @@ class _AudioSwapCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final trimDuration = (range.end - range.start).round();
 
     return _ToolCard(
       icon: Icons.swap_horizontal_circle_rounded,
@@ -616,38 +1021,419 @@ class _AudioSwapCard extends StatelessWidget {
             style: TextStyle(color: AppTone.textSecondary(context)),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onPickAudio,
-            icon: const Icon(Icons.library_music_rounded),
-            label: Text(l.t('pickAudioFile')),
+          Text(
+            l.t('videoStep'),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          VideoPreviewPanel(
+            localFilePath: videoPath,
+            range: RangeValues(0, videoDuration <= 1 ? 1 : videoDuration),
+            onDurationChanged: (_) {},
           ),
           const SizedBox(height: 8),
           Text(
-            '${l.t('selectedAudio')}: ${selectedFile ?? '-'}',
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            '${l.t('videoAudioSwapHelp')} ${l.t('trimDuration')}: ${_formatSeconds(videoDuration)}',
+            style: TextStyle(color: AppTone.textSecondary(context)),
           ),
-          const SizedBox(height: 4),
-          Text(
-            l.t('audioFormatSupport'),
-            style: TextStyle(
-              color: AppTone.textSecondary(context),
-              fontSize: 12,
+          const SizedBox(height: 12),
+          _EditorStepTile(
+            number: '1',
+            title: l.t('originalAudio'),
+            subtitle: mode == 'replace'
+                ? l.t('replaceOriginalAudio')
+                : l.t('removeOriginalAudioOnly'),
+            icon: Icons.movie_filter_rounded,
+          ),
+          const SizedBox(height: 8),
+          _SegmentedString(
+            values: const ['replace', 'remove'],
+            selected: mode,
+            labels: [
+              l.t('replaceOriginalAudio'),
+              l.t('removeOriginalAudioOnly'),
+            ],
+            onChanged: onModeChanged,
+          ),
+          const SizedBox(height: 8),
+          if (mode == 'replace') ...[
+            _EditorStepTile(
+              number: '2',
+              title: l.t('chooseNewAudio'),
+              subtitle: selectedFile ?? l.t('pickAudioFile'),
+              icon: Icons.library_music_rounded,
+              trailing: OutlinedButton.icon(
+                onPressed: onPickAudio,
+                icon: const Icon(Icons.upload_file_rounded),
+                label: Text(l.t('chooseAudioFile')),
+              ),
             ),
+            if (selectedFile != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${l.t('selectedAudio')}: $selectedFile',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: l.t('delete'),
+                    onPressed: onClearAudio,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ],
+          ] else
+            _EditorStepTile(
+              number: '2',
+              title: l.t('chooseNewAudio'),
+              subtitle: l.t('noNewAudioNeeded'),
+              icon: Icons.volume_off_rounded,
+            ),
+          const SizedBox(height: 8),
+          _EditorStepTile(
+            number: '3',
+            title: l.t('previewAndApply'),
+            subtitle: mode == 'replace'
+                ? l.t('audioTrimmedToVideoLength')
+                : l.t('removeOriginalAudioOnly'),
+            icon: Icons.play_circle_fill_rounded,
+          ),
+          if (mode == 'replace') ...[
+            const SizedBox(height: 12),
+            Text(
+              l.t('audioFormatSupport'),
+              style: TextStyle(
+                color: AppTone.textSecondary(context),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l.t('audioStartPoint'),
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l.t('audioStartPointHelp'),
+              style: TextStyle(color: AppTone.textSecondary(context)),
+            ),
+            const SizedBox(height: 10),
+            if (loadingAudioDuration)
+              const LinearProgressIndicator()
+            else
+              _AudioStartTimeline(
+                audioDuration: audioDuration ?? videoDuration,
+                videoDuration: videoDuration,
+                startPosition: startPosition,
+                onChanged: onStartPositionChanged,
+              ),
+            Text(
+              l.t('audioStartsAtVideoPoint'),
+              style: TextStyle(color: AppTone.textSecondary(context)),
+            ),
+            const SizedBox(height: 10),
+            _SegmentedString(
+              values: const ['silent', 'loop', 'original'],
+              selected: shortAudioBehavior,
+              labels: [
+                l.t('leaveRemainingVideoSilent'),
+                l.t('loopAudioUntilVideoEnds'),
+                l.t('keepOriginalAfterAudioEnds'),
+              ],
+              onChanged: onShortBehaviorChanged,
+            ),
+            const SizedBox(height: 12),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: Text(l.t('advancedOptions')),
+              children: [
+                Text(
+                  '${l.t('audioVolume')}: ${(volume * 100).round()}%',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                Slider(value: volume, onChanged: onVolumeChanged),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: mode == 'replace' ? onPreview : null,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(l.t('previewWithNewAudio')),
+              ),
+              FilledButton.icon(
+                onPressed: onApply,
+                icon: const Icon(Icons.swap_horizontal_circle_rounded),
+                label: Text(
+                  mode == 'replace' ? l.t('applyAudioSwap') : l.t('applyMute'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSeconds(double value) {
+    final total = value.round().clamp(0, 86400);
+    final minutes = (total % 3600) ~/ 60;
+    final seconds = total % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+}
+
+class _AudioStartTimeline extends StatelessWidget {
+  const _AudioStartTimeline({
+    required this.audioDuration,
+    required this.videoDuration,
+    required this.startPosition,
+    required this.onChanged,
+  });
+
+  final double audioDuration;
+  final double videoDuration;
+  final double startPosition;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final max = audioDuration <= 1 ? 1.0 : audioDuration;
+    final start = startPosition.clamp(0, max).toDouble();
+    final end = (start + videoDuration).clamp(0, max).toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 8,
+          children: [
+            _MiniInfo(label: l.t('selectedAudio'), value: _formatSeconds(max)),
+            _MiniInfo(
+              label: l.t('video'),
+              value: _formatSeconds(videoDuration),
+            ),
+            _MiniInfo(label: l.t('audioStart'), value: _formatSeconds(start)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: AppTone.card(context).withValues(alpha: 0.34),
+            border: Border.all(color: AppTone.border(context)),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final startX = width * (start / max);
+              final endX = width * (end / max);
+              return Stack(
+                children: [
+                  for (var i = 0; i < 32; i++)
+                    Positioned(
+                      left: (width / 32) * i,
+                      top: 10 + (i % 5) * 2,
+                      bottom: 10 + ((i + 2) % 5) * 2,
+                      child: Container(
+                        width: 3,
+                        decoration: BoxDecoration(
+                          color: AppTone.textSecondary(
+                            context,
+                          ).withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    left: startX,
+                    width: (endX - startX).clamp(4, width).toDouble(),
+                    top: 8,
+                    bottom: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [
+                            AppColors.primaryStart,
+                            AppColors.primaryEnd,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: (startX - 2).clamp(0, width - 4).toDouble(),
+                    top: 4,
+                    bottom: 4,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.premiumGold,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        Slider(
+          value: start,
+          min: 0,
+          max: max,
+          divisions: max.round().clamp(1, 1200),
+          onChanged: onChanged,
+        ),
+        Text(
+          '${l.t('audioSectionUsed')}: ${_formatSeconds(start)} - ${_formatSeconds(end)}',
+          style: TextStyle(color: AppTone.textSecondary(context)),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final delta in [-5.0, -1.0, 1.0, 5.0])
+              OutlinedButton(
+                onPressed: () => onChanged((start + delta).clamp(0, max)),
+                child: Text(
+                  delta > 0 ? '+${delta.round()}s' : '${delta.round()}s',
+                ),
+              ),
+            TextButton.icon(
+              onPressed: () => onChanged(0),
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: Text(l.t('resetSelection')),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _formatSeconds(double value) {
+    final total = value.round().clamp(0, 86400);
+    final hours = total ~/ 3600;
+    final minutes = (total % 3600) ~/ 60;
+    final seconds = total % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:'
+          '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
+  }
+}
+
+class _MiniInfo extends StatelessWidget {
+  const _MiniInfo({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: AppColors.primaryEnd.withValues(alpha: 0.12),
+        border: Border.all(color: AppColors.primaryEnd.withValues(alpha: 0.32)),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
+
+class _VideoToGifCard extends StatelessWidget {
+  const _VideoToGifCard({
+    required this.sourceName,
+    required this.localFilePath,
+    required this.range,
+    required this.maxDuration,
+    required this.quality,
+    required this.size,
+    required this.fps,
+    required this.loop,
+    required this.speed,
+    required this.onPickVideo,
+    required this.onRangeChanged,
+    required this.onQualityChanged,
+    required this.onSizeChanged,
+    required this.onFpsChanged,
+    required this.onLoopChanged,
+    required this.onSpeedChanged,
+    required this.onPreview,
+    required this.onCreate,
+  });
+
+  final String sourceName;
+  final String localFilePath;
+  final RangeValues range;
+  final double maxDuration;
+  final String quality;
+  final String size;
+  final int fps;
+  final bool loop;
+  final double speed;
+  final VoidCallback onPickVideo;
+  final ValueChanged<RangeValues> onRangeChanged;
+  final ValueChanged<String> onQualityChanged;
+  final ValueChanged<String> onSizeChanged;
+  final ValueChanged<int> onFpsChanged;
+  final ValueChanged<bool> onLoopChanged;
+  final ValueChanged<double> onSpeedChanged;
+  final VoidCallback onPreview;
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final max = maxDuration <= 1 ? 1.0 : maxDuration;
+
+    return _ToolCard(
+      icon: Icons.gif_box_rounded,
+      title: l.t('videoToGif'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SourcePickerRow(
+            title: l.t('chooseVideo'),
+            sourceName: sourceName,
+            localFilePath: localFilePath,
+            onPickVideo: onPickVideo,
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  '${l.t('startTime')}: 00:${range.start.round().toString().padLeft(2, '0')}',
+                  '${l.t('startTime')}: ${_formatEditorTime(range.start)}',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${l.t('endTime')}: 00:${range.end.round().toString().padLeft(2, '0')}',
+                  '${l.t('endTime')}: ${_formatEditorTime(range.end)}',
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
                 ),
@@ -657,43 +1443,65 @@ class _AudioSwapCard extends StatelessWidget {
           RangeSlider(
             values: range,
             min: 0,
-            max: 32,
-            divisions: 32,
-            onChanged: onRangeChanged,
+            max: max,
+            divisions: max.round().clamp(1, 600),
+            onChanged: (value) {
+              if (value.end - value.start < 1) return;
+              onRangeChanged(value);
+            },
           ),
           Text(
-            '${l.t('trimDuration')}: $trimDuration ${l.t('seconds')}',
+            '${l.t('trimDuration')}: ${_formatEditorTime(range.end - range.start)}',
             style: TextStyle(color: AppTone.textSecondary(context)),
           ),
           const SizedBox(height: 12),
           Text(
-            '${l.t('audioStartPosition')}: 00:${startPosition.round().toString().padLeft(2, '0')}',
+            l.t('gifSettings'),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          _SegmentedString(
+            values: const ['Standard', 'High'],
+            selected: quality,
+            labels: [l.t('standard'), l.t('high')],
+            onChanged: onQualityChanged,
+          ),
+          const SizedBox(height: 8),
+          _SegmentedString(
+            values: const ['Small', 'Medium', 'Original'],
+            selected: size,
+            labels: [l.t('small'), l.t('medium'), l.t('original')],
+            onChanged: onSizeChanged,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${l.t('fps')}: $fps',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           Slider(
-            value: startPosition,
-            min: 0,
-            max: 32,
-            divisions: 32,
-            onChanged: onStartPositionChanged,
-          ),
-          SwitchListTile(
-            value: removeOriginal,
-            onChanged: onRemoveOriginalChanged,
-            title: Text(l.t('removeOriginalSound')),
-            contentPadding: EdgeInsets.zero,
-          ),
-          SwitchListTile(
-            value: keepOriginalSoftly,
-            onChanged: onKeepOriginalChanged,
-            title: Text(l.t('keepOriginalSoundSoftly')),
-            contentPadding: EdgeInsets.zero,
+            value: fps.toDouble(),
+            min: 10,
+            max: 20,
+            divisions: 10,
+            onChanged: (value) => onFpsChanged(value.round()),
           ),
           Text(
-            '${l.t('audioVolume')}: ${(volume * 100).round()}%',
+            '${l.t('speed')}: ${speed.toStringAsFixed(1)}x',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
-          Slider(value: volume, onChanged: onVolumeChanged),
+          Slider(
+            value: speed,
+            min: 0.5,
+            max: 2,
+            divisions: 6,
+            onChanged: onSpeedChanged,
+          ),
+          SwitchListTile(
+            value: loop,
+            onChanged: onLoopChanged,
+            title: Text(l.t('loop')),
+            contentPadding: EdgeInsets.zero,
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 10,
@@ -702,12 +1510,12 @@ class _AudioSwapCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onPreview,
                 icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(l.t('preview')),
+                label: Text(l.t('previewGifRange')),
               ),
               FilledButton.icon(
-                onPressed: onApply,
-                icon: const Icon(Icons.swap_horizontal_circle_rounded),
-                label: Text(l.t('applyAudioSwap')),
+                onPressed: onCreate,
+                icon: const Icon(Icons.gif_rounded),
+                label: Text(l.t('createGif')),
               ),
             ],
           ),
@@ -717,63 +1525,495 @@ class _AudioSwapCard extends StatelessWidget {
   }
 }
 
-class _ExportSettingsCard extends StatelessWidget {
-  const _ExportSettingsCard({
+class _ReelsShortsCard extends StatelessWidget {
+  const _ReelsShortsCard({
+    required this.sourceName,
+    required this.localFilePath,
+    required this.preset,
+    required this.resizeMode,
     required this.quality,
-    required this.saveToGallery,
-    required this.noWatermark,
+    required this.mute,
+    required this.onPickVideo,
+    required this.onPresetChanged,
+    required this.onResizeModeChanged,
     required this.onQualityChanged,
-    required this.onSaveChanged,
-    required this.onWatermarkChanged,
+    required this.onMuteChanged,
+    required this.onCreate,
   });
 
+  final String sourceName;
+  final String localFilePath;
+  final String preset;
+  final String resizeMode;
   final String quality;
-  final bool saveToGallery;
-  final bool noWatermark;
+  final bool mute;
+  final VoidCallback onPickVideo;
+  final ValueChanged<String> onPresetChanged;
+  final ValueChanged<String> onResizeModeChanged;
   final ValueChanged<String> onQualityChanged;
-  final ValueChanged<bool> onSaveChanged;
-  final ValueChanged<bool> onWatermarkChanged;
+  final ValueChanged<bool> onMuteChanged;
+  final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return _ToolCard(
-      icon: Icons.tune_rounded,
-      title: l.t('exportSettings'),
+      icon: Icons.smart_display_rounded,
+      title: l.t('reelsShortsCreator'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(value: 'Standard', label: Text(l.t('standard'))),
-                ButtonSegment(
-                  value: 'Highest quality',
-                  label: Text(l.t('highestQuality')),
-                ),
-              ],
-              selected: {quality},
-              onSelectionChanged: (value) => onQualityChanged(value.first),
+          _SourcePickerRow(
+            title: l.t('chooseVideo'),
+            sourceName: sourceName,
+            localFilePath: localFilePath,
+            onPickVideo: onPickVideo,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l.t('choosePlatform'),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l.t('platformPresetHelp'),
+            style: TextStyle(color: AppTone.textSecondary(context)),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            crossAxisCount: MediaQuery.sizeOf(context).width < 430 ? 2 : 4,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 0.92,
+            children: [
+              _PlatformPresetCard(
+                selected: preset == 'instagram',
+                icon: Icons.camera_alt_rounded,
+                title: l.t('instagramReel'),
+                badge: l
+                    .t('readyForPlatform')
+                    .replaceFirst('{platform}', 'Instagram'),
+                onTap: () => onPresetChanged('instagram'),
+              ),
+              _PlatformPresetCard(
+                selected: preset == 'youtube',
+                icon: Icons.play_circle_fill_rounded,
+                title: l.t('youtubeShort'),
+                badge: l
+                    .t('readyForPlatform')
+                    .replaceFirst('{platform}', 'YouTube'),
+                onTap: () => onPresetChanged('youtube'),
+              ),
+              _PlatformPresetCard(
+                selected: preset == 'tiktok',
+                icon: Icons.music_video_rounded,
+                title: l.t('tiktokVideo'),
+                badge: l
+                    .t('readyForPlatform')
+                    .replaceFirst('{platform}', 'TikTok'),
+                onTap: () => onPresetChanged('tiktok'),
+              ),
+              _PlatformPresetCard(
+                selected: preset == 'snapchat',
+                icon: Icons.flash_on_rounded,
+                title: l.t('snapchatSpotlight'),
+                badge: l
+                    .t('readyForPlatform')
+                    .replaceFirst('{platform}', 'Snapchat'),
+                onTap: () => onPresetChanged('snapchat'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SafeZonePreview(preset: preset),
+          const SizedBox(height: 8),
+          Text(
+            l.t('safeZoneHelp'),
+            style: TextStyle(
+              color: AppTone.textSecondary(context),
+              fontSize: 12,
             ),
           ),
-          SwitchListTile(
-            value: saveToGallery,
-            onChanged: onSaveChanged,
-            title: Text(l.t('saveToGallery')),
-            contentPadding: EdgeInsets.zero,
+          const SizedBox(height: 12),
+          Text(
+            l.t('resizeMode'),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          _SegmentedString(
+            values: const ['smart_crop', 'fit_blur', 'fit_solid'],
+            selected: resizeMode,
+            labels: [
+              l.t('smartCrop'),
+              l.t('fitWithBlurredBackground'),
+              l.t('fitWithSolidBackground'),
+            ],
+            onChanged: onResizeModeChanged,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            resizeMode == 'smart_crop'
+                ? l.t('smartCropHelp')
+                : l.t('blurredBackgroundHelp'),
+            style: TextStyle(
+              color: AppTone.textSecondary(context),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SegmentedString(
+            values: const ['low', 'medium', 'high'],
+            selected: quality,
+            labels: [l.t('smallFile'), l.t('balanced'), l.t('highQuality')],
+            onChanged: onQualityChanged,
           ),
           SwitchListTile(
-            value: noWatermark,
-            onChanged: onWatermarkChanged,
-            title: Text(l.t('noWatermarkWhenAvailable')),
-            subtitle: Text(
-              l.t('noWatermarkNote'),
-              style: TextStyle(color: AppTone.textSecondary(context)),
-            ),
+            value: mute,
+            onChanged: onMuteChanged,
+            title: Text(l.t('removeOriginalAudio')),
             contentPadding: EdgeInsets.zero,
+          ),
+          Text(
+            l.t('reelsShortsOutputNote'),
+            style: TextStyle(
+              color: AppTone.textSecondary(context),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.auto_awesome_motion_rounded),
+            label: Text(_createLabel(l, preset)),
           ),
         ],
+      ),
+    );
+  }
+
+  String _createLabel(AppLocalizations l, String preset) {
+    return switch (preset) {
+      'youtube' => l.t('createYouTubeShort'),
+      'tiktok' => l.t('createTikTokVideo'),
+      'snapchat' => l.t('createSnapchatSpotlight'),
+      _ => l.t('createInstagramReel'),
+    };
+  }
+}
+
+class _PlatformPresetCard extends StatelessWidget {
+  const _PlatformPresetCard({
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.badge,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? AppColors.primaryEnd : AppTone.border(context),
+            width: selected ? 1.8 : 1,
+          ),
+          color: selected
+              ? AppColors.primaryEnd.withValues(alpha: 0.14)
+              : AppTone.card(context).withValues(alpha: 0.32),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: selected
+                  ? AppColors.primaryEnd
+                  : AppTone.textSecondary(context),
+            ),
+            const Spacer(),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            const Text('9:16 · 1080x1920', style: TextStyle(fontSize: 11)),
+            const SizedBox(height: 4),
+            Text(
+              badge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppTone.textSecondary(context),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SafeZonePreview extends StatelessWidget {
+  const _SafeZonePreview({required this.preset});
+
+  final String preset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        height: 260,
+        child: AspectRatio(
+          aspectRatio: 9 / 16,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF18213A), Color(0xFF0B1020)],
+              ),
+              border: Border.all(color: AppTone.border(context)),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Center(
+                    child: Container(
+                      width: 110,
+                      height: 170,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primaryEnd,
+                          width: 2,
+                        ),
+                        color: AppColors.primaryEnd.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  top: 22,
+                  left: 18,
+                  right: 18,
+                  child: _SafeZoneBar(),
+                ),
+                Positioned(
+                  right: preset == 'tiktok' ? 14 : 18,
+                  top: 92,
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < 3; i++) ...[
+                        const CircleAvatar(
+                          radius: 8,
+                          backgroundColor: Colors.white54,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ],
+                  ),
+                ),
+                const Positioned(
+                  left: 18,
+                  right: 18,
+                  bottom: 24,
+                  child: _SafeZoneBar(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SafeZoneBar extends StatelessWidget {
+  const _SafeZoneBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 28,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.white.withValues(alpha: 0.14),
+        border: Border.all(color: Colors.white24),
+      ),
+    );
+  }
+}
+
+class _SourcePickerRow extends StatelessWidget {
+  const _SourcePickerRow({
+    required this.title,
+    required this.sourceName,
+    required this.localFilePath,
+    required this.onPickVideo,
+  });
+
+  final String title;
+  final String sourceName;
+  final String localFilePath;
+  final VoidCallback onPickVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTone.border(context)),
+        color: AppTone.card(context).withValues(alpha: 0.36),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.video_file_rounded, color: AppColors.primaryEnd),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  localFilePath.trim().isEmpty
+                      ? l.t('fileMustBeSavedBeforeEdit')
+                      : sourceName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: onPickVideo,
+            icon: const Icon(Icons.folder_open_rounded),
+            label: Text(l.t('chooseVideo')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditorStepTile extends StatelessWidget {
+  const _EditorStepTile({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.trailing,
+  });
+
+  final String number;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTone.border(context)),
+        color: AppTone.card(context).withValues(alpha: 0.36),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primaryEnd.withValues(alpha: 0.18),
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: AppColors.primaryEnd,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(icon, color: AppColors.primaryEnd),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentedString extends StatelessWidget {
+  const _SegmentedString({
+    required this.values,
+    required this.selected,
+    required this.labels,
+    required this.onChanged,
+  });
+
+  final List<String> values;
+  final String selected;
+  final List<String> labels;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SegmentedButton<String>(
+        segments: [
+          for (var i = 0; i < values.length; i++)
+            ButtonSegment(value: values[i], label: Text(labels[i])),
+        ],
+        selected: {selected},
+        onSelectionChanged: (value) => onChanged(value.first),
       ),
     );
   }
@@ -800,7 +2040,7 @@ class _ProgressPanel extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Text(l.t('processingLocally'))),
+              Expanded(child: Text(l.t('processingEditor'))),
               Text('${(progress * 100).round()}%'),
             ],
           ),

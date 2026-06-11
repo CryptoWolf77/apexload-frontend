@@ -91,41 +91,131 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 1.55,
+            childAspectRatio: 1.34,
             children: [
-              _Benefit(icon: Icons.block_rounded, label: l.t('noAds')),
               _Benefit(
                 icon: Icons.all_inclusive_rounded,
                 label: l.t('unlimitedDownloads'),
+                subtitle: l.t('premiumUnlimitedDescription'),
               ),
               _Benefit(
                 icon: Icons.high_quality_rounded,
-                label: l.t('fhd4kDownloads'),
-              ),
-              _Benefit(
-                icon: Icons.verified_rounded,
-                label: l.t('noWatermarkWhenAvailable'),
-              ),
-              _Benefit(
-                icon: Icons.auto_fix_high_rounded,
-                label: l.t('quickEditor'),
-                subtitle: l.t('quickEditorBenefit'),
-              ),
-              _Benefit(
-                icon: Icons.swap_horizontal_circle_rounded,
-                label: l.t('audioSwapReplaceAudio'),
-                subtitle: l.t('audioSwapSubtitle'),
+                label: l.t('premiumHdDownloads'),
+                subtitle: l.t('premiumHdDownloadsDescription'),
               ),
               _Benefit(
                 icon: Icons.playlist_add_check_rounded,
                 label: l.t('batchDownloads'),
+                subtitle: l.t('premiumBatchDescription'),
               ),
               _Benefit(
                 icon: Icons.graphic_eq_rounded,
-                label: l.t('audioExtraction'),
+                label: l.t('premiumMp3Extraction'),
+                subtitle: l.t('premiumMp3Description'),
               ),
-              _Benefit(icon: Icons.speed_rounded, label: l.t('fasterQueue')),
-              _Benefit(icon: Icons.cloud_done_rounded, label: l.t('cloudSave')),
+              _Benefit(
+                icon: Icons.verified_rounded,
+                label: l.t('premiumNoWatermark'),
+                subtitle: l.t('premiumNoWatermarkDescription'),
+              ),
+              _Benefit(
+                icon: Icons.phone_android_rounded,
+                label: l.t('whatsappStatusSaver'),
+                subtitle: l.t('whatsappStatusBenefit'),
+              ),
+              _Benefit(
+                icon: Icons.auto_fix_high_rounded,
+                label: l.t('premiumQuickEditorTools'),
+                subtitle: l.t('quickEditorBenefit'),
+              ),
+              _Benefit(
+                icon: Icons.speed_rounded,
+                label: l.t('premiumFasterQueue'),
+                subtitle: l.t('premiumFasterQueueDescription'),
+              ),
+              _Benefit(
+                icon: Icons.block_rounded,
+                label: l.t('noAds'),
+                subtitle: l.t('premiumNoAdsDescription'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _FeatureSection(
+            title: l.t('premiumDownloads'),
+            features: [
+              _PremiumFeature(
+                icon: Icons.high_quality_rounded,
+                title: l.t('fhd4kDownloads'),
+                body: l.t('fhd4kDownloadsWhenAvailable'),
+              ),
+              _PremiumFeature(
+                icon: Icons.graphic_eq_rounded,
+                title: l.t('audioExtraction'),
+                body: l.t('audioExtractionPremiumMessage'),
+              ),
+              _PremiumFeature(
+                icon: Icons.block_rounded,
+                title: l.t('noAds'),
+                body: l.t('premiumSubtitle'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _FeatureSection(
+            title: l.t('premiumCreatorTools'),
+            features: [
+              _PremiumFeature(
+                icon: Icons.gif_box_rounded,
+                title: l.t('videoToGif'),
+                body: l.t('videoToGifBenefit'),
+              ),
+              _PremiumFeature(
+                icon: Icons.stay_current_portrait_rounded,
+                title: l.t('reelsShortsCreator'),
+                body: l.t('reelsShortsBenefit'),
+              ),
+              _PremiumFeature(
+                icon: Icons.message_rounded,
+                title: l.t('whatsappStatusSaver'),
+                body: l.t('whatsappStatusBenefit'),
+              ),
+              _PremiumFeature(
+                icon: Icons.tune_rounded,
+                title: l.t('videoOptimizer'),
+                body: l.t('videoOptimizerBenefit'),
+              ),
+              _PremiumFeature(
+                icon: Icons.swap_horizontal_circle_rounded,
+                title: l.t('advancedAudioSwap'),
+                body: l.t('advancedAudioSwapBenefit'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _FeatureSection(
+            title: l.t('premiumEditorTools'),
+            features: [
+              _PremiumFeature(
+                icon: Icons.content_cut_rounded,
+                title: l.t('professionalTrimPreview'),
+                body: l.t('trimVideo'),
+              ),
+              _PremiumFeature(
+                icon: Icons.timeline_rounded,
+                title: l.t('audioStartSelector'),
+                body: l.t('advancedAudioSwapBenefit'),
+              ),
+              _PremiumFeature(
+                icon: Icons.movie_creation_rounded,
+                title: l.t('localVideoConversion'),
+                body: l.t('convertVideoToMp4'),
+              ),
+              _PremiumFeature(
+                icon: Icons.speed_rounded,
+                title: l.t('localOptimization'),
+                body: l.t('videoOptimizerBenefit'),
+              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -167,6 +257,114 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   }
 }
 
+class _FeatureSection extends StatelessWidget {
+  const _FeatureSection({required this.title, required this.features});
+
+  final String title;
+  final List<_PremiumFeature> features;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 10),
+        for (final feature in features) ...[
+          _PremiumFeatureCard(feature: feature),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _PremiumFeature {
+  const _PremiumFeature({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+}
+
+class _PremiumFeatureCard extends StatelessWidget {
+  const _PremiumFeatureCard({required this.feature});
+
+  final _PremiumFeature feature;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return GlassCard(
+      padding: const EdgeInsets.all(15),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [AppColors.primaryStart, AppColors.primaryEnd],
+              ),
+            ),
+            child: Icon(feature.icon, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      feature.title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.premiumGold.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        l.t('premium'),
+                        style: const TextStyle(
+                          color: AppColors.premiumGold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  feature.body,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Benefit extends StatelessWidget {
   const _Benefit({required this.icon, required this.label, this.subtitle});
 
@@ -178,39 +376,44 @@ class _Benefit extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       padding: const EdgeInsets.all(12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primaryEnd),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppTone.textSecondary(context),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ],
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.premiumGold.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(
+                color: AppColors.premiumGold.withValues(alpha: 0.32),
+              ),
             ),
+            child: Icon(icon, color: AppColors.premiumGold, size: 20),
           ),
+          const SizedBox(height: 9),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 5),
+            Expanded(
+              child: Text(
+                subtitle!,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTone.textSecondary(context),
+                  fontSize: 11,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ] else
+            const Spacer(),
         ],
       ),
     );

@@ -10,6 +10,12 @@ class MockDownloadService {
     String? sizeLabel,
     String? fileId,
     String? downloadUrl,
+    String? localFilePath,
+    String? thumbnailPath,
+    String? duration,
+    String? quality,
+    String? galleryUri,
+    bool isEdited = false,
   }) {
     return DownloadItemModel(
       id: '${media.id}_${format.id}_${DateTime.now().millisecondsSinceEpoch}',
@@ -22,6 +28,12 @@ class MockDownloadService {
       fileName: fileName,
       fileId: fileId ?? '',
       downloadUrl: downloadUrl ?? '',
+      localFilePath: localFilePath ?? '',
+      thumbnailPath: thumbnailPath ?? '',
+      duration: duration ?? media.duration,
+      quality: quality ?? format.label,
+      galleryUri: galleryUri ?? '',
+      isEdited: isEdited,
     );
   }
 }

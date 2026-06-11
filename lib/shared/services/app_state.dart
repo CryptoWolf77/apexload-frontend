@@ -1,19 +1,31 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/clipboard_helper_service.dart';
+import 'package:apexload/shared/services/local_editor_service.dart';
+import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/services/mock_download_service.dart';
-import 'package:apexload/shared/services/mock_library_service.dart';
 import 'package:apexload/shared/services/mock_subscription_service.dart';
+import 'package:apexload/shared/services/whatsapp_status_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final analyzeServiceProvider = Provider((ref) => ApiAnalyzeService());
 final apiDownloadServiceProvider = Provider((ref) => ApiDownloadService());
+final localMediaServiceProvider = Provider((ref) => LocalMediaService());
+final localEditorServiceProvider = Provider(
+  (ref) =>
+      LocalEditorService(mediaService: ref.watch(localMediaServiceProvider)),
+);
+final whatsappStatusServiceProvider = Provider(
+  (ref) =>
+      WhatsAppStatusService(mediaService: ref.watch(localMediaServiceProvider)),
+);
 final downloadServiceProvider = Provider((ref) => MockDownloadService());
 final subscriptionServiceProvider = Provider(
   (ref) => MockSubscriptionService(),
@@ -159,18 +171,129 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
 }
 
 class LibraryController extends Notifier<List<DownloadItemModel>> {
+  static const _libraryKey = 'apexload_download_library_v1';
+
+  SharedPreferences? _prefs;
+  Future<void>? _loadFuture;
+
   @override
-  List<DownloadItemModel> build() => MockLibraryService().initialItems();
+  List<DownloadItemModel> build() {
+    _loadFuture = _load();
+    return const [];
+  }
 
-  void add(DownloadItemModel item) => state = [item, ...state];
+  void add(DownloadItemModel item) {
+    final cleaned = _clean(item);
+    state = [
+      cleaned,
+      ...state.where((existing) => !_sameLibraryIdentity(existing, cleaned)),
+    ];
+    unawaited(_save());
+  }
 
-  void delete(String id) =>
-      state = state.where((item) => item.id != id).toList();
+  void delete(String id) {
+    state = state.where((item) => item.id != id).toList();
+    unawaited(_save());
+  }
 
   void rename(String id, String fileName) {
     state = [
       for (final item in state)
         if (item.id == id) item.copyWith(fileName: fileName) else item,
     ];
+    unawaited(_save());
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!ref.mounted) return;
+    _prefs = prefs;
+    final stored = prefs.getString(_libraryKey);
+    var items = <DownloadItemModel>[];
+    if (stored != null && stored.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(stored);
+        if (decoded is List) {
+          items = decoded
+              .whereType<Map>()
+              .map(
+                (row) => DownloadItemModel.fromJson(
+                  row.map((key, value) => MapEntry('$key', value)),
+                ),
+              )
+              .map(_clean)
+              .where((item) => item.id.isNotEmpty)
+              .toList();
+        }
+      } on Object {
+        items = const [];
+      }
+    }
+    final repaired = await ref
+        .read(localMediaServiceProvider)
+        .discoverExistingDownloads(existing: items);
+    if (!ref.mounted) return;
+    state = _dedupeAndSort([...repaired, ...items]);
+    await _save();
+  }
+
+  Future<void> _save() async {
+    final future = _loadFuture;
+    if (future != null && _prefs == null) await future;
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    if (!ref.mounted) return;
+    _prefs = prefs;
+    final rows = state.map((item) => item.toJson()).toList();
+    await prefs.setString(_libraryKey, jsonEncode(rows));
+  }
+
+  DownloadItemModel _clean(DownloadItemModel item) {
+    final title = item.title.trim().isEmpty ? item.fileName : item.title;
+    final fileName = item.fileName.trim().isEmpty ? title : item.fileName;
+    return item.copyWith(
+      title: title.trim(),
+      fileName: fileName.trim(),
+      platform: item.platform.trim().isEmpty ? 'ApexLoad' : item.platform,
+      sizeLabel: item.sizeLabel.trim(),
+    );
+  }
+
+  List<DownloadItemModel> _dedupeAndSort(List<DownloadItemModel> items) {
+    final result = <DownloadItemModel>[];
+    for (final item in items) {
+      if (item.id.trim().isEmpty) continue;
+      final index = result.indexWhere(
+        (existing) => _sameLibraryIdentity(existing, item),
+      );
+      if (index >= 0) {
+        result[index] = item.date.isAfter(result[index].date)
+            ? item
+            : result[index];
+      } else {
+        result.add(item);
+      }
+    }
+    result.sort((a, b) => b.date.compareTo(a.date));
+    return result;
+  }
+
+  bool _sameLibraryIdentity(
+    DownloadItemModel existing,
+    DownloadItemModel incoming,
+  ) {
+    if (existing.id == incoming.id) return true;
+    if (incoming.fileId.trim().isNotEmpty &&
+        existing.fileId == incoming.fileId) {
+      return true;
+    }
+    if (incoming.localFilePath.trim().isNotEmpty &&
+        existing.localFilePath == incoming.localFilePath) {
+      return true;
+    }
+    if (incoming.downloadUrl.trim().isNotEmpty &&
+        existing.downloadUrl == incoming.downloadUrl) {
+      return true;
+    }
+    return false;
   }
 }
