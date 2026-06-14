@@ -6,6 +6,7 @@ import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   Widget build(BuildContext context) {
     final active = ref.watch(subscriptionControllerProvider).isPremium;
     final l = AppLocalizations.of(context);
+    final showWhatsappStatusSaver =
+        kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
     return GradientScaffold(
       appBar: AppBar(
         title: Text(l.t('premium')),
@@ -118,11 +121,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 label: l.t('premiumNoWatermark'),
                 subtitle: l.t('premiumNoWatermarkDescription'),
               ),
-              _Benefit(
-                icon: Icons.phone_android_rounded,
-                label: l.t('whatsappStatusSaver'),
-                subtitle: l.t('whatsappStatusBenefit'),
-              ),
+              if (showWhatsappStatusSaver)
+                _Benefit(
+                  icon: Icons.phone_android_rounded,
+                  label: l.t('whatsappStatusSaver'),
+                  subtitle: l.t('whatsappStatusBenefit'),
+                ),
               _Benefit(
                 icon: Icons.auto_fix_high_rounded,
                 label: l.t('premiumQuickEditorTools'),
@@ -175,11 +179,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 title: l.t('reelsShortsCreator'),
                 body: l.t('reelsShortsBenefit'),
               ),
-              _PremiumFeature(
-                icon: Icons.message_rounded,
-                title: l.t('whatsappStatusSaver'),
-                body: l.t('whatsappStatusBenefit'),
-              ),
+              if (showWhatsappStatusSaver)
+                _PremiumFeature(
+                  icon: Icons.message_rounded,
+                  title: l.t('whatsappStatusSaver'),
+                  body: l.t('whatsappStatusBenefit'),
+                ),
               _PremiumFeature(
                 icon: Icons.tune_rounded,
                 title: l.t('videoOptimizer'),

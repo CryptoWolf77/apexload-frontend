@@ -6,6 +6,7 @@ import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:flutter/foundation.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -62,6 +63,12 @@ class LocalMediaService {
     final folder = await _folderFor(type);
     final safeName = _safeFileName(fileName, fallback: _defaultFileName(type));
     final file = await _uniqueFile(folder, safeName);
+    _logIosSave('Starting save');
+    _logIosSave('Platform: ${Platform.operatingSystem}');
+    _logIosSave('Source: $url');
+    _logIosSave('Expected filename: $safeName');
+    _logIosSave('Target: ${file.path}');
+    _logIosSave('Directory exists: ${folder.existsSync()}');
     try {
       await _dio.download(
         url,
@@ -71,13 +78,22 @@ class LocalMediaService {
           onProgress?.call((received / total).clamp(0, 1));
         },
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      _logIosSave('Failed: ${error.runtimeType}: $error');
+      if (kDebugMode && Platform.isIOS) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
       if (file.existsSync()) {
         await file.delete();
       }
       rethrow;
     }
-    if (!file.existsSync() || await file.length() == 0) {
+    final exists = file.existsSync();
+    final size = exists ? await file.length() : 0;
+    _logIosSave('File exists: $exists');
+    _logIosSave('File size: $size');
+    if (!exists || size == 0) {
+      _logIosSave('Failed: saved file missing or empty');
       throw StateError('Downloaded file could not be saved.');
     }
     final galleryUri = await publishToGallery(
@@ -85,11 +101,12 @@ class LocalMediaService {
       fileName: file.uri.pathSegments.last,
       type: type,
     );
+    _logIosSave('Completed');
     return LocalMediaSaveResult(
       localFilePath: file.path,
       thumbnailPath: '',
       fileName: file.uri.pathSegments.last,
-      sizeLabel: _formatBytes(await file.length()),
+      sizeLabel: _formatBytes(size),
       galleryUri: galleryUri ?? '',
     );
   }
@@ -137,6 +154,7 @@ class LocalMediaService {
     required DownloadType type,
     String? category,
   }) async {
+    if (!Platform.isAndroid) return null;
     final file = File(localFilePath);
     if (!file.existsSync()) return null;
     try {
@@ -389,8 +407,10 @@ class LocalMediaService {
   }
 
   Future<Directory> _rootDirectory() async {
-    final external = await getExternalStorageDirectory();
-    final base = external ?? await getApplicationDocumentsDirectory();
+    final base = Platform.isAndroid
+        ? (await getExternalStorageDirectory() ??
+              await getApplicationDocumentsDirectory())
+        : await getApplicationDocumentsDirectory();
     return Directory('${base.path}/ApexLoad');
   }
 
@@ -479,6 +499,11 @@ class LocalMediaService {
     if (kb < 1024) return '${kb.toStringAsFixed(kb < 10 ? 1 : 0)} KB';
     final mb = kb / 1024;
     return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
+  }
+
+  void _logIosSave(String message) {
+    if (!Platform.isIOS) return;
+    debugPrint('[ApexLoad iOS Save] $message');
   }
 
   String? _mimeType(DownloadItemModel item) {

@@ -19,6 +19,7 @@ import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/premium_locked_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -100,6 +101,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return Consumer(
             builder: (context, ref, child) {
               final l = AppLocalizations.of(context);
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+                return const WhatsAppStatusAndroidOnlyScreen();
+              }
               final premium = ref
                   .watch(subscriptionControllerProvider)
                   .isPremium;
@@ -212,6 +216,71 @@ class DownloadProgressArgs {
   final String? apiJobId;
 
   DownloadFormatModel get primaryFormat => formats.first;
+}
+
+class WhatsAppStatusAndroidOnlyScreen extends StatelessWidget {
+  const WhatsAppStatusAndroidOnlyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return GradientScaffold(
+      appBar: AppBar(
+        title: Text(l.t('whatsappStatusSaver')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_rounded),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l.t('whatsappStatusSaver'),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      Chip(label: Text(l.t('androidOnly'))),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    l.t('whatsappStatusAndroidOnlyTitle'),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l.t('whatsappStatusAndroidOnlyMessage'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.go('/home'),
+                      icon: const Icon(Icons.home_rounded),
+                      label: Text(l.t('goHome')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class RouteFallbackScreen extends StatelessWidget {

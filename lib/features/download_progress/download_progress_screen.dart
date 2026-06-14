@@ -125,6 +125,12 @@ class _DownloadProgressScreenState
     var lastSaveProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
     for (var i = 0; i < status.files.length; i++) {
       final file = status.files[i];
+      final format = _formatForBackendFile(
+        file,
+        i < widget.args.formats.length
+            ? widget.args.formats[i]
+            : widget.args.primaryFormat,
+      );
       try {
         if (mounted) {
           setState(() {
@@ -138,8 +144,10 @@ class _DownloadProgressScreenState
         }
         final save = await localMedia.saveRemoteFile(
           url: apiService.fullFileUrl(file),
-          fileName: file.fileName.isEmpty ? file.fileId : file.fileName,
-          type: _downloadTypeForBackendFile(file, widget.args.primaryFormat),
+          fileName: file.fileName.isEmpty
+              ? _fileNameFor(format)
+              : file.fileName,
+          type: format.type,
           onProgress: (saveProgress) {
             final now = DateTime.now();
             if (!mounted ||
@@ -165,7 +173,7 @@ class _DownloadProgressScreenState
         }
         if (save.galleryUri.isNotEmpty) {
           galleryUris[file.fileId] = save.galleryUri;
-        } else if (!kIsWeb) {
+        } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
           galleryPublishFailed = true;
         }
       } on Object catch (error) {
@@ -593,18 +601,6 @@ class _DownloadProgressScreenState
       isAvailable: fallback.isAvailable,
       unavailableReasonKey: fallback.unavailableReasonKey,
     );
-  }
-
-  DownloadType _downloadTypeForBackendFile(
-    ApiDownloadFile file,
-    DownloadFormatModel fallback,
-  ) {
-    return switch (file.type.toLowerCase()) {
-      'audio' => DownloadType.audio,
-      'image' => DownloadType.image,
-      'video' => DownloadType.video,
-      _ => fallback.type,
-    };
   }
 
   String _extensionFromFileName(String fileName, String fallback) {

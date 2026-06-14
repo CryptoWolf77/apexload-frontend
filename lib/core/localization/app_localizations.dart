@@ -484,6 +484,11 @@ class AppLocalizations {
       'whatsappStatusSaver': 'WhatsApp Status Saver',
       'whatsappStatusHomeCopy':
           'Save viewed WhatsApp status photos and videos locally.',
+      'androidOnly': 'Android only',
+      'whatsappStatusAndroidOnlyTitle':
+          'WhatsApp Status Saver is available on Android only.',
+      'whatsappStatusAndroidOnlyMessage':
+          'iOS does not allow apps to access WhatsApp status folders.',
       'whatsappStatusPremiumTitle':
           'WhatsApp Status Saver is a Premium feature.',
       'whatsappStatusPremiumMessage':
@@ -1048,6 +1053,11 @@ class AppLocalizations {
       'statusSaver': 'حافظ الحالات',
       'whatsappStatusSaver': 'حفظ حالات واتساب',
       'whatsappStatusHomeCopy': 'احفظ صور وفيديوهات حالات واتساب التي شاهدتها.',
+      'androidOnly': 'أندرويد فقط',
+      'whatsappStatusAndroidOnlyTitle':
+          'حفظ حالات واتساب متاح على أندرويد فقط.',
+      'whatsappStatusAndroidOnlyMessage':
+          'نظام iOS لا يسمح للتطبيقات بالوصول إلى مجلد حالات واتساب.',
       'whatsappStatusPremiumTitle': 'حافظ حالات واتساب ميزة بريميوم.',
       'whatsappStatusPremiumMessage':
           'يمكنك معاينة الحالات المحلية، والترقية لحفظها داخل ApexLoad.',
