@@ -428,6 +428,14 @@ class _DownloadProgressScreenState
                         returnedFiles: _latestFiles,
                       ),
                     ],
+                    if (_showLargeSavingHint) ...[
+                      const SizedBox(height: 12),
+                      _LargeFileInfoCard(
+                        title: l.t('preparingLargeVideo'),
+                        message: l.t('largeVideoSavingMessage'),
+                        subtitle: l.t('largeVideoSavingSubtitle'),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     if (_preparing) ...[
                       LinearProgressIndicator(value: _progress),
@@ -540,6 +548,54 @@ class _DownloadProgressScreenState
     if (label.isEmpty) return null;
     if (label.toLowerCase() == 'unknown') return l.t('calculating');
     return label;
+  }
+
+  bool get _showLargeSavingHint {
+    if (_status.toLowerCase() != 'saving') return false;
+    if (widget.args.primaryFormat.type != DownloadType.video) return false;
+    final labels = [
+      widget.args.primaryFormat.label,
+      widget.args.primaryFormat.id,
+      widget.args.primaryFormat.sizeLabel,
+      widget.args.fileName,
+      widget.args.media.title,
+      for (final file in _latestFiles) ...[file.fileName, file.size, file.type],
+    ];
+    return _hasLargeVideoSignal(labels);
+  }
+
+  bool _hasLargeVideoSignal(Iterable<String> labels) {
+    for (final label in labels) {
+      final normalized = label.toLowerCase().replaceAll(' ', '');
+      if (normalized.isEmpty) continue;
+      if (normalized.contains('1080') ||
+          normalized.contains('1440') ||
+          normalized.contains('2160') ||
+          normalized.contains('2k') ||
+          normalized.contains('4k') ||
+          normalized.contains('fhd') ||
+          normalized.contains('uhd') ||
+          normalized.contains('highbitrate')) {
+        return true;
+      }
+      final mb = _sizeLabelToMb(label);
+      if (mb != null && mb >= 100) return true;
+    }
+    return false;
+  }
+
+  double? _sizeLabelToMb(String value) {
+    final match = RegExp(
+      r'(\d+(?:[.,]\d+)?)\s*(gb|gib|mb|mib|kb|kib)\b',
+      caseSensitive: false,
+    ).firstMatch(value);
+    if (match == null) return null;
+    final amount = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+    if (amount == null) return null;
+    final unit = match.group(2)!.toLowerCase();
+    if (unit.startsWith('g')) return amount * 1024;
+    if (unit.startsWith('m')) return amount;
+    return amount / 1024;
   }
 
   Future<void> _generateThumbnailsInBackground(
@@ -688,6 +744,71 @@ class _ProgressMetadataRow extends StatelessWidget {
   }
 }
 
+class _LargeFileInfoCard extends StatelessWidget {
+  const _LargeFileInfoCard({
+    required this.title,
+    required this.message,
+    this.subtitle,
+  });
+
+  final String title;
+  final String message;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryEnd.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primaryEnd.withValues(alpha: 0.26)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    height: 1.35,
+                  ),
+                ),
+                if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      color: AppTone.textSecondary(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DebugDownloadInfo extends StatelessWidget {
   const _DebugDownloadInfo({
     required this.requestedFormats,
@@ -699,6 +820,7 @@ class _DebugDownloadInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final requested = [
       for (final format in requestedFormats)
         DownloadSelectedItem.fromFormat(format),
@@ -722,13 +844,13 @@ class _DebugDownloadInfo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Selected type: ${requested.map((item) => item.type).join(', ')}',
+              '${l.t('selectedType')}: ${requested.map((item) => item.type).join(', ')}',
             ),
             Text(
-              'Requested format: ${requested.map((item) => item.formatId).join(', ')}',
+              '${l.t('requestedFormat')}: ${requested.map((item) => item.formatId).join(', ')}',
             ),
-            Text('Returned file type: ${returned?.type ?? '-'}'),
-            Text('Returned filename: ${returned?.fileName ?? '-'}'),
+            Text('${l.t('returnedFileType')}: ${returned?.type ?? '-'}'),
+            Text('${l.t('returnedFilename')}: ${returned?.fileName ?? '-'}'),
           ],
         ),
       ),

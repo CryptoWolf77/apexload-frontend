@@ -126,15 +126,16 @@ class _SourcePickerCard extends ConsumerWidget {
       final file = await openFile(acceptedTypeGroups: [videoGroup]);
       final path = file?.path;
       if (file == null || path == null || path.trim().isEmpty) return;
+      final sizeLabel = _formatBytes(await file.length());
       if (!context.mounted) return;
       context.push(
         '/quick-editor/edit',
         extra: DownloadItemModel(
           id: 'local_video_${DateTime.now().millisecondsSinceEpoch}',
           title: file.name,
-          platform: 'Local',
+          platform: l.t('localFile'),
           date: DateTime.now(),
-          sizeLabel: '',
+          sizeLabel: sizeLabel,
           type: DownloadType.video,
           thumbnailUrl: '',
           fileName: file.name,
@@ -209,6 +210,7 @@ class _DownloadSourceTileState extends ConsumerState<_DownloadSourceTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -237,7 +239,7 @@ class _DownloadSourceTileState extends ConsumerState<_DownloadSourceTile> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_item.platform} - ${_item.fileName}',
+                      '${_platformLabel(l, _item.platform)} - ${_item.fileName}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -259,6 +261,25 @@ class _DownloadSourceTileState extends ConsumerState<_DownloadSourceTile> {
       ),
     );
   }
+
+  String _platformLabel(AppLocalizations l, String platform) {
+    final trimmed = platform.trim();
+    if (trimmed == 'Editor') return l.t('editor');
+    if (trimmed == 'Local' || trimmed == 'Local file') return l.t('localFile');
+    if (trimmed == 'WhatsApp Status') return l.t('whatsappStatusSaver');
+    if (trimmed == 'ApexLoad') return trimmed;
+    return l.platformName(trimmed);
+  }
+}
+
+String _formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  final kb = bytes / 1024;
+  if (kb < 1024) return '${kb.toStringAsFixed(kb < 10 ? 1 : 0)} KB';
+  final mb = kb / 1024;
+  if (mb < 1024) return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
+  final gb = mb / 1024;
+  return '${gb.toStringAsFixed(gb < 10 ? 1 : 0)} GB';
 }
 
 class _EditorSourceThumbnail extends StatelessWidget {

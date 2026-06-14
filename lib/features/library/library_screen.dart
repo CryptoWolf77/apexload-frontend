@@ -33,7 +33,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final items = ref.watch(libraryControllerProvider).where((item) {
+    final libraryItems = ref.watch(libraryControllerProvider);
+    final items = libraryItems.where((item) {
       final query = _search.text.toLowerCase();
       final matchesQuery =
           query.isEmpty ||
@@ -49,6 +50,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       return matchesQuery && matchesType && matchesPlatform;
     }).toList();
     final groups = _groupItems(items);
+    final hasNonMp4Video = libraryItems.any(_isNonMp4Video);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 104),
@@ -110,6 +112,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        if (hasNonMp4Video) ...[
+          _PlaybackTipCard(
+            onOpenQuickEditor: () => context.go('/quick-editor'),
+          ),
+          const SizedBox(height: 14),
+        ],
         if (items.isEmpty)
           SizedBox(
             height: 360,
@@ -258,6 +266,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return error.toString().contains('localFileMissing');
   }
 
+  bool _isNonMp4Video(DownloadItemModel item) {
+    if (item.type != DownloadType.video) return false;
+    final fileName = item.fileName.toLowerCase().trim();
+    if (fileName.isEmpty || !fileName.contains('.')) return false;
+    return !fileName.endsWith('.mp4');
+  }
+
   Future<void> _rename(String id, String current) async {
     final controller = TextEditingController(text: current);
     final value = await showDialog<String>(
@@ -286,5 +301,57 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     if (value != null && value.isNotEmpty) {
       ref.read(libraryControllerProvider.notifier).rename(id, value);
     }
+  }
+}
+
+class _PlaybackTipCard extends StatelessWidget {
+  const _PlaybackTipCard({required this.onOpenQuickEditor});
+
+  final VoidCallback onOpenQuickEditor;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryEnd.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primaryEnd.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_rounded, color: AppColors.primaryEnd),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.t('playbackTip'),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  l.t('playbackTipMessage'),
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: onOpenQuickEditor,
+                  icon: const Icon(Icons.movie_creation_rounded),
+                  label: Text(l.t('openQuickEditor')),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

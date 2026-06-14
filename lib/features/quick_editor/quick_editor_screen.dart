@@ -32,6 +32,51 @@ String _formatEditorTime(num seconds) {
   return '$mm:$ss';
 }
 
+String _formatEditorBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  final kb = bytes / 1024;
+  if (kb < 1024) return '${kb.toStringAsFixed(kb < 10 ? 1 : 0)} KB';
+  final mb = kb / 1024;
+  if (mb < 1024) return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
+  final gb = mb / 1024;
+  return '${gb.toStringAsFixed(gb < 10 ? 1 : 0)} GB';
+}
+
+bool _hasLargeEditorVideoSignal(Iterable<String> labels) {
+  for (final label in labels) {
+    final normalized = label.toLowerCase().replaceAll(' ', '');
+    if (normalized.isEmpty) continue;
+    if (normalized.contains('1080') ||
+        normalized.contains('1440') ||
+        normalized.contains('2160') ||
+        normalized.contains('1920x1080') ||
+        normalized.contains('2k') ||
+        normalized.contains('4k') ||
+        normalized.contains('fhd') ||
+        normalized.contains('uhd') ||
+        normalized.contains('highbitrate')) {
+      return true;
+    }
+    final mb = _editorSizeLabelToMb(label);
+    if (mb != null && mb >= 100) return true;
+  }
+  return false;
+}
+
+double? _editorSizeLabelToMb(String value) {
+  final match = RegExp(
+    r'(\d+(?:[.,]\d+)?)\s*(gb|gib|mb|mib|kb|kib)\b',
+    caseSensitive: false,
+  ).firstMatch(value);
+  if (match == null) return null;
+  final amount = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+  if (amount == null) return null;
+  final unit = match.group(2)!.toLowerCase();
+  if (unit.startsWith('g')) return amount * 1024;
+  if (unit.startsWith('m')) return amount;
+  return amount / 1024;
+}
+
 class QuickEditorScreen extends ConsumerStatefulWidget {
   const QuickEditorScreen({super.key, required this.item});
 
@@ -67,6 +112,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
   var _reelsResizeMode = 'smart_crop';
   var _reelsQuality = 'medium';
   var _reelsMute = false;
+  String? _selectedVideoSizeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +344,10 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                 left: 18,
                 right: 18,
                 bottom: 18,
-                child: _ProgressPanel(progress: state.progress),
+                child: _ProgressPanel(
+                  progress: state.progress,
+                  showLargeFileHint: _showLargeProcessingHint(state.activeJob),
+                ),
               ),
           ],
         ),
@@ -541,7 +590,11 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
       setState(() {
         _selectedVideoFile = file.name;
         _selectedVideoPath = path;
+        _selectedVideoSizeLabel = null;
       });
+      final sizeLabel = _formatEditorBytes(await file.length());
+      if (!mounted) return;
+      setState(() => _selectedVideoSizeLabel = sizeLabel);
     } on Object {
       if (!mounted) return;
       AppNotification.error(
@@ -676,6 +729,39 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
     final remaining =
         (_selectedAudioDuration ?? _trimMax) - _audioStartPosition;
     return remaining.clamp(1, _trimMax < 12 ? _trimMax : 12).toDouble();
+  }
+
+  bool _showLargeProcessingHint(QuickEditorJobType? activeJob) {
+    if (activeJob == null) return false;
+    final heavyJob = switch (activeJob) {
+      QuickEditorJobType.export ||
+      QuickEditorJobType.compress ||
+      QuickEditorJobType.videoToGif ||
+      QuickEditorJobType.reelsShorts ||
+      QuickEditorJobType.audioSwap ||
+      QuickEditorJobType.trim => true,
+      QuickEditorJobType.mute || QuickEditorJobType.extractAudio => false,
+    };
+    if (!heavyJob) return false;
+    final source =
+        activeJob == QuickEditorJobType.videoToGif ||
+            activeJob == QuickEditorJobType.reelsShorts
+        ? _sourceItemFor(
+            QuickEditorJob(
+              type: activeJob,
+              operation: '',
+              successMessageKey: '',
+            ),
+          )
+        : widget.item;
+    return _hasLargeEditorVideoSignal([
+      source.title,
+      source.fileName,
+      source.sizeLabel,
+      source.quality,
+      _selectedVideoSizeLabel ?? '',
+      _reelsQuality,
+    ]);
   }
 }
 
@@ -2020,9 +2106,13 @@ class _SegmentedString extends StatelessWidget {
 }
 
 class _ProgressPanel extends StatelessWidget {
-  const _ProgressPanel({required this.progress});
+  const _ProgressPanel({
+    required this.progress,
+    required this.showLargeFileHint,
+  });
 
   final double progress;
+  final bool showLargeFileHint;
 
   @override
   Widget build(BuildContext context) {
@@ -2046,6 +2136,60 @@ class _ProgressPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           LinearProgressIndicator(value: progress),
+          if (showLargeFileHint) ...[
+            const SizedBox(height: 10),
+            _EditorLargeFileInfoCard(
+              title: l.t('preparingLargeVideo'),
+              message: l.t('largeVideoProcessingMessage'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EditorLargeFileInfoCard extends StatelessWidget {
+  const _EditorLargeFileInfoCard({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primaryEnd.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryEnd.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_rounded, color: AppColors.primaryEnd, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    height: 1.35,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

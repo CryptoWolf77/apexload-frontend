@@ -76,6 +76,11 @@ class AppLocalizations {
           'Saving and preparing the file on your device before actions become available.',
       'savingToDevice': 'Saving to your device',
       'savingFileToDevice': 'Saving file to your device...',
+      'preparingLargeVideo': 'Preparing large video',
+      'largeVideoSavingMessage':
+          'Large video detected. Saving may take a little longer. Please keep ApexLoad open while we finish preparing your file.',
+      'largeVideoSavingSubtitle':
+          'This can take longer for 1080p, 4K, or large files.',
       'downloadSaveFailed':
           'The download completed, but the file could not be saved on your device. Please try again.',
       'addingToGallery': 'Adding to Gallery',
@@ -174,6 +179,8 @@ class AppLocalizations {
       'noWatermarkNote': 'Applied only when the platform/source provides it.',
       'processingLocally': 'Processing locally on this device',
       'processingEditor': 'Processing locally on this device',
+      'largeVideoProcessingMessage':
+          'Large video processing may take a little longer. Please keep the app open until the export is complete.',
       'trimSuccess': 'Trim applied successfully',
       'muteSuccess': 'Video muted successfully',
       'audioExtractedSuccess': 'Audio extracted successfully',
@@ -258,6 +265,10 @@ class AppLocalizations {
       'premiumFeatureSummary':
           'Unlock FHD & 4K quality, no watermark when available, Quick Editor, audio extraction, and batch downloads.',
       'downloadProgress': 'Download progress',
+      'selectedType': 'Selected type',
+      'requestedFormat': 'Requested format',
+      'returnedFileType': 'Returned file type',
+      'returnedFilename': 'Returned filename',
       'openLibrary': 'Open Library',
       'downloadAnother': 'Download Another',
       'cancel': 'Cancel',
@@ -267,6 +278,11 @@ class AppLocalizations {
       'savedLocally': 'Saved locally',
       'done': 'Done',
       'searchDownloads': 'Search downloads',
+      'playbackTip': 'Playback tip',
+      'playbackTipMessage':
+          'If a downloaded video does not open on your phone, it may be in a format your device does not support. You can convert it to MP4 using Quick Editor, or open it with a media player like VLC.',
+      'openQuickEditor': 'Open Quick Editor',
+      'convertToMp4': 'Convert to MP4',
       'noDownloadsYet': 'No downloads yet',
       'pasteLinkOnHome': 'Paste a link on the Home screen to start.',
       'renameFile': 'Rename file',
@@ -694,6 +710,11 @@ class AppLocalizations {
           'جارٍ حفظ وتجهيز الملف على جهازك قبل إتاحة الإجراءات.',
       'savingToDevice': 'جارٍ الحفظ على جهازك',
       'savingFileToDevice': 'جارٍ حفظ الملف على جهازك...',
+      'preparingLargeVideo': 'جاري تجهيز فيديو كبير',
+      'largeVideoSavingMessage':
+          'تم اكتشاف فيديو كبير. قد يستغرق الحفظ وقتًا أطول قليلًا. يرجى إبقاء ApexLoad مفتوحًا حتى ننتهي من تجهيز الملف.',
+      'largeVideoSavingSubtitle':
+          'قد يستغرق ذلك وقتًا أطول مع ملفات 1080p أو 4K أو الملفات الكبيرة.',
       'downloadSaveFailed':
           'اكتمل التحميل، ولكن تعذّر حفظ الملف على جهازك. يرجى المحاولة مرة أخرى.',
       'addingToGallery': 'جارٍ الإضافة إلى المعرض',
@@ -737,14 +758,35 @@ class AppLocalizations {
       'quickEditor': 'المحرر السريع',
       'quickEditorSubtitle':
           'قص الفيديو، كتم الصوت، استخراج الصوت، وضغط الفيديو.',
+      'quickEditorLandingSubtitle':
+          'اختر فيديو تم تنزيله أو ملفًا من جهازك، ثم اختر أداة التعديل المناسبة.',
       'quickEditorPremiumTitle': 'المحرر السريع ميزة بريميوم',
       'quickEditorPremiumMessage':
           'قم بالترقية لقص الفيديو، كتم الصوت، استخراج الصوت، استبدال الصوت، وضغط الفيديو',
+      'chooseVideoSource': 'اختر مصدر الفيديو',
+      'chooseVideoSourceDescription':
+          'استخدم فيديو من تنزيلات ApexLoad أو اختر فيديو محفوظًا على هذا الجهاز.',
+      'chooseLocalVideo': 'اختيار فيديو من الجهاز',
+      'chooseFromDownloads': 'اختيار من التنزيلات',
+      'noEditableVideosYet':
+          'لا توجد فيديوهات قابلة للتعديل بعد. نزّل فيديو أولًا أو اختر ملفًا من جهازك.',
+      'localFile': 'ملف من الجهاز',
       'editVideo': 'تعديل الفيديو',
       'trimVideo': 'قص الفيديو',
       'muteVideo': 'كتم الصوت',
       'extractAudio': 'استخراج الصوت',
       'compressVideo': 'ضغط الفيديو',
+      'videoOptimizer': 'تحسين الفيديو',
+      'videoOptimizerSubtitle':
+          'قلّل الحجم، وحوّل إلى MP4، وجهّز إخراجًا أنظف محليًا.',
+      'videoOptimizerPremiumTitle': 'تحسين الفيديو ميزة بريميوم.',
+      'videoOptimizerPremiumMessage':
+          'قم بالترقية لتحسين الفيديوهات محليًا قبل مشاركتها.',
+      'optimizerPreset': 'إعداد التحسين',
+      'optimizerLocalOnly': 'يتم التحسين محليًا على هذا الجهاز.',
+      'optimizeVideo': 'تحسين الفيديو',
+      'optimizerSuccess': 'تم تحسين الفيديو بنجاح',
+      'convertVideoToMp4': 'تحويل الفيديو إلى MP4',
       'exportEditedVideo': 'تصدير الفيديو المعدل',
       'format': 'الصيغة',
       'startTime': 'وقت البداية',
@@ -770,6 +812,8 @@ class AppLocalizations {
       'noWatermarkNote': 'تطبق فقط عندما توفرها المنصة أو المصدر.',
       'processingLocally': 'تتم المعالجة محلياً على هذا الجهاز',
       'processingEditor': 'تتم المعالجة محليًا على هذا الجهاز',
+      'largeVideoProcessingMessage':
+          'قد تستغرق معالجة الفيديو الكبير وقتًا أطول قليلًا. يرجى إبقاء التطبيق مفتوحًا حتى يكتمل التصدير.',
       'trimSuccess': 'تم تطبيق القص بنجاح',
       'muteSuccess': 'تم كتم الفيديو بنجاح',
       'audioExtractedSuccess': 'تم استخراج الصوت بنجاح',
@@ -819,6 +863,18 @@ class AppLocalizations {
       'premiumFasterQueue': 'أولوية في المعالجة',
       'premiumFasterQueueDescription': 'أولوية للمهام المدعومة.',
       'premiumNoAdsDescription': 'استخدم ApexLoad بدون مقاطعة إعلانية.',
+      'videoToGifBenefit':
+          'حوّل لحظات الفيديو المفضلة لديك إلى صور GIF قابلة للمشاركة.',
+      'reelsShortsBenefit': 'أنشئ فيديوهات عمودية جاهزة للمنصات خلال ثوانٍ.',
+      'whatsappStatusBenefit':
+          'احفظ صور وفيديوهات حالات واتساب التي شاهدتها بسهولة.',
+      'videoOptimizerBenefit': 'قلّل حجم الملف مع التحكم في جودة الإخراج.',
+      'advancedAudioSwapBenefit': 'اختر بدقة من أين يبدأ الصوت الجديد.',
+      'professionalTrimPreview': 'معاينة القص الاحترافية',
+      'audioStartSelector': 'تحديد بداية الصوت',
+      'advancedAudioSwap': 'تبديل الصوت المتقدم',
+      'localVideoConversion': 'تحويل الفيديو محليًا',
+      'localOptimization': 'تحسين الفيديو محليًا',
       'noAds': 'بدون إعلانات',
       'batchDownloads': 'تحميل الدفعات',
       'audioExtraction': 'استخراج الصوت',
@@ -841,6 +897,10 @@ class AppLocalizations {
       'premiumFeatureSummary':
           'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، واستخراج الصوت، وتحميل الدفعات.',
       'downloadProgress': 'تقدم التحميل',
+      'selectedType': 'النوع المحدد',
+      'requestedFormat': 'الصيغة المطلوبة',
+      'returnedFileType': 'نوع الملف المستلم',
+      'returnedFilename': 'اسم الملف المستلم',
       'openLibrary': 'فتح المكتبة',
       'downloadAnother': 'تحميل رابط آخر',
       'cancel': 'إلغاء',
@@ -850,6 +910,11 @@ class AppLocalizations {
       'savedLocally': 'تم الحفظ محلياً',
       'done': 'تم',
       'searchDownloads': 'البحث في التحميلات',
+      'playbackTip': 'ملاحظة للتشغيل',
+      'playbackTipMessage':
+          'إذا لم يعمل الفيديو على هاتفك، فقد يكون بصيغة لا يدعمها الجهاز. يمكنك تحويله إلى MP4 من خلال المحرر السريع، أو فتحه باستخدام مشغل وسائط مثل VLC.',
+      'openQuickEditor': 'فتح المحرر السريع',
+      'convertToMp4': 'تحويل إلى MP4',
       'noDownloadsYet': 'لا توجد تحميلات بعد',
       'pasteLinkOnHome': 'الصق رابطاً في الشاشة الرئيسية للبدء.',
       'renameFile': 'إعادة تسمية الملف',
@@ -890,6 +955,12 @@ class AppLocalizations {
       'selectedAudio': 'الصوت المختار',
       'audioFormatSupport': 'سيتم دعم MP3 / M4A / WAV لاحقاً',
       'audioStartPosition': 'بداية الصوت داخل الفيديو',
+      'audioStartPoint': 'نقطة بداية الصوت',
+      'audioStartPointHelp':
+          'اختر من أين يبدأ الصوت المحدد. سيتم تشغيله من بداية الفيديو.',
+      'audioStartsAtVideoPoint':
+          'سيبدأ الصوت الجديد من الثانية 0 في الفيديو. إذا كان أقصر من مدة الفيديو، اختر تكراره أو ترك الجزء المتبقي صامتًا.',
+      'audioSectionUsed': 'الجزء المستخدم من الصوت',
       'removeOriginalSound': 'إزالة الصوت الأصلي',
       'keepOriginalSoundSoftly': 'إبقاء الصوت الأصلي منخفض',
       'audioVolume': 'مستوى الصوت',
@@ -1168,6 +1239,29 @@ class AppLocalizations {
       'whatsappAutoDetected': 'تم اكتشاف حالات واتساب تلقائيًا.',
       'guidedPermissionText':
           'استخدم دليل طريقة الاستخدام أعلاه، ثم اربط مجلد .Statuses. ستحتاج إلى تنفيذ هذه الخطوة مرة واحدة فقط.',
+      'connectWhatsappStatuses': 'ربط حالات واتساب',
+      'connectWhatsappSetupExplanation':
+          'يتطلب أندرويد إذنًا لمرة واحدة للوصول إلى حالات واتساب التي شاهدتها. أكمل هذه الخطوات مرة واحدة، وسيحمّل ApexLoad الحالات تلقائيًا بعد ذلك.',
+      'whatsappSetupStep1': 'اضغط تغيير المجلد لفتح منتقي المجلدات في أندرويد.',
+      'whatsappSetupStep2':
+          'في منتقي المجلدات، اضغط قائمة الثلاث نقاط واختر إظهار الملفات المخفية.',
+      'whatsappSetupStep3': 'افتح مجلد .Statuses.',
+      'whatsappSetupStep4': 'اضغط استخدام هذا المجلد، ثم اضغط سماح.',
+      'whatsappSetupStep5': 'بعد ذلك، سيحمّل ApexLoad الحالات تلقائيًا.',
+      'watchInstructions': 'عرض التعليمات',
+      'changeFolder': 'تغيير المجلد',
+      'wrongWhatsappFolder':
+          'لا يبدو أن هذا هو مجلد .Statuses في واتساب. يرجى تفعيل الملفات المخفية واختيار .Statuses.',
+      'wrongWhatsappFolderSelected':
+          'هذا ليس مجلد .Statuses. يرجى الضغط على تغيير المجلد، ثم إظهار الملفات المخفية، ثم اختيار .Statuses.',
+      'setupRequired': 'الإعداد مطلوب',
+      'validatingFolder': 'تم اختيار المجلد، جارٍ التحقق',
+      'wrongFolderSelected': 'تم اختيار مجلد غير صحيح',
+      'connectedNoStatuses': 'تم الربط، لكن لا توجد حالات مشاهدة بعد',
+      'checkingSavedAccess': 'جارٍ التحقق من صلاحية الحفظ',
+      'connecting': 'جارٍ الربط',
+      'scanningStatuses': 'جارٍ فحص الحالات',
+      'foundStatuses': 'تم العثور على {count} حالات',
       'chooseFolderManually': 'اختيار المجلد يدويًا',
       'detectingWhatsapp': 'جارٍ اكتشاف واتساب…',
       'connectedAutomatically': 'تم الاتصال تلقائيًا',

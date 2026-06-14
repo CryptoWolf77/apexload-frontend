@@ -27,6 +27,7 @@ class DownloadItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = AppTone.isLight(context);
+    final l = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -78,14 +79,14 @@ class DownloadItemCard extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          item.platform,
+                          _platformLabel(l, item.platform),
                           style: TextStyle(
                             color: AppTone.textSecondary(context),
                             fontSize: 12,
                           ),
                         ),
                         Text(
-                          item.type.name.toUpperCase(),
+                          _typeLabel(l, item.type),
                           style: TextStyle(
                             color: AppTone.textSecondary(context),
                             fontSize: 12,
@@ -107,7 +108,9 @@ class DownloadItemCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          DateFormat.MMMd().format(item.date),
+                          DateFormat.MMMd(
+                            Localizations.localeOf(context).languageCode,
+                          ).format(item.date),
                           style: TextStyle(
                             color: AppTone.textSecondary(context),
                             fontSize: 12,
@@ -166,7 +169,6 @@ class DownloadItemCard extends StatelessWidget {
                   if (value == 'edit') onEdit?.call();
                 },
                 itemBuilder: (context) {
-                  final l = AppLocalizations.of(context);
                   return [
                     PopupMenuItem(value: 'open', child: Text(l.t('open'))),
                     PopupMenuItem(value: 'share', child: Text(l.t('share'))),
@@ -182,6 +184,23 @@ class DownloadItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _platformLabel(AppLocalizations l, String platform) {
+    final trimmed = platform.trim();
+    if (trimmed == 'Editor') return l.t('editor');
+    if (trimmed == 'Local' || trimmed == 'Local file') return l.t('localFile');
+    if (trimmed == 'WhatsApp Status') return l.t('whatsappStatusSaver');
+    if (trimmed == 'ApexLoad') return trimmed;
+    return l.platformName(trimmed);
+  }
+
+  String _typeLabel(AppLocalizations l, DownloadType type) {
+    return switch (type) {
+      DownloadType.video => l.t('video'),
+      DownloadType.audio => l.t('audio'),
+      DownloadType.image => l.t('images'),
+    };
   }
 }
 
