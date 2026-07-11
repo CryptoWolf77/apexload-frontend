@@ -1,4 +1,5 @@
 import 'package:apexload/core/constants/app_constants.dart';
+import 'package:apexload/core/constants/app_file_type_groups.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
@@ -7,7 +8,8 @@ import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/local_thumbnail_view.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:file_selector/file_selector.dart' show openFile;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -118,12 +120,9 @@ class _SourcePickerCard extends ConsumerWidget {
   Future<void> _pickLocalVideo(BuildContext context) async {
     final l = AppLocalizations.of(context);
     try {
-      const videoGroup = XTypeGroup(
-        label: 'Video',
-        extensions: ['mp4', 'mov', 'm4v', 'webm'],
-        mimeTypes: ['video/mp4', 'video/quicktime', 'video/webm'],
+      final file = await openFile(
+        acceptedTypeGroups: [AppFileTypeGroups.video],
       );
-      final file = await openFile(acceptedTypeGroups: [videoGroup]);
       final path = file?.path;
       if (file == null || path == null || path.trim().isEmpty) return;
       final sizeLabel = _formatBytes(await file.length());
@@ -143,7 +142,12 @@ class _SourcePickerCard extends ConsumerWidget {
           quality: l.t('localFile'),
         ),
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      if (isFilePickerCancellation(error)) return;
+      if (kDebugMode) {
+        debugPrint('Quick Editor local video picker failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
       if (!context.mounted) return;
       AppNotification.error(context, message: l.t('somethingWentWrong'));
     }
