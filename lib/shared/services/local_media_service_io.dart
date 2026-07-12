@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:apexload/core/network/api_config.dart';
@@ -29,13 +30,38 @@ class LocalMediaSaveResult {
   final String galleryUri;
 }
 
-class LocalMediaService {
-  LocalMediaService({Dio? dio}) : _dio = dio ?? Dio();
+class CacheClearResult {
+  const CacheClearResult({
+    required this.bytesCleared,
+    required this.filesCleared,
+  });
 
+  final int bytesCleared;
+  final int filesCleared;
+}
+
+class LocalMediaService {
+  LocalMediaService({Dio? dio}) : _dio = dio ?? _sharedDio;
+
+  static final Dio _sharedDio = Dio();
+  static Future<void>? _folderSetupFuture;
+  static Future<Directory>? _rootDirectoryFuture;
   final Dio _dio;
   static const _androidChannel = MethodChannel('apexload/android');
 
   Future<void> ensureFolders() async {
+    final setup = _folderSetupFuture ??= _createFolders();
+    try {
+      await setup;
+    } on Object {
+      if (identical(_folderSetupFuture, setup)) {
+        _folderSetupFuture = null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _createFolders() async {
     for (final directory in [
       await _rootDirectory(),
       await videosDirectory(),
@@ -58,23 +84,40 @@ class LocalMediaService {
     required String fileName,
     required DownloadType type,
     void Function(double progress)? onProgress,
+    VoidCallback? onIndeterminateProgress,
+    bool publishToGallery = true,
   }) async {
+    final totalWatch = Stopwatch()..start();
+    _logSavePerf('Start save');
     await ensureFolders();
     final folder = await _folderFor(type);
     final safeName = _safeFileName(fileName, fallback: _defaultFileName(type));
     final file = await _uniqueFile(folder, safeName);
+    _logSavePerf('downloadUrl: $url');
+    _logSavePerf('targetPath: ${file.path}');
     _logIosSave('Starting save');
     _logIosSave('Platform: ${Platform.operatingSystem}');
     _logIosSave('Source: $url');
     _logIosSave('Expected filename: $safeName');
     _logIosSave('Target: ${file.path}');
     _logIosSave('Directory exists: ${folder.existsSync()}');
+    var loggedContentLength = false;
+    final downloadWatch = Stopwatch()..start();
     try {
       await _dio.download(
         url,
         file.path,
+        deleteOnError: true,
+        options: Options(responseType: ResponseType.stream),
         onReceiveProgress: (received, total) {
-          if (total <= 0) return;
+          if (!loggedContentLength) {
+            loggedContentLength = true;
+            _logSavePerf('contentLength: ${total > 0 ? total : 'unknown'}');
+          }
+          if (total <= 0) {
+            onIndeterminateProgress?.call();
+            return;
+          }
           onProgress?.call((received / total).clamp(0, 1));
         },
       );
@@ -88,6 +131,11 @@ class LocalMediaService {
       }
       rethrow;
     }
+    downloadWatch.stop();
+    _logSavePerf(
+      'stream download completed in: ${downloadWatch.elapsedMilliseconds} ms',
+    );
+    final verifyWatch = Stopwatch()..start();
     final exists = file.existsSync();
     final size = exists ? await file.length() : 0;
     _logIosSave('File exists: $exists');
@@ -96,10 +144,29 @@ class LocalMediaService {
       _logIosSave('Failed: saved file missing or empty');
       throw StateError('Downloaded file could not be saved.');
     }
-    final galleryUri = await publishToGallery(
-      localFilePath: file.path,
-      fileName: file.uri.pathSegments.last,
-      type: type,
+    verifyWatch.stop();
+    _logSavePerf(
+      'file verification completed in: ${verifyWatch.elapsedMilliseconds} ms',
+    );
+    if (publishToGallery) {
+      final galleryQueueWatch = Stopwatch()..start();
+      unawaited(
+        _publishToGalleryAfterSave(
+          localFilePath: file.path,
+          fileName: file.uri.pathSegments.last,
+          type: type,
+        ),
+      );
+      galleryQueueWatch.stop();
+      _logSavePerf(
+        'gallery scan queued in: ${galleryQueueWatch.elapsedMilliseconds} ms',
+      );
+    } else {
+      _logSavePerf('gallery publishing skipped by user setting');
+    }
+    totalWatch.stop();
+    _logSavePerf(
+      'total save stage completed in: ${totalWatch.elapsedMilliseconds} ms',
     );
     _logIosSave('Completed');
     return LocalMediaSaveResult(
@@ -107,7 +174,26 @@ class LocalMediaService {
       thumbnailPath: '',
       fileName: file.uri.pathSegments.last,
       sizeLabel: _formatBytes(size),
-      galleryUri: galleryUri ?? '',
+      galleryUri: '',
+    );
+  }
+
+  Future<void> _publishToGalleryAfterSave({
+    required String localFilePath,
+    required String fileName,
+    required DownloadType type,
+  }) async {
+    final watch = Stopwatch()..start();
+    final uri = await publishToGallery(
+      localFilePath: localFilePath,
+      fileName: fileName,
+      type: type,
+    );
+    watch.stop();
+    _logSavePerf(
+      uri == null
+          ? 'gallery scan finished without uri in: ${watch.elapsedMilliseconds} ms'
+          : 'gallery scan finished in: ${watch.elapsedMilliseconds} ms',
     );
   }
 
@@ -266,6 +352,51 @@ class LocalMediaService {
     }
   }
 
+  Future<CacheClearResult> clearSafeCache() async {
+    await ensureFolders();
+    var bytesCleared = 0;
+    var filesCleared = 0;
+
+    final thumbnailResult = await _deleteDirectoryContents(
+      await thumbnailsDirectory(),
+    );
+    bytesCleared += thumbnailResult.bytesCleared;
+    filesCleared += thumbnailResult.filesCleared;
+
+    final temp = await getTemporaryDirectory();
+    if (temp.existsSync()) {
+      await for (final entity in temp.list(followLinks: false)) {
+        final name = entity.uri.pathSegments.isEmpty
+            ? ''
+            : entity.uri.pathSegments.last;
+        if (!name.startsWith('apexload_audio_swap_preview_') &&
+            !name.startsWith('apexload_gif_preview_')) {
+          continue;
+        }
+        final result = await _deleteCacheEntity(entity);
+        bytesCleared += result.bytesCleared;
+        filesCleared += result.filesCleared;
+      }
+    }
+
+    return CacheClearResult(
+      bytesCleared: bytesCleared,
+      filesCleared: filesCleared,
+    );
+  }
+
+  Future<String?> visibleDownloadRootPath() async {
+    if (!Platform.isAndroid) return null;
+    return (await _rootDirectory()).path;
+  }
+
+  Future<bool> openDownloadsFolder() async {
+    if (!Platform.isAndroid) return false;
+    final root = await _rootDirectory();
+    final result = await OpenFilex.open(root.path);
+    return result.type == ResultType.done;
+  }
+
   Future<List<DownloadItemModel>> discoverExistingDownloads({
     List<DownloadItemModel> existing = const [],
   }) async {
@@ -303,11 +434,6 @@ class LocalMediaService {
         final fileName = entity.uri.pathSegments.last;
         final type = _typeForFileName(fileName) ?? entry.$2;
         final stat = await entity.stat();
-        final thumbnail = await generateThumbnail(
-          localFilePath: path,
-          fileName: fileName,
-          type: type,
-        );
         discovered.add(
           DownloadItemModel(
             id: _libraryIdForPath(path),
@@ -319,7 +445,7 @@ class LocalMediaService {
             thumbnailUrl: '',
             fileName: fileName,
             localFilePath: path,
-            thumbnailPath: thumbnail ?? '',
+            thumbnailPath: '',
             quality: entry.$4 ? 'Edited' : '',
             isEdited: entry.$4,
           ),
@@ -406,12 +532,51 @@ class LocalMediaService {
     };
   }
 
-  Future<Directory> _rootDirectory() async {
+  Future<Directory> _rootDirectory() {
+    return _rootDirectoryFuture ??= _resolveRootDirectory();
+  }
+
+  Future<Directory> _resolveRootDirectory() async {
     final base = Platform.isAndroid
         ? (await getExternalStorageDirectory() ??
               await getApplicationDocumentsDirectory())
         : await getApplicationDocumentsDirectory();
     return Directory('${base.path}/ApexLoad');
+  }
+
+  Future<CacheClearResult> _deleteDirectoryContents(Directory directory) async {
+    if (!directory.existsSync()) {
+      return const CacheClearResult(bytesCleared: 0, filesCleared: 0);
+    }
+    var bytes = 0;
+    var files = 0;
+    await for (final entity in directory.list(followLinks: false)) {
+      final result = await _deleteCacheEntity(entity);
+      bytes += result.bytesCleared;
+      files += result.filesCleared;
+    }
+    return CacheClearResult(bytesCleared: bytes, filesCleared: files);
+  }
+
+  Future<CacheClearResult> _deleteCacheEntity(FileSystemEntity entity) async {
+    var bytes = 0;
+    var files = 0;
+    if (entity is File) {
+      bytes = await entity.length();
+      files = 1;
+    } else if (entity is Directory) {
+      await for (final child in entity.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (child is File) {
+          bytes += await child.length();
+          files++;
+        }
+      }
+    }
+    await entity.delete(recursive: true);
+    return CacheClearResult(bytesCleared: bytes, filesCleared: files);
   }
 
   Future<File> _uniqueFile(Directory directory, String fileName) async {
@@ -504,6 +669,11 @@ class LocalMediaService {
   void _logIosSave(String message) {
     if (!Platform.isIOS) return;
     debugPrint('[ApexLoad iOS Save] $message');
+  }
+
+  void _logSavePerf(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ApexLoad Save Perf] $message');
   }
 
   String? _mimeType(DownloadItemModel item) {

@@ -57,19 +57,16 @@ void main() {
     },
   );
 
-  test(
-    'ApiAnalyzeService falls back when backend response is unusable',
-    () async {
-      final service = ApiAnalyzeService(
-        client: _FakeApiClient(postData: {'success': false}),
-      );
+  test('ApiAnalyzeService reports unusable backend responses', () async {
+    final service = ApiAnalyzeService(
+      client: _FakeApiClient(postData: {'success': false}),
+    );
 
-      final result = await service.analyze('https://www.instagram.com/p/demo');
-
-      expect(result.usedMockFallback, isTrue);
-      expect(result.media.mediaType, MediaType.image);
-    },
-  );
+    expect(
+      () => service.analyze('https://www.instagram.com/p/demo'),
+      throwsA(isA<AnalyzeException>()),
+    );
+  });
 
   test(
     'ApiDownloadService sends backend skeleton payload and reads status',
@@ -111,14 +108,6 @@ void main() {
             isPremium: true,
             sizeLabel: '42 MB',
           ),
-          DownloadFormatModel(
-            id: 'mp3_audio',
-            label: 'MP3 Audio',
-            extension: 'mp3',
-            type: DownloadType.audio,
-            isPremium: true,
-            sizeLabel: '4 MB',
-          ),
         ],
         premium: true,
         noWatermark: true,
@@ -140,7 +129,6 @@ void main() {
       expect(client.lastPostData?['noWatermark'], true);
       expect(client.lastPostData?['selectedItems'], [
         {'formatId': '1080p', 'type': 'video'},
-        {'formatId': 'mp3', 'type': 'audio'},
       ]);
       expect(job.jobId, 'job_demo_test');
       expect(status.progress, 100);

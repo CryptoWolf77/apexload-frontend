@@ -37,6 +37,8 @@ class _DownloadProgressScreenState
   var _saved = false;
   var _failed = false;
   var _preparing = false;
+  var _savingIndeterminate = false;
+  var _polling = false;
   DownloadItemModel? _completedItem;
   String? _localSavedPath;
   List<ApiDownloadFile> _latestFiles = const [];
@@ -60,7 +62,8 @@ class _DownloadProgressScreenState
   }
 
   Future<void> _pollStatus() async {
-    if (!mounted || _saved) return;
+    if (!mounted || _saved || _polling) return;
+    _polling = true;
     try {
       final status = await ref
           .read(apiDownloadServiceProvider)
@@ -98,6 +101,8 @@ class _DownloadProgressScreenState
       if (!mounted) return;
       _timer?.cancel();
       _markFailed(AppLocalizations.of(context).t('connectionProblem'));
+    } finally {
+      _polling = false;
     }
   }
 
@@ -108,11 +113,14 @@ class _DownloadProgressScreenState
       return;
     }
 
+    final saveStageWatch = Stopwatch()..start();
+    _logSavePerf('Start save');
     final apiService = ref.read(apiDownloadServiceProvider);
     final localMedia = ref.read(localMediaServiceProvider);
     setState(() {
       _preparing = true;
-      _progress = 0.96;
+      _savingIndeterminate = false;
+      _progress = 0.95;
       _status = 'preparing';
       _statusMessage = l.t('preparingYourFileDescription');
     });
@@ -121,7 +129,6 @@ class _DownloadProgressScreenState
     final savedNames = <String, String>{};
     final savedSizes = <String, String>{};
     final galleryUris = <String, String>{};
-    var galleryPublishFailed = false;
     var lastSaveProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
     for (var i = 0; i < status.files.length; i++) {
       final file = status.files[i];
@@ -134,12 +141,13 @@ class _DownloadProgressScreenState
       try {
         if (mounted) {
           setState(() {
-            _progress = (0.96 + (i / status.files.length) * 0.035).clamp(
+            _progress = (0.95 + (i / status.files.length) * 0.045).clamp(
               0,
               0.995,
             );
             _status = 'saving';
             _statusMessage = l.t('savingFileToDevice');
+            _savingIndeterminate = true;
           });
         }
         final save = await localMedia.saveRemoteFile(
@@ -148,6 +156,20 @@ class _DownloadProgressScreenState
               ? _fileNameFor(format)
               : file.fileName,
           type: format.type,
+          publishToGallery: widget.args.saveToGallery,
+          onIndeterminateProgress: () {
+            final now = DateTime.now();
+            if (!mounted ||
+                now.difference(lastSaveProgressUpdate).inMilliseconds < 800) {
+              return;
+            }
+            lastSaveProgressUpdate = now;
+            setState(() {
+              _status = 'saving';
+              _savingIndeterminate = true;
+              _statusMessage = l.t('savingFileToDevice');
+            });
+          },
           onProgress: (saveProgress) {
             final now = DateTime.now();
             if (!mounted ||
@@ -158,8 +180,9 @@ class _DownloadProgressScreenState
             lastSaveProgressUpdate = now;
             setState(() {
               final totalProgress = (i + saveProgress) / status.files.length;
-              _progress = (0.96 + totalProgress * 0.035).clamp(0.96, 0.995);
+              _progress = (0.95 + totalProgress * 0.049).clamp(0.95, 0.999);
               _status = 'saving';
+              _savingIndeterminate = false;
               _statusMessage =
                   '${l.t('savingFileToDevice')} ${(saveProgress * 100).round().clamp(0, 100)}%';
             });
@@ -173,8 +196,6 @@ class _DownloadProgressScreenState
         }
         if (save.galleryUri.isNotEmpty) {
           galleryUris[file.fileId] = save.galleryUri;
-        } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-          galleryPublishFailed = true;
         }
       } on Object catch (error) {
         if (kDebugMode) {
@@ -219,15 +240,20 @@ class _DownloadProgressScreenState
       _markFailed(l.t('downloadSaveFailed'));
       return;
     }
+    final historyWatch = Stopwatch()..start();
+    final library = ref.read(libraryControllerProvider.notifier);
     for (final item in items.reversed) {
-      ref.read(libraryControllerProvider.notifier).add(item);
+      await library.addAndSave(item);
     }
-    unawaited(
-      _generateThumbnailsInBackground(
-        items,
-        localMedia,
-        ref.read(libraryControllerProvider.notifier),
-      ),
+    historyWatch.stop();
+    _logSavePerf(
+      'history save completed in: ${historyWatch.elapsedMilliseconds} ms',
+    );
+    final thumbnailQueueWatch = Stopwatch()..start();
+    unawaited(_generateThumbnailsInBackground(items, localMedia, library));
+    thumbnailQueueWatch.stop();
+    _logSavePerf(
+      'thumbnail queued in: ${thumbnailQueueWatch.elapsedMilliseconds} ms',
     );
     final showAd = await ref
         .read(subscriptionControllerProvider.notifier)
@@ -241,13 +267,15 @@ class _DownloadProgressScreenState
           : status.message;
       _saved = true;
       _preparing = false;
+      _savingIndeterminate = false;
       _completedItem = items.first;
       _localSavedPath = savedFiles[status.files.first.fileId];
     });
+    saveStageWatch.stop();
+    _logSavePerf(
+      'total save stage completed in: ${saveStageWatch.elapsedMilliseconds} ms',
+    );
     AppNotification.success(context, message: l.t('downloadSavedToLibrary'));
-    if (galleryPublishFailed) {
-      AppNotification.warning(context, message: l.t('galleryPublishFailed'));
-    }
     if (showAd) {
       await showMockAdDialog(context);
     }
@@ -302,6 +330,7 @@ class _DownloadProgressScreenState
       _failed = true;
       _saved = true;
       _preparing = false;
+      _savingIndeterminate = false;
       _progress = _progress.clamp(0, 0.95);
       _status = l.t('downloadFailed');
       _statusMessage = message.trim().isEmpty ? l.t('downloadFailed') : message;
@@ -322,6 +351,11 @@ class _DownloadProgressScreenState
   Widget build(BuildContext context) {
     final completed = _saved && !_failed;
     final failed = _failed;
+    final progressIsIndeterminate =
+        _status.toLowerCase() == 'saving' &&
+        _savingIndeterminate &&
+        !completed &&
+        !failed;
     final percent = failed
         ? (_progress * 100).round().clamp(0, 99)
         : (_progress * 100).round();
@@ -355,7 +389,7 @@ class _DownloadProgressScreenState
                         fit: StackFit.expand,
                         children: [
                           CircularProgressIndicator(
-                            value: _progress,
+                            value: progressIsIndeterminate ? null : _progress,
                             strokeWidth: 14,
                             backgroundColor: AppTone.cardSecondary(context),
                             color: failed
@@ -366,7 +400,11 @@ class _DownloadProgressScreenState
                           ),
                           Center(
                             child: Text(
-                              completed ? '100%' : '$percent%',
+                              progressIsIndeterminate
+                                  ? '...'
+                                  : completed
+                                  ? '100%'
+                                  : '$percent%',
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                           ),
@@ -438,7 +476,9 @@ class _DownloadProgressScreenState
                     ],
                     const SizedBox(height: 24),
                     if (_preparing) ...[
-                      LinearProgressIndicator(value: _progress),
+                      LinearProgressIndicator(
+                        value: progressIsIndeterminate ? null : _progress,
+                      ),
                     ] else if (completed && !failed) ...[
                       PrimaryGradientButton(
                         label: l.t('openLibrary'),
@@ -608,10 +648,15 @@ class _DownloadProgressScreenState
         continue;
       }
       try {
+        final thumbnailWatch = Stopwatch()..start();
         final thumbnail = await localMedia.generateThumbnail(
           localFilePath: item.localFilePath,
           fileName: item.fileName,
           type: item.type,
+        );
+        thumbnailWatch.stop();
+        _logSavePerf(
+          'thumbnail completed in: ${thumbnailWatch.elapsedMilliseconds} ms',
         );
         if (thumbnail == null || thumbnail.isEmpty) continue;
         library.add(item.copyWith(thumbnailPath: thumbnail));
@@ -665,6 +710,11 @@ class _DownloadProgressScreenState
       return fileName.substring(dot + 1).toLowerCase();
     }
     return fallback;
+  }
+
+  void _logSavePerf(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ApexLoad Save Perf] $message');
   }
 }
 

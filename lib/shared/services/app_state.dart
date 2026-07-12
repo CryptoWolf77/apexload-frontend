@@ -37,6 +37,10 @@ final localeControllerProvider = NotifierProvider<LocaleController, Locale?>(
 );
 final themeModeControllerProvider =
     NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final autoSaveToGalleryControllerProvider =
+    NotifierProvider<AutoSaveToGalleryController, bool>(
+      AutoSaveToGalleryController.new,
+    );
 final subscriptionControllerProvider =
     NotifierProvider<SubscriptionController, UserSubscriptionModel>(
       SubscriptionController.new,
@@ -60,6 +64,31 @@ class ThemeModeController extends Notifier<ThemeMode> {
   ThemeMode build() => ThemeMode.dark;
 
   void setMode(ThemeMode mode) => state = mode;
+}
+
+class AutoSaveToGalleryController extends Notifier<bool> {
+  static const _preferenceKey = 'auto_save_to_gallery';
+  Future<void>? _loadFuture;
+
+  @override
+  bool build() {
+    _loadFuture = _load();
+    return true;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    final load = _loadFuture;
+    if (load != null) await load;
+    state = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_preferenceKey, enabled);
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!ref.mounted) return;
+    state = prefs.getBool(_preferenceKey) ?? true;
+  }
 }
 
 class SubscriptionController extends Notifier<UserSubscriptionModel> {
@@ -191,6 +220,15 @@ class LibraryController extends Notifier<List<DownloadItemModel>> {
     unawaited(_save());
   }
 
+  Future<void> addAndSave(DownloadItemModel item) async {
+    final cleaned = _clean(item);
+    state = [
+      cleaned,
+      ...state.where((existing) => !_sameLibraryIdentity(existing, cleaned)),
+    ];
+    await _save();
+  }
+
   void delete(String id) {
     state = state.where((item) => item.id != id).toList();
     unawaited(_save());
@@ -200,6 +238,17 @@ class LibraryController extends Notifier<List<DownloadItemModel>> {
     state = [
       for (final item in state)
         if (item.id == id) item.copyWith(fileName: fileName) else item,
+    ];
+    unawaited(_save());
+  }
+
+  void clearCachedThumbnails() {
+    state = [
+      for (final item in state)
+        if (item.thumbnailPath.isNotEmpty)
+          item.copyWith(thumbnailPath: '')
+        else
+          item,
     ];
     unawaited(_save());
   }

@@ -20,6 +20,16 @@ class LocalMediaSaveResult {
   final String galleryUri;
 }
 
+class CacheClearResult {
+  const CacheClearResult({
+    required this.bytesCleared,
+    required this.filesCleared,
+  });
+
+  final int bytesCleared;
+  final int filesCleared;
+}
+
 class LocalMediaService {
   Future<void> ensureFolders() async {}
 
@@ -28,6 +38,8 @@ class LocalMediaService {
     required String fileName,
     required DownloadType type,
     void Function(double progress)? onProgress,
+    void Function()? onIndeterminateProgress,
+    bool publishToGallery = true,
   }) async {
     onProgress?.call(1);
     return LocalMediaSaveResult(
@@ -88,6 +100,14 @@ class LocalMediaService {
   }
 
   Future<void> deleteItemFiles(DownloadItemModel item) async {}
+
+  Future<CacheClearResult> clearSafeCache() async {
+    return const CacheClearResult(bytesCleared: 0, filesCleared: 0);
+  }
+
+  Future<String?> visibleDownloadRootPath() async => null;
+
+  Future<bool> openDownloadsFolder() async => false;
 
   Future<List<DownloadItemModel>> discoverExistingDownloads({
     List<DownloadItemModel> existing = const [],

@@ -247,13 +247,30 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
           ),
           const SizedBox(height: 14),
           Center(
-            child: Text(
-              l.t('termsPrivacyPlaceholder'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTone.textSecondary(context),
-                fontSize: 12,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  l.t('premiumLegalNotice'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    fontSize: 12,
+                  ),
+                ),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () => context.push('/terms'),
+                      child: Text(l.t('termsOfUse')),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/privacy'),
+                      child: Text(l.t('privacyPolicy')),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

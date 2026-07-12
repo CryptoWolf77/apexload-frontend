@@ -1,10 +1,12 @@
 import 'package:apexload/core/localization/app_localizations.dart';
+import 'package:apexload/core/constants/legal_documents.dart';
 import 'package:apexload/features/account/account_screen.dart';
 import 'package:apexload/features/audio_extraction/audio_extraction_screen.dart';
 import 'package:apexload/features/download_options/download_options_screen.dart';
 import 'package:apexload/features/download_progress/download_progress_screen.dart';
 import 'package:apexload/features/home/home_screen.dart';
 import 'package:apexload/features/library/library_screen.dart';
+import 'package:apexload/features/legal/legal_document_screen.dart';
 import 'package:apexload/features/onboarding/onboarding_screen.dart';
 import 'package:apexload/features/premium/premium_screen.dart';
 import 'package:apexload/features/quick_editor/quick_editor_landing_screen.dart';
@@ -86,6 +88,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        builder: (context, state) =>
+            const LegalDocumentScreen(document: ApexLoadLegalDocuments.privacy),
+      ),
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) =>
+            const LegalDocumentScreen(document: ApexLoadLegalDocuments.terms),
       ),
       GoRoute(
         path: '/account',

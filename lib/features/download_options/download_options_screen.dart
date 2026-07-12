@@ -12,6 +12,7 @@ import 'package:apexload/shared/widgets/legal_notice_card.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/premium_lock_sheet.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +30,6 @@ class DownloadOptionsScreen extends ConsumerStatefulWidget {
 class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   late final TextEditingController _fileController;
   DownloadFormatModel? _selectedFormat;
-  var _saveToGallery = true;
   var _creatingDownloadJob = false;
 
   bool get _isVideo => widget.media.mediaType == MediaType.video;
@@ -152,7 +152,10 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
         fileName: _fileController.text.trim().isEmpty
             ? _defaultFileName
             : _fileController.text.trim(),
-        saveToGallery: _saveToGallery,
+        saveToGallery:
+            !kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.android &&
+            ref.read(autoSaveToGalleryControllerProvider),
         apiJobId: apiJobId,
       ),
     );
@@ -224,6 +227,9 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   @override
   Widget build(BuildContext context) {
     final subscription = ref.watch(subscriptionControllerProvider);
+    final autoSaveToGallery = ref.watch(autoSaveToGalleryControllerProvider);
+    final galleryPublishingSupported =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final premiumActive = subscription.isPremium;
     final l = AppLocalizations.of(context);
     final remainingText = l
@@ -361,9 +367,18 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
             const SizedBox(height: 10),
           ],
           SwitchListTile(
-            value: _saveToGallery,
-            onChanged: (value) => setState(() => _saveToGallery = value),
+            value: galleryPublishingSupported && autoSaveToGallery,
+            onChanged: galleryPublishingSupported
+                ? (value) => ref
+                      .read(autoSaveToGalleryControllerProvider.notifier)
+                      .setEnabled(value)
+                : null,
             title: Text(l.t('saveToGallery')),
+            subtitle: Text(
+              galleryPublishingSupported
+                  ? l.t('autoSaveAndroidDescription')
+                  : l.t('autoSaveIosDescription'),
+            ),
             contentPadding: EdgeInsets.zero,
           ),
           TextField(

@@ -81,4 +81,24 @@ void main() {
       expect(await controller.recordSuccessfulDownload(), isFalse);
     }
   });
+
+  test('auto-save to gallery preference is persisted', () async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    final controller = container.read(
+      autoSaveToGalleryControllerProvider.notifier,
+    );
+
+    await controller.setEnabled(false);
+    expect(container.read(autoSaveToGalleryControllerProvider), isFalse);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('auto_save_to_gallery'), isFalse);
+    container.dispose();
+
+    final restored = ProviderContainer();
+    addTearDown(restored.dispose);
+    restored.read(autoSaveToGalleryControllerProvider);
+    await pumpEventQueue();
+    expect(restored.read(autoSaveToGalleryControllerProvider), isFalse);
+  });
 }

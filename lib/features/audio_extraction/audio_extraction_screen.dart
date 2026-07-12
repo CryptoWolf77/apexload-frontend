@@ -8,6 +8,7 @@ import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/premium_locked_card.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,7 +76,10 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
           ),
           formats: [format],
           fileName: 'apexload_audio.${format.extension}',
-          saveToGallery: true,
+          saveToGallery:
+              !kIsWeb &&
+              defaultTargetPlatform == TargetPlatform.android &&
+              ref.read(autoSaveToGalleryControllerProvider),
           apiJobId: job.jobId,
         ),
       );

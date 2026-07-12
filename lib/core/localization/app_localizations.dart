@@ -253,8 +253,8 @@ class AppLocalizations {
       'bestValue': 'Best Value',
       'premiumActivatedDemo': 'Premium activated for this demo.',
       'premiumActiveButton': 'Premium Active',
-      'termsPrivacyPlaceholder':
-          'Terms and Privacy are placeholders for this frontend version.',
+      'premiumLegalNotice':
+          'By continuing, you agree to the Terms of Use and Privacy Policy.',
       'downloadOptions': 'Download options',
       'chooseFormat': 'Choose format',
       'customFilename': 'Custom filename',
@@ -449,16 +449,103 @@ class AppLocalizations {
       'dark': 'Dark',
       'light': 'Light',
       'autoSaveToGallery': 'Auto-save to gallery',
+      'autoSaveAndroidDescription':
+          'Publish supported downloads to your device gallery automatically.',
+      'autoSaveIosDescription':
+          'Downloads are saved in Files > On My iPhone > ApexLoad. Automatic Photos export is not enabled.',
       'downloadLocation': 'Download location',
       'deviceDownloadsFolder': 'Device downloads folder',
+      'downloadLocationAndroidSubtitle': 'View your ApexLoad media folders',
+      'downloadLocationIosSubtitle': 'Files > On My iPhone > ApexLoad',
+      'downloadLocationAndroidDescription':
+          'ApexLoad keeps its files in dedicated folders in app storage. Supported media can also be published to your gallery when Auto-save is enabled.',
+      'downloadLocationIosDescription':
+          'Find your downloads in the Files app under On My iPhone > ApexLoad. ApexLoad does not display or expose the private iOS sandbox path.',
+      'videosFolder': 'Videos',
+      'audioFolder': 'Audio',
+      'imagesFolder': 'Images',
+      'editedFolder': 'Edited files',
+      'gifsFolder': 'GIFs',
+      'thumbnailsFolder': 'Thumbnails',
+      'openFolder': 'Open folder',
+      'folderOpenUnavailable':
+          'Your file manager could not open this folder. You can still access saved media from Downloads.',
       'clearCache': 'Clear cache',
-      'demoCacheOnly': 'Demo cache only',
+      'clearCacheSubtitle': 'Remove thumbnails and temporary editor previews',
+      'clearCacheConfirmTitle': 'Clear temporary files?',
+      'clearCacheConfirmMessage':
+          'This removes generated thumbnails and temporary editor previews only. Your downloads, edited files, history, settings, and Premium status will stay safe.',
+      'cacheClearedSuccess': 'Cleared {size} of temporary data.',
+      'cacheClearFailed': 'Could not clear temporary files. Please try again.',
       'privacyPolicy': 'Privacy Policy',
+      'privacyPolicySubtitle': 'How ApexLoad handles data and permissions',
       'termsOfUse': 'Terms of Use',
+      'termsOfUseSubtitle': 'Rules for responsible use of ApexLoad',
       'contactSupport': 'Contact Support',
       'rateApp': 'Rate App',
-      'placeholder': 'Placeholder',
-      'comingSoon': 'Coming soon',
+      'rateAppSubtitle': 'Share feedback on the app store',
+      'ratingAvailableAfterRelease':
+          'App rating will be available after ApexLoad is released on the store.',
+      'couldNotOpenStore': 'Could not open the app store. Please try again.',
+      'supportEmailBody':
+          'Please describe the issue below:\n\n\nApp version: {version}\nPlatform: {platform}\nOS version: {osVersion}',
+      'emailAppUnavailableTitle': 'Email app unavailable',
+      'emailAppUnavailableMessage':
+          'No email app could be opened. You can copy our support address instead.',
+      'copyEmail': 'Copy email',
+      'emailCopied': 'Support email copied.',
+      'legalLastUpdated': 'Last updated: July 2026',
+      'privacyIntro':
+          'This policy explains how the current ApexLoad app handles information when you analyze links, download media, use local editing tools, or contact support.',
+      'privacyDataTitle': 'Information you provide',
+      'privacyDataBody':
+          'Links you submit, selected download formats, and related download options are sent to the ApexLoad backend so the request can be analyzed and processed. If you contact support, your email app prepares a message containing the app version, platform, OS version, and whatever details you choose to add.',
+      'privacyProcessingTitle': 'Download and server processing',
+      'privacyProcessingBody':
+          'The ApexLoad backend may contact the public media platform or its delivery network to analyze and prepare requested media. Downloaded output is then transferred to your device. Do not submit private, restricted, or sensitive links that you are not authorized to access.',
+      'privacyLocalTitle': 'Data stored on your device',
+      'privacyLocalBody':
+          'ApexLoad stores preferences, language and theme choices, local Premium state, daily usage counters, download history, saved file paths, and generated thumbnails on your device. Quick Editor processing is performed locally on the device. Clearing cache removes only temporary previews and generated thumbnails; deleting app data through the operating system may remove local records and app-managed files.',
+      'privacyPermissionsTitle': 'Permissions',
+      'privacyPermissionsBody':
+          'Network access is used for analysis and downloads. Android may use media and folder access to publish downloads or read a WhatsApp .Statuses folder you explicitly choose. iOS uses the system file picker for files you select and exposes app documents through the Files app. ApexLoad does not request broad all-files access.',
+      'privacyThirdPartiesTitle': 'Third-party services',
+      'privacyThirdPartiesBody':
+          'ApexLoad interacts with the social or media platform named in the submitted link, its content delivery providers, the ApexLoad API, and operating-system sharing, storage, and email services. Those third parties operate under their own terms and privacy practices. The current app build does not include a live advertising SDK, payment SDK, or account sign-in system.',
+      'privacyAccountsTitle': 'Accounts and subscriptions',
+      'privacyAccountsBody':
+          'The current app does not require an ApexLoad account. Premium and subscription state used by this build is stored locally. Store-managed purchases may be introduced in a future release and would then also be governed by the relevant app store policies.',
+      'privacyChoicesTitle': 'Your choices',
+      'privacyChoicesBody':
+          'You can disable automatic gallery publishing on supported Android devices, remove individual downloads, clear temporary cache, revoke folder access in system settings, or clear the app data. Disabling a setting does not delete files already saved.',
+      'legalContactTitle': 'Contact',
+      'legalContactBody':
+          'Questions about privacy, these terms, or ApexLoad can be sent to support@apexload.org.',
+      'termsIntro':
+          'By using ApexLoad, you agree to use it lawfully, responsibly, and only for content you own, are permitted to use, or are otherwise allowed to download.',
+      'termsUseTitle': 'Responsible use',
+      'termsUseBody':
+          'You are responsible for every link and file you process. Follow applicable laws, platform rules, privacy rights, and any license or permission attached to the content.',
+      'termsCopyrightTitle': 'Copyright and ownership',
+      'termsCopyrightBody':
+          'ApexLoad does not grant ownership of third-party content. Keep attribution and copyright notices where required, and obtain permission before copying, editing, publishing, or distributing content owned by someone else.',
+      'termsProhibitedTitle': 'Prohibited misuse',
+      'termsProhibitedBody':
+          'Do not use ApexLoad to access private, login-only, paywalled, restricted, or DRM-protected content; bypass security controls; infringe copyright; harass others; distribute unlawful material; or overload the service through automated abuse.',
+      'termsPlatformsTitle': 'Third-party platforms and availability',
+      'termsPlatformsBody':
+          'Supported platforms can change or block access without notice. A format, quality, thumbnail, audio track, or link may be unavailable. ApexLoad is not affiliated with or endorsed by the listed social platforms unless explicitly stated.',
+      'termsSubscriptionsTitle': 'Premium features',
+      'termsSubscriptionsBody':
+          'Premium features, limits, prices, and availability may change. The current build uses local subscription state unless a store purchase flow is explicitly offered. Any future store purchase will also be subject to the store terms shown at checkout.',
+      'termsLimitationsTitle': 'Service limitations and liability',
+      'termsLimitationsBody':
+          'ApexLoad is provided on an as-available basis. Downloads and edits may fail because of network conditions, device storage, unsupported media, platform changes, or third-party restrictions. To the extent permitted by law, ApexLoad is not responsible for unauthorized use, lost data, unavailable third-party content, or indirect damages. Keep your own backups of important files.',
+      'editingCompatibilityTitle': 'For the best editing compatibility',
+      'editingCompatibilityMessage':
+          'This video is not in MP4 format. For smoother editing on iPhone, we recommend converting it to MP4 first. You can also continue editing the original file.',
+      'continueEditing': 'Continue editing',
+      'goToConvertMp4': 'Go to Convert to MP4',
       'choosePlatform': 'Choose Platform',
       'instagramReel': 'Instagram Reel',
       'youtubeShort': 'YouTube Short',
@@ -884,8 +971,8 @@ class AppLocalizations {
       'bestValue': 'أفضل قيمة',
       'premiumActivatedDemo': 'تم تفعيل بريميوم في النسخة التجريبية.',
       'premiumActiveButton': 'الاشتراك المميز نشط',
-      'termsPrivacyPlaceholder':
-          'الشروط والخصوصية عناصر مؤقتة في نسخة الواجهة الحالية.',
+      'premiumLegalNotice':
+          'بالمتابعة، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
       'downloadOptions': 'خيارات التحميل',
       'chooseFormat': 'اختر الصيغة',
       'customFilename': 'اسم الملف المخصص',
@@ -1077,16 +1164,103 @@ class AppLocalizations {
       'dark': 'داكن',
       'light': 'فاتح',
       'autoSaveToGallery': 'الحفظ التلقائي في المعرض',
+      'autoSaveAndroidDescription':
+          'نشر التحميلات المدعومة تلقائيًا في معرض الجهاز.',
+      'autoSaveIosDescription':
+          'تُحفظ التحميلات في الملفات > على iPhone الخاص بي > ApexLoad. الحفظ التلقائي في الصور غير مفعّل.',
       'downloadLocation': 'مكان التحميل',
       'deviceDownloadsFolder': 'مجلد التحميلات على الجهاز',
+      'downloadLocationAndroidSubtitle': 'عرض مجلدات وسائط ApexLoad',
+      'downloadLocationIosSubtitle': 'الملفات > على iPhone الخاص بي > ApexLoad',
+      'downloadLocationAndroidDescription':
+          'يحفظ ApexLoad ملفاته في مجلدات مخصصة داخل مساحة التطبيق. ويمكن أيضًا نشر الوسائط المدعومة في المعرض عند تفعيل الحفظ التلقائي.',
+      'downloadLocationIosDescription':
+          'ستجد تحميلاتك في تطبيق الملفات ضمن على iPhone الخاص بي > ApexLoad. لا يعرض ApexLoad مسار نظام iOS الداخلي الخاص.',
+      'videosFolder': 'الفيديوهات',
+      'audioFolder': 'الصوتيات',
+      'imagesFolder': 'الصور',
+      'editedFolder': 'الملفات المعدّلة',
+      'gifsFolder': 'صور GIF',
+      'thumbnailsFolder': 'الصور المصغّرة',
+      'openFolder': 'فتح المجلد',
+      'folderOpenUnavailable':
+          'تعذّر على مدير الملفات فتح هذا المجلد. لا يزال بإمكانك الوصول إلى الوسائط من صفحة التحميلات.',
       'clearCache': 'مسح الذاكرة المؤقتة',
-      'demoCacheOnly': 'ذاكرة تجريبية فقط',
+      'clearCacheSubtitle': 'حذف الصور المصغّرة ومعاينات المحرر المؤقتة',
+      'clearCacheConfirmTitle': 'هل تريد مسح الملفات المؤقتة؟',
+      'clearCacheConfirmMessage':
+          'سيتم حذف الصور المصغّرة التي أنشأها التطبيق ومعاينات المحرر المؤقتة فقط. ستبقى تحميلاتك وملفاتك المعدّلة وسجل التحميل والإعدادات وحالة بريميوم محفوظة.',
+      'cacheClearedSuccess': 'تم مسح {size} من البيانات المؤقتة.',
+      'cacheClearFailed': 'تعذّر مسح الملفات المؤقتة. يرجى المحاولة مرة أخرى.',
       'privacyPolicy': 'سياسة الخصوصية',
+      'privacyPolicySubtitle': 'كيفية تعامل ApexLoad مع البيانات والأذونات',
       'termsOfUse': 'شروط الاستخدام',
+      'termsOfUseSubtitle': 'قواعد الاستخدام المسؤول لتطبيق ApexLoad',
       'contactSupport': 'التواصل مع الدعم',
       'rateApp': 'تقييم التطبيق',
-      'placeholder': 'عنصر مؤقت',
-      'comingSoon': 'قريباً',
+      'rateAppSubtitle': 'شارك رأيك عبر متجر التطبيقات',
+      'ratingAvailableAfterRelease':
+          'سيصبح تقييم ApexLoad متاحًا بعد نشر التطبيق في المتجر.',
+      'couldNotOpenStore': 'تعذّر فتح متجر التطبيقات. يرجى المحاولة مرة أخرى.',
+      'supportEmailBody':
+          'يرجى وصف المشكلة أدناه:\n\n\nإصدار التطبيق: {version}\nالمنصة: {platform}\nإصدار النظام: {osVersion}',
+      'emailAppUnavailableTitle': 'تعذّر فتح تطبيق البريد',
+      'emailAppUnavailableMessage':
+          'لم نتمكن من فتح تطبيق بريد. يمكنك نسخ عنوان الدعم بدلًا من ذلك.',
+      'copyEmail': 'نسخ البريد',
+      'emailCopied': 'تم نسخ بريد الدعم.',
+      'legalLastUpdated': 'آخر تحديث: يوليو 2026',
+      'privacyIntro':
+          'توضح هذه السياسة كيفية تعامل الإصدار الحالي من ApexLoad مع المعلومات عند تحليل الروابط أو تحميل الوسائط أو استخدام أدوات التعديل المحلية أو التواصل مع الدعم.',
+      'privacyDataTitle': 'المعلومات التي تقدمها',
+      'privacyDataBody':
+          'تُرسل الروابط التي تدخلها وصيغ التحميل المحددة وخيارات التحميل المرتبطة بها إلى خادم ApexLoad لتحليل الطلب ومعالجته. وعند التواصل مع الدعم، يجهّز تطبيق البريد رسالة تتضمن إصدار التطبيق والمنصة وإصدار النظام وأي تفاصيل تختار إضافتها.',
+      'privacyProcessingTitle': 'معالجة التحميل على الخادم',
+      'privacyProcessingBody':
+          'قد يتصل خادم ApexLoad بمنصة الوسائط العامة أو شبكة توزيع المحتوى التابعة لها لتحليل الوسائط المطلوبة وتجهيزها، ثم يُنقل الملف الناتج إلى جهازك. لا ترسل روابط خاصة أو مقيّدة أو حساسة لا تملك صلاحية الوصول إليها.',
+      'privacyLocalTitle': 'البيانات المحفوظة على جهازك',
+      'privacyLocalBody':
+          'يحفظ ApexLoad على جهازك التفضيلات واللغة والمظهر وحالة بريميوم المحلية وعداد الاستخدام اليومي وسجل التحميل ومسارات الملفات والصور المصغّرة. تتم عمليات المحرر السريع محليًا على الجهاز. مسح الذاكرة المؤقتة يحذف المعاينات المؤقتة والصور المصغّرة فقط، بينما قد يؤدي مسح بيانات التطبيق من النظام إلى حذف السجلات المحلية والملفات التي يديرها التطبيق.',
+      'privacyPermissionsTitle': 'الأذونات',
+      'privacyPermissionsBody':
+          'يُستخدم اتصال الشبكة للتحليل والتحميل. وقد يستخدم أندرويد الوصول إلى الوسائط والمجلدات لنشر التحميلات أو قراءة مجلد .Statuses الذي تختاره بنفسك. ويستخدم iOS منتقي الملفات لاختيار الملفات ويعرض مستندات التطبيق في تطبيق الملفات. لا يطلب ApexLoad صلاحية الوصول الشامل إلى جميع الملفات.',
+      'privacyThirdPartiesTitle': 'الخدمات الخارجية',
+      'privacyThirdPartiesBody':
+          'يتعامل ApexLoad مع منصة التواصل أو الوسائط الموجودة في الرابط، ومزودي توزيع المحتوى، وواجهة ApexLoad البرمجية، وخدمات المشاركة والتخزين والبريد في نظام التشغيل. تخضع هذه الجهات لشروطها وسياسات الخصوصية الخاصة بها. لا يتضمن الإصدار الحالي حزمة إعلانات فعلية أو حزمة دفع أو نظام تسجيل دخول للحسابات.',
+      'privacyAccountsTitle': 'الحسابات والاشتراكات',
+      'privacyAccountsBody':
+          'لا يتطلب الإصدار الحالي حساب ApexLoad. تُحفظ حالة بريميوم والاشتراك المستخدمة في هذا الإصدار محليًا. قد تتم إضافة مشتريات تديرها المتاجر مستقبلًا، وعندها ستخضع أيضًا لسياسات المتجر المعني.',
+      'privacyChoicesTitle': 'خياراتك',
+      'privacyChoicesBody':
+          'يمكنك تعطيل النشر التلقائي في المعرض على أجهزة أندرويد المدعومة، وحذف تحميلات فردية، ومسح الملفات المؤقتة، وإلغاء إذن المجلد من إعدادات النظام، أو مسح بيانات التطبيق. تغيير الإعداد لا يحذف الملفات المحفوظة مسبقًا.',
+      'legalContactTitle': 'التواصل',
+      'legalContactBody':
+          'يمكن إرسال الأسئلة المتعلقة بالخصوصية أو هذه الشروط أو ApexLoad إلى support@apexload.org.',
+      'termsIntro':
+          'باستخدام ApexLoad، فإنك توافق على استعماله بصورة قانونية ومسؤولة وللمحتوى الذي تملكه أو لديك إذن باستخدامه أو يُسمح لك بتحميله.',
+      'termsUseTitle': 'الاستخدام المسؤول',
+      'termsUseBody':
+          'أنت مسؤول عن كل رابط وملف تعالجه. التزم بالقوانين المعمول بها وشروط المنصات وحقوق الخصوصية وأي ترخيص أو إذن مرتبط بالمحتوى.',
+      'termsCopyrightTitle': 'حقوق النشر والملكية',
+      'termsCopyrightBody':
+          'لا يمنحك ApexLoad ملكية محتوى الآخرين. حافظ على نسب المحتوى وإشعارات حقوق النشر عند الحاجة، واحصل على الإذن قبل نسخ محتوى يملكه شخص آخر أو تعديله أو نشره أو توزيعه.',
+      'termsProhibitedTitle': 'الاستخدام المحظور',
+      'termsProhibitedBody':
+          'لا تستخدم ApexLoad للوصول إلى محتوى خاص أو يتطلب تسجيل الدخول أو مدفوع أو مقيّد أو محمي بإدارة الحقوق الرقمية، أو لتجاوز وسائل الحماية، أو انتهاك حقوق النشر، أو مضايقة الآخرين، أو نشر مواد غير قانونية، أو إساءة استخدام الخدمة آليًا.',
+      'termsPlatformsTitle': 'المنصات الخارجية وتوفر الخدمة',
+      'termsPlatformsBody':
+          'قد تغيّر المنصات المدعومة طريقة عملها أو تمنع الوصول دون إشعار. وقد لا تتوفر صيغة أو جودة أو صورة مصغّرة أو مسار صوتي أو رابط. ApexLoad غير تابع للمنصات الاجتماعية المذكورة ولا يحظى بتأييدها ما لم يُذكر ذلك صراحة.',
+      'termsSubscriptionsTitle': 'ميزات بريميوم',
+      'termsSubscriptionsBody':
+          'قد تتغير ميزات بريميوم وحدودها وأسعارها وتوفرها. يستخدم الإصدار الحالي حالة اشتراك محلية ما لم يتم توفير شراء واضح عبر المتجر. وستخضع أي عملية شراء مستقبلية أيضًا لشروط المتجر المعروضة عند الدفع.',
+      'termsLimitationsTitle': 'حدود الخدمة والمسؤولية',
+      'termsLimitationsBody':
+          'تُقدّم خدمة ApexLoad حسب توفرها. قد تفشل التحميلات أو التعديلات بسبب الشبكة أو مساحة الجهاز أو وسائط غير مدعومة أو تغييرات المنصات أو قيود الجهات الخارجية. وفي الحدود التي يسمح بها القانون، لا يتحمل ApexLoad مسؤولية الاستخدام غير المصرح به أو فقدان البيانات أو عدم توفر محتوى خارجي أو الأضرار غير المباشرة. احتفظ بنسخة احتياطية من ملفاتك المهمة.',
+      'editingCompatibilityTitle': 'لأفضل توافق أثناء التعديل',
+      'editingCompatibilityMessage':
+          'هذا الفيديو ليس بصيغة MP4. لتعديل أكثر سلاسة على iPhone، نوصي بتحويله إلى MP4 أولًا. ويمكنك أيضًا متابعة تعديل الملف الأصلي.',
+      'continueEditing': 'متابعة التعديل',
+      'goToConvertMp4': 'الانتقال إلى التحويل إلى MP4',
       'choosePlatform': 'اختر المنصة',
       'instagramReel': 'Instagram Reel',
       'youtubeShort': 'YouTube Short',

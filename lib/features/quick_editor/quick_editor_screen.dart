@@ -88,6 +88,8 @@ class QuickEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _convertToMp4Key = GlobalKey();
   RangeValues _trimRange = const RangeValues(0, 10);
   var _trimMax = 32.0;
   var _removeAudio = true;
@@ -114,6 +116,79 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
   var _reelsQuality = 'medium';
   var _reelsMute = false;
   String? _selectedVideoSizeLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showIosCompatibilityRecommendationIfNeeded();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showIosCompatibilityRecommendationIfNeeded() async {
+    final extension = _sourceExtension(widget.item);
+    if (!mounted ||
+        kIsWeb ||
+        defaultTargetPlatform != TargetPlatform.iOS ||
+        extension.isEmpty ||
+        extension == 'mp4') {
+      return;
+    }
+    final l = AppLocalizations.of(context);
+    final goToConvert = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.t('editingCompatibilityTitle')),
+        content: Text(l.t('editingCompatibilityMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l.t('continueEditing')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l.t('goToConvertMp4')),
+          ),
+        ],
+      ),
+    );
+    if (goToConvert != true || !mounted) return;
+    var targetContext = _convertToMp4Key.currentContext;
+    if (targetContext == null && _scrollController.hasClients) {
+      await _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 550),
+        curve: Curves.easeOutCubic,
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      targetContext = _convertToMp4Key.currentContext;
+    }
+    if (targetContext == null || !targetContext.mounted) return;
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      alignment: 0.75,
+    );
+  }
+
+  String _sourceExtension(DownloadItemModel item) {
+    final source = item.fileName.trim().isNotEmpty
+        ? item.fileName.trim()
+        : item.localFilePath.trim();
+    final clean = source.split('?').first;
+    final dot = clean.lastIndexOf('.');
+    if (dot < 0 || dot == clean.length - 1) return '';
+    return clean.substring(dot + 1).toLowerCase();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,6 +226,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         child: Stack(
           children: [
             ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
               children: [
                 Text(
@@ -324,19 +400,22 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                PrimaryGradientButton(
-                  label: l.t('convertVideoToMp4'),
-                  icon: Icons.ios_share_rounded,
-                  isLoading: state.activeJob == QuickEditorJobType.export,
-                  onPressed: state.isProcessing
-                      ? null
-                      : () => _run(
-                          const QuickEditorJob(
-                            type: QuickEditorJobType.export,
-                            operation: 'convert',
-                            successMessageKey: 'exportSuccess',
+                KeyedSubtree(
+                  key: _convertToMp4Key,
+                  child: PrimaryGradientButton(
+                    label: l.t('convertVideoToMp4'),
+                    icon: Icons.ios_share_rounded,
+                    isLoading: state.activeJob == QuickEditorJobType.export,
+                    onPressed: state.isProcessing
+                        ? null
+                        : () => _run(
+                            const QuickEditorJob(
+                              type: QuickEditorJobType.export,
+                              operation: 'convert',
+                              successMessageKey: 'exportSuccess',
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -982,11 +1061,14 @@ class _MuteCard extends StatelessWidget {
       title: l.t('muteVideo'),
       child: Column(
         children: [
-          SwitchListTile(
-            value: value,
-            onChanged: onChanged,
-            title: Text(l.t('removeOriginalAudio')),
-            contentPadding: EdgeInsets.zero,
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              value: value,
+              onChanged: onChanged,
+              title: Text(l.t('removeOriginalAudio')),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
           FilledButton.icon(
             onPressed: onApply,
@@ -1239,17 +1321,20 @@ class _AudioSwapCard extends StatelessWidget {
               onChanged: onShortBehaviorChanged,
             ),
             const SizedBox(height: 12),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: EdgeInsets.zero,
-              title: Text(l.t('advancedOptions')),
-              children: [
-                Text(
-                  '${l.t('audioVolume')}: ${(volume * 100).round()}%',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                Slider(value: volume, onChanged: onVolumeChanged),
-              ],
+            Material(
+              color: Colors.transparent,
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: Text(l.t('advancedOptions')),
+                children: [
+                  Text(
+                    '${l.t('audioVolume')}: ${(volume * 100).round()}%',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  Slider(value: volume, onChanged: onVolumeChanged),
+                ],
+              ),
             ),
           ],
           const SizedBox(height: 8),
@@ -1587,11 +1672,14 @@ class _VideoToGifCard extends StatelessWidget {
             divisions: 6,
             onChanged: onSpeedChanged,
           ),
-          SwitchListTile(
-            value: loop,
-            onChanged: onLoopChanged,
-            title: Text(l.t('loop')),
-            contentPadding: EdgeInsets.zero,
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              value: loop,
+              onChanged: onLoopChanged,
+              title: Text(l.t('loop')),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1760,11 +1848,14 @@ class _ReelsShortsCard extends StatelessWidget {
             labels: [l.t('smallFile'), l.t('balanced'), l.t('highQuality')],
             onChanged: onQualityChanged,
           ),
-          SwitchListTile(
-            value: mute,
-            onChanged: onMuteChanged,
-            title: Text(l.t('removeOriginalAudio')),
-            contentPadding: EdgeInsets.zero,
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              value: mute,
+              onChanged: onMuteChanged,
+              title: Text(l.t('removeOriginalAudio')),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
           Text(
             l.t('reelsShortsOutputNote'),
@@ -2030,53 +2121,82 @@ class _EditorStepTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTone.border(context)),
-        color: AppTone.card(context).withValues(alpha: 0.36),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primaryEnd.withValues(alpha: 0.18),
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.primaryEnd,
-                fontWeight: FontWeight.w900,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final stackAction =
+            trailing != null &&
+            (constraints.maxWidth < 500 || textScale > 1.15);
+
+        Widget buildHeader() => Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.primaryEnd.withValues(alpha: 0.18),
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: AppColors.primaryEnd,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Icon(icon, color: AppColors.primaryEnd),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppTone.textSecondary(context),
-                    fontSize: 12,
+            const SizedBox(width: 10),
+            Icon(icon, color: AppColors.primaryEnd),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppTone.textSecondary(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ],
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTone.border(context)),
+            color: AppTone.card(context).withValues(alpha: 0.36),
           ),
-          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
-        ],
-      ),
+          child: stackAction
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    buildHeader(),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: trailing),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: buildHeader()),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 8),
+                      trailing!,
+                    ],
+                  ],
+                ),
+        );
+      },
     );
   }
 }
