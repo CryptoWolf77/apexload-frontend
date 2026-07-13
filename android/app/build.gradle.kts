@@ -29,21 +29,6 @@ android {
         versionName = flutter.versionName
     }
 
-    flavorDimensions += "edition"
-
-    productFlavors {
-        create("store") {
-            dimension = "edition"
-            applicationId = "com.yahyazlab.apexload"
-            resValue("string", "app_name", "ApexLoad")
-        }
-        create("full") {
-            dimension = "edition"
-            applicationId = "com.yahyazlab.apexload.full"
-            resValue("string", "app_name", "ApexLoad Full")
-        }
-    }
-
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

@@ -1,5 +1,4 @@
 import 'package:apexload/core/constants/app_constants.dart';
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
@@ -34,7 +33,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isStore = ref.watch(appEditionProvider).isStore;
     final libraryItems = ref.watch(libraryControllerProvider);
     final items = libraryItems.where((item) {
       final query = _search.text.toLowerCase();
@@ -48,8 +46,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           (_type == 'Audio' && item.type == DownloadType.audio) ||
           (_type == 'Images' && item.type == DownloadType.image) ||
           (_type == 'Edited' && item.isEdited);
-      final matchesPlatform =
-          isStore || _platform == 'All' || item.platform == _platform;
+      final matchesPlatform = _platform == 'All' || item.platform == _platform;
       return matchesQuery && matchesType && matchesPlatform;
     }).toList();
     final groups = _groupItems(items);
@@ -89,32 +86,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        if (!isStore)
-          SizedBox(
-            height: 42,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
+        SizedBox(
+          height: 42,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              PlatformChip(
+                label: l.t('all'),
+                selected: _platform == 'All',
+                onTap: () => setState(() => _platform = 'All'),
+              ),
+              const SizedBox(width: 8),
+              for (final platform in [
+                ...AppConstants.supportedPlatforms,
+                'Editor',
+              ]) ...[
                 PlatformChip(
-                  label: l.t('all'),
-                  selected: _platform == 'All',
-                  onTap: () => setState(() => _platform = 'All'),
+                  label: platform == 'Editor' ? l.t('editor') : platform,
+                  selected: _platform == platform,
+                  onTap: () => setState(() => _platform = platform),
                 ),
                 const SizedBox(width: 8),
-                for (final platform in [
-                  ...AppConstants.supportedPlatforms,
-                  'Editor',
-                ]) ...[
-                  PlatformChip(
-                    label: platform == 'Editor' ? l.t('editor') : platform,
-                    selected: _platform == platform,
-                    onTap: () => setState(() => _platform = platform),
-                  ),
-                  const SizedBox(width: 8),
-                ],
               ],
-            ),
+            ],
           ),
+        ),
         const SizedBox(height: 16),
         if (hasNonMp4Video) ...[
           _PlaybackTipCard(
@@ -128,9 +124,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             child: EmptyState(
               icon: Icons.folder_open_rounded,
               title: l.t('noDownloadsYet'),
-              description: l.t(
-                isStore ? 'storeNoDownloadsYetDescription' : 'pasteLinkOnHome',
-              ),
+              description: l.t('pasteLinkOnHome'),
             ),
           )
         else

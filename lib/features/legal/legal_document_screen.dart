@@ -1,21 +1,18 @@
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/constants/legal_documents.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LegalDocumentScreen extends ConsumerWidget {
+class LegalDocumentScreen extends StatelessWidget {
   const LegalDocumentScreen({super.key, required this.document});
 
   final LegalDocument document;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isStore = ref.watch(appEditionProvider).isStore;
     return GradientScaffold(
       appBar: AppBar(
         title: Text(l.t(document.titleKey)),
@@ -37,7 +34,7 @@ class LegalDocumentScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           GlassCard(
             child: Text(
-              _editionText(l, document.introKey, isStore),
+              l.t(document.introKey),
               style: const TextStyle(height: 1.55),
             ),
           ),
@@ -46,7 +43,7 @@ class LegalDocumentScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(4, 10, 4, 6),
               child: Text(
-                _editionText(l, section.titleKey, isStore),
+                l.t(section.titleKey),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
@@ -55,7 +52,7 @@ class LegalDocumentScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                _editionText(l, section.bodyKey, isStore),
+                l.t(section.bodyKey),
                 style: TextStyle(
                   color: AppTone.textSecondary(context),
                   height: 1.55,
@@ -67,11 +64,5 @@ class LegalDocumentScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _editionText(AppLocalizations l, String key, bool isStore) {
-    final storeKey = '${key}Store';
-    if (isStore && l.has(storeKey)) return l.t(storeKey);
-    return l.t(key);
   }
 }

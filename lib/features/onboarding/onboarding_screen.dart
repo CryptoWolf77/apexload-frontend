@@ -1,22 +1,20 @@
 import 'package:apexload/core/constants/app_constants.dart';
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/legal_notice_card.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class OnboardingScreen extends ConsumerStatefulWidget {
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   var _page = 0;
 
@@ -36,42 +34,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final isStore = ref.watch(appEditionProvider).isStore;
-    final pages = isStore
-        ? [
-            _OnboardingPageData(
-              icon: Icons.folder_open_rounded,
-              title: l.t('storeOnboardingTitle1'),
-              description: l.t('storeOnboardingDesc1'),
-            ),
-            _OnboardingPageData(
-              icon: Icons.auto_fix_high_rounded,
-              title: l.t('storeOnboardingTitle2'),
-              description: l.t('storeOnboardingDesc2'),
-            ),
-            _OnboardingPageData(
-              icon: Icons.workspace_premium_rounded,
-              title: l.t('storeOnboardingTitle3'),
-              description: l.t('storeOnboardingDesc3'),
-            ),
-          ]
-        : [
-            _OnboardingPageData(
-              icon: Icons.link_rounded,
-              title: l.t('onboardingTitle1'),
-              description: l.t('onboardingDesc1'),
-            ),
-            _OnboardingPageData(
-              icon: Icons.tune_rounded,
-              title: l.t('onboardingTitle2'),
-              description: l.t('onboardingDesc2'),
-            ),
-            _OnboardingPageData(
-              icon: Icons.workspace_premium_rounded,
-              title: l.t('onboardingTitle3'),
-              description: l.t('onboardingDesc3'),
-            ),
-          ];
+    final pages = [
+      _OnboardingPageData(
+        icon: Icons.link_rounded,
+        title: l.t('onboardingTitle1'),
+        description: l.t('onboardingDesc1'),
+      ),
+      _OnboardingPageData(
+        icon: Icons.tune_rounded,
+        title: l.t('onboardingTitle2'),
+        description: l.t('onboardingDesc2'),
+      ),
+      _OnboardingPageData(
+        icon: Icons.workspace_premium_rounded,
+        title: l.t('onboardingTitle3'),
+        description: l.t('onboardingDesc3'),
+      ),
+    ];
     final last = _page == pages.length - 1;
     return GradientScaffold(
       child: Padding(

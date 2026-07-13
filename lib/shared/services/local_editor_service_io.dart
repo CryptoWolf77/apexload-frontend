@@ -541,14 +541,13 @@ class LocalEditorService {
       QuickEditorJobType.audioSwap => 'Audio swapped $originalTitle',
       QuickEditorJobType.videoToGif => 'GIF $originalTitle',
       QuickEditorJobType.reelsShorts =>
-        '${_reelsTitlePrefix(options['storeEdition'] == true ? 'store' : options['preset'] as String?)} $originalTitle',
+        '${_reelsTitlePrefix(options['preset'] as String?)} $originalTitle',
       _ => 'Edited $originalTitle',
     };
   }
 
   String _platformFor(QuickEditorJob job, Map<String, Object?> options) {
     if (job.type != QuickEditorJobType.reelsShorts) return 'Editor';
-    if (options['storeEdition'] == true) return 'Reels/Shorts Creator';
     return switch (options['preset'] as String? ?? 'instagram') {
       'youtube' => 'YouTube Short Creator',
       'tiktok' => 'TikTok Creator',
@@ -558,7 +557,6 @@ class LocalEditorService {
   }
 
   String _reelsTitlePrefix(String? preset) {
-    if (preset == 'store') return 'Reel/Short';
     return switch (preset ?? 'instagram') {
       'youtube' => 'YouTube Short',
       'tiktok' => 'TikTok Video',

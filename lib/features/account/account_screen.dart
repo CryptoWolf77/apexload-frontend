@@ -1,4 +1,3 @@
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
@@ -16,7 +15,6 @@ class AccountScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final subscription = ref.watch(subscriptionControllerProvider);
     final downloads = ref.watch(libraryControllerProvider).length;
-    final isStore = ref.watch(appEditionProvider).isStore;
 
     return GradientScaffold(
       appBar: AppBar(
@@ -71,9 +69,7 @@ class AccountScreen extends ConsumerWidget {
                       : l.t('locked'),
                 ),
                 _InfoRow(
-                  label: isStore
-                      ? l.t('videoOptimizer')
-                      : l.t('batchDownloads'),
+                  label: l.t('batchDownloads'),
                   value: subscription.isPremium
                       ? l.t('unlocked')
                       : l.t('locked'),

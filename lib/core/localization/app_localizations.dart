@@ -35,29 +35,6 @@ class AppLocalizations {
       'onboardingTitle3': 'Go Premium for more power',
       'onboardingDesc3':
           'Unlock FHD & 4K quality, no watermark when available, batch downloads, Quick Editor, Audio Swap, faster queue, and no ads.',
-      'storeSubtitle': 'Local Video Toolkit',
-      'storeTagline': 'Edit, optimize, and save videos locally.',
-      'storeHeroTitle': 'Create with local video tools',
-      'storeHeroDescription':
-          'Import videos from your device, trim clips, replace audio, make GIFs, optimize file size, and convert to MP4.',
-      'storeToolsTitle': 'Local creator tools',
-      'storePremiumPrompt': 'Unlock all local editor tools',
-      'storeNoRecentMedia': 'Choose a local video in Quick Editor to begin.',
-      'storeNoDownloadsYetDescription':
-          'Import a local video in Quick Editor or save edited files to build your library.',
-      'storeOnboardingTitle1': 'Import local videos',
-      'storeOnboardingDesc1':
-          'Choose a video from your device and keep your workflow inside ApexLoad.',
-      'storeOnboardingTitle2': 'Edit and optimize locally',
-      'storeOnboardingDesc2':
-          'Trim, mute, extract audio, replace audio, create GIFs, format vertical clips, and convert to MP4.',
-      'storeOnboardingTitle3': 'Go Premium for more tools',
-      'storeOnboardingDesc3':
-          'Unlock the full local editor toolkit, advanced audio swap, optimizer presets, and export controls.',
-      'storeLegalShort':
-          'Only edit and save media you own or have permission to use.',
-      'storeLegalFull':
-          'This edition is intended for importing, editing, optimizing, and saving local media you own or have permission to use.',
       'pasteYourVideoLink': 'Paste your video link',
       'howToUse': 'How to use',
       'analyzeLink': 'Analyze link',
@@ -248,8 +225,6 @@ class AppLocalizations {
       'premiumBatchDescription': 'Queue up to 5 links at a time.',
       'premiumMp3Extraction': 'MP3 audio extraction',
       'premiumMp3Description': 'Save audio from supported videos.',
-      'premiumMp3DescriptionStore':
-          'Extract MP3 audio from videos stored on your device.',
       'premiumNoWatermark': 'No watermark when possible',
       'premiumNoWatermarkDescription':
           'Applied automatically when the source supports it.',
@@ -260,8 +235,6 @@ class AppLocalizations {
       'videoToGifBenefit':
           'Turn your favorite video moments into shareable GIFs.',
       'reelsShortsBenefit': 'Create platform-ready vertical videos in seconds.',
-      'reelsShortsBenefitStore':
-          'Create vertical short-form videos with clean local formatting.',
       'whatsappStatusBenefit': 'Save viewed WhatsApp photos and videos easily.',
       'videoOptimizerBenefit':
           'Reduce file size while controlling output quality.',
@@ -386,16 +359,6 @@ class AppLocalizations {
       'couldNotCreateGif': 'Could not create this GIF. Try a shorter range.',
       'videoToGifPremiumTitle': 'Video to GIF is a Premium feature.',
       'reelsShortsCreator': 'Reels/Shorts Creator',
-      'chooseCanvas': 'Choose canvas',
-      'verticalNineSixteen': 'Vertical 9:16',
-      'verticalShortVideo': 'Short vertical video',
-      'portraitVideo': 'Portrait video',
-      'fullScreenStory': 'Full-screen story',
-      'readyForVerticalVideo': 'Ready for vertical video',
-      'readyForShortVideo': 'Ready for short video',
-      'readyForPortraitVideo': 'Ready for portrait video',
-      'readyForFullScreen': 'Ready for full screen',
-      'createReelShort': 'Create Reel/Short',
       'chooseOutputFormat': 'Choose output format',
       'resizeMode': 'Resize mode',
       'smartCrop': 'Smart crop',
@@ -531,28 +494,6 @@ class AppLocalizations {
       'copyEmail': 'Copy email',
       'emailCopied': 'Support email copied.',
       'legalLastUpdated': 'Last updated: July 2026',
-      'privacyIntroStore':
-          'This policy explains how the Store Edition of ApexLoad handles information when you import local media, use local editing tools, save files, or contact support.',
-      'privacyDataBodyStore':
-          'Files you choose from your device are used for local editing and export. If you contact support, your email app prepares a message containing the app version, platform, OS version, and whatever details you choose to add.',
-      'privacyProcessingTitleStore': 'Local media processing',
-      'privacyProcessingBodyStore':
-          'Store Edition editing tools run locally on your device. The Store Edition does not provide social-platform link analysis or social media downloading.',
-      'privacyPermissionsBodyStore':
-          'Android and iOS use system media, file, and photo permissions only for files you select, exports you save, and library actions you request. ApexLoad does not request broad all-files access.',
-      'privacyThirdPartiesBodyStore':
-          'The Store Edition uses operating-system sharing, storage, file picker, and email services. The current app build does not include a live advertising SDK, payment SDK, or account sign-in system.',
-      'termsIntroStore':
-          'By using ApexLoad Store Edition, you agree to use it lawfully and only with media you own or have permission to edit and save.',
-      'termsUseBodyStore':
-          'You are responsible for every file you import, edit, export, or share. Follow applicable laws, privacy rights, and any license or permission attached to the media.',
-      'termsCopyrightBodyStore':
-          'ApexLoad does not grant ownership of third-party media. Keep attribution and copyright notices where required, and obtain permission before copying, editing, publishing, or distributing content owned by someone else.',
-      'termsProhibitedBodyStore':
-          'Do not use ApexLoad to infringe copyright, harass others, distribute unlawful material, bypass security controls, or process media you are not authorized to use.',
-      'termsPlatformsTitleStore': 'Local tools and availability',
-      'termsPlatformsBodyStore':
-          'Editing, conversion, optimization, and export results may vary by device, source format, file size, and available storage. Keep your own backups of important files.',
       'privacyIntro':
           'This policy explains how the current ApexLoad app handles information when you analyze links, download media, use local editing tools, or contact support.',
       'privacyDataTitle': 'Information you provide',
@@ -816,29 +757,6 @@ class AppLocalizations {
       'onboardingTitle3': 'فعّل بريميوم لقوة أكبر',
       'onboardingDesc3':
           'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والدفعات، والمحرر السريع، وتبديل الصوت، والطابور الأسرع، وتجربة بدون إعلانات.',
-      'storeSubtitle': 'أدوات فيديو محلية',
-      'storeTagline': 'عدّل الفيديوهات وحسّنها واحفظها محليًا.',
-      'storeHeroTitle': 'أنشئ باستخدام أدوات الفيديو المحلية',
-      'storeHeroDescription':
-          'استورد فيديوهات من جهازك، واقص المقاطع، واستبدل الصوت، وأنشئ GIF، وقلّل حجم الملفات، وحوّل إلى MP4.',
-      'storeToolsTitle': 'أدوات إنشاء محلية',
-      'storePremiumPrompt': 'افتح كل أدوات المحرر المحلية',
-      'storeNoRecentMedia': 'اختر فيديو محليًا في المحرر السريع للبدء.',
-      'storeNoDownloadsYetDescription':
-          'استورد فيديو محليًا في المحرر السريع أو احفظ ملفات معدلة لبناء مكتبتك.',
-      'storeOnboardingTitle1': 'استورد فيديوهات محلية',
-      'storeOnboardingDesc1':
-          'اختر فيديو من جهازك واحتفظ بسير العمل داخل ApexLoad.',
-      'storeOnboardingTitle2': 'عدّل وحسّن محليًا',
-      'storeOnboardingDesc2':
-          'اقص الفيديو، واكتم الصوت، واستخرج الصوت، واستبدله، وأنشئ GIF، وجهّز المقاطع العمودية، وحوّل إلى MP4.',
-      'storeOnboardingTitle3': 'انتقل إلى بريميوم لمزيد من الأدوات',
-      'storeOnboardingDesc3':
-          'افتح مجموعة أدوات المحرر المحلية بالكامل، وتبديل الصوت المتقدم، وإعدادات التحسين، وخيارات التصدير.',
-      'storeLegalShort':
-          'عدّل واحفظ فقط الوسائط التي تملكها أو لديك إذن باستخدامها.',
-      'storeLegalFull':
-          'هذا الإصدار مخصص لاستيراد الوسائط المحلية التي تملكها أو لديك إذن باستخدامها وتعديلها وتحسينها وحفظها.',
       'pasteYourVideoLink': 'الصق رابط الفيديو',
       'analyzeLink': 'تحليل الرابط',
       'downloadCompleted': 'اكتمل التحميل',
@@ -1025,8 +943,6 @@ class AppLocalizations {
       'premiumBatchDescription': 'حمّل حتى 5 روابط في كل مرة.',
       'premiumMp3Extraction': 'استخراج الصوت MP3',
       'premiumMp3Description': 'احفظ الصوت من الفيديوهات المدعومة.',
-      'premiumMp3DescriptionStore':
-          'استخرج صوت MP3 من الفيديوهات المحفوظة على جهازك.',
       'premiumNoWatermark': 'بدون علامة مائية عند الإمكان',
       'premiumNoWatermarkDescription': 'تُطبق تلقائياً عندما يدعم المصدر ذلك.',
       'premiumQuickEditorTools': 'أدوات التعديل السريع',
@@ -1036,7 +952,6 @@ class AppLocalizations {
       'videoToGifBenefit':
           'حوّل لحظات الفيديو المفضلة لديك إلى صور GIF قابلة للمشاركة.',
       'reelsShortsBenefit': 'أنشئ فيديوهات عمودية جاهزة للمنصات خلال ثوانٍ.',
-      'reelsShortsBenefitStore': 'أنشئ فيديوهات عمودية قصيرة بتنسيق محلي نظيف.',
       'whatsappStatusBenefit':
           'احفظ صور وفيديوهات حالات واتساب التي شاهدتها بسهولة.',
       'videoOptimizerBenefit': 'قلّل حجم الملف مع التحكم في جودة الإخراج.',
@@ -1159,16 +1074,6 @@ class AppLocalizations {
       'couldNotCreateGif': 'تعذّر إنشاء GIF. جرّب مدة أقصر.',
       'videoToGifPremiumTitle': 'تحويل الفيديو إلى GIF ميزة بريميوم.',
       'reelsShortsCreator': 'صانع Reels/Shorts',
-      'chooseCanvas': 'اختر مساحة العرض',
-      'verticalNineSixteen': 'عمودي 9:16',
-      'verticalShortVideo': 'فيديو عمودي قصير',
-      'portraitVideo': 'فيديو بالطول',
-      'fullScreenStory': 'ملء الشاشة',
-      'readyForVerticalVideo': 'جاهز للفيديو العمودي',
-      'readyForShortVideo': 'جاهز للفيديو القصير',
-      'readyForPortraitVideo': 'جاهز للفيديو بالطول',
-      'readyForFullScreen': 'جاهز لملء الشاشة',
-      'createReelShort': 'إنشاء Reel/Short',
       'chooseOutputFormat': 'اختر تنسيق الإخراج',
       'resizeMode': 'طريقة تغيير المقاس',
       'smartCrop': 'قص ذكي',
@@ -1303,28 +1208,6 @@ class AppLocalizations {
       'copyEmail': 'نسخ البريد',
       'emailCopied': 'تم نسخ بريد الدعم.',
       'legalLastUpdated': 'آخر تحديث: يوليو 2026',
-      'privacyIntroStore':
-          'توضح هذه السياسة كيفية تعامل إصدار المتجر من ApexLoad مع المعلومات عند استيراد وسائط محلية أو استخدام أدوات التعديل المحلية أو حفظ الملفات أو التواصل مع الدعم.',
-      'privacyDataBodyStore':
-          'تُستخدم الملفات التي تختارها من جهازك للتعديل والتصدير محليًا. وعند التواصل مع الدعم، يجهّز تطبيق البريد رسالة تتضمن إصدار التطبيق والمنصة وإصدار النظام وأي تفاصيل تختار إضافتها.',
-      'privacyProcessingTitleStore': 'معالجة الوسائط محليًا',
-      'privacyProcessingBodyStore':
-          'تعمل أدوات التعديل في إصدار المتجر محليًا على جهازك. لا يوفر إصدار المتجر تحليل روابط منصات التواصل أو تحميل الوسائط منها.',
-      'privacyPermissionsBodyStore':
-          'يستخدم Android و iOS أذونات الوسائط والملفات والصور الخاصة بالنظام فقط للملفات التي تختارها وعمليات التصدير التي تحفظها وإجراءات المكتبة التي تطلبها. لا يطلب ApexLoad صلاحية الوصول الشامل إلى جميع الملفات.',
-      'privacyThirdPartiesBodyStore':
-          'يستخدم إصدار المتجر خدمات المشاركة والتخزين ومنتقي الملفات والبريد في نظام التشغيل. لا يتضمن الإصدار الحالي حزمة إعلانات فعلية أو حزمة دفع أو نظام تسجيل دخول للحسابات.',
-      'termsIntroStore':
-          'باستخدام إصدار المتجر من ApexLoad، فإنك توافق على استخدامه بصورة قانونية ومع الوسائط التي تملكها أو لديك إذن بتعديلها وحفظها فقط.',
-      'termsUseBodyStore':
-          'أنت مسؤول عن كل ملف تستورده أو تعدّله أو تصدّره أو تشاركه. التزم بالقوانين وحقوق الخصوصية وأي ترخيص أو إذن مرتبط بالوسائط.',
-      'termsCopyrightBodyStore':
-          'لا يمنحك ApexLoad ملكية وسائط الآخرين. حافظ على نسب المحتوى وإشعارات حقوق النشر عند الحاجة، واحصل على الإذن قبل نسخ محتوى يملكه شخص آخر أو تعديله أو نشره أو توزيعه.',
-      'termsProhibitedBodyStore':
-          'لا تستخدم ApexLoad لانتهاك حقوق النشر أو مضايقة الآخرين أو نشر مواد غير قانونية أو تجاوز وسائل الحماية أو معالجة وسائط لا تملك صلاحية استخدامها.',
-      'termsPlatformsTitleStore': 'الأدوات المحلية وتوفرها',
-      'termsPlatformsBodyStore':
-          'قد تختلف نتائج التعديل والتحويل والتحسين والتصدير حسب الجهاز وصيغة المصدر وحجم الملف والمساحة المتاحة. احتفظ بنسخة احتياطية من ملفاتك المهمة.',
       'privacyIntro':
           'توضح هذه السياسة كيفية تعامل الإصدار الحالي من ApexLoad مع المعلومات عند تحليل الروابط أو تحميل الوسائط أو استخدام أدوات التعديل المحلية أو التواصل مع الدعم.',
       'privacyDataTitle': 'المعلومات التي تقدمها',

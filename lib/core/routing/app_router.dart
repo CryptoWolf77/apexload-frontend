@@ -1,12 +1,10 @@
 import 'package:apexload/core/localization/app_localizations.dart';
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/legal_documents.dart';
 import 'package:apexload/features/account/account_screen.dart';
 import 'package:apexload/features/audio_extraction/audio_extraction_screen.dart';
 import 'package:apexload/features/download_options/download_options_screen.dart';
 import 'package:apexload/features/download_progress/download_progress_screen.dart';
 import 'package:apexload/features/home/home_screen.dart';
-import 'package:apexload/features/home/store_home_screen.dart';
 import 'package:apexload/features/library/library_screen.dart';
 import 'package:apexload/features/legal/legal_document_screen.dart';
 import 'package:apexload/features/onboarding/onboarding_screen.dart';
@@ -29,7 +27,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final edition = ref.watch(appEditionProvider);
   return GoRouter(
     initialLocation: '/splash',
     routes: [
@@ -46,8 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (context, state) =>
-                edition.isStore ? const StoreHomeScreen() : const HomeScreen(),
+            builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
             path: '/downloads',
@@ -63,34 +59,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      if (edition.isFull) ...[
-        GoRoute(
-          path: '/download-options',
-          builder: (context, state) {
-            final extra = state.extra;
-            if (extra is! MediaInfoModel) {
-              return const RouteFallbackScreen(
-                title: 'noMediaToShow',
-                message: 'analyzeFirstForOptions',
-              );
-            }
-            return DownloadOptionsScreen(media: extra);
-          },
-        ),
-        GoRoute(
-          path: '/download-progress',
-          builder: (context, state) {
-            final extra = state.extra;
-            if (extra is! DownloadProgressArgs) {
-              return const RouteFallbackScreen(
-                title: 'noDownloadInProgress',
-                message: 'startDownloadFirst',
-              );
-            }
-            return DownloadProgressScreen(args: extra);
-          },
-        ),
-      ],
+      GoRoute(
+        path: '/download-options',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! MediaInfoModel) {
+            return const RouteFallbackScreen(
+              title: 'noMediaToShow',
+              message: 'analyzeFirstForOptions',
+            );
+          }
+          return DownloadOptionsScreen(media: extra);
+        },
+      ),
+      GoRoute(
+        path: '/download-progress',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! DownloadProgressArgs) {
+            return const RouteFallbackScreen(
+              title: 'noDownloadInProgress',
+              message: 'startDownloadFirst',
+            );
+          }
+          return DownloadProgressScreen(args: extra);
+        },
+      ),
       GoRoute(
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
@@ -109,43 +103,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/account',
         builder: (context, state) => const AccountScreen(),
       ),
-      if (edition.isFull) ...[
-        GoRoute(
-          path: '/audio',
-          builder: (context, state) => const AudioExtractionScreen(),
-        ),
-        GoRoute(
-          path: '/whatsapp-status',
-          builder: (context, state) {
-            return Consumer(
-              builder: (context, ref, child) {
-                final l = AppLocalizations.of(context);
-                if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-                  return const WhatsAppStatusAndroidOnlyScreen();
-                }
-                final premium = ref
-                    .watch(subscriptionControllerProvider)
-                    .isPremium;
-                if (!premium) {
-                  return GradientScaffold(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(22),
-                        child: PremiumLockedCard(
-                          title: l.t('whatsappStatusPremiumTitle'),
-                          description: l.t('whatsappStatusPremiumMessage'),
-                          onUpgrade: () => context.push('/premium'),
-                        ),
+      GoRoute(
+        path: '/audio',
+        builder: (context, state) => const AudioExtractionScreen(),
+      ),
+      GoRoute(
+        path: '/whatsapp-status',
+        builder: (context, state) {
+          return Consumer(
+            builder: (context, ref, child) {
+              final l = AppLocalizations.of(context);
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+                return const WhatsAppStatusAndroidOnlyScreen();
+              }
+              final premium = ref
+                  .watch(subscriptionControllerProvider)
+                  .isPremium;
+              if (!premium) {
+                return GradientScaffold(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(22),
+                      child: PremiumLockedCard(
+                        title: l.t('whatsappStatusPremiumTitle'),
+                        description: l.t('whatsappStatusPremiumMessage'),
+                        onUpgrade: () => context.push('/premium'),
                       ),
                     ),
-                  );
-                }
-                return const WhatsAppStatusScreen();
-              },
-            );
-          },
-        ),
-      ],
+                  ),
+                );
+              }
+              return const WhatsAppStatusScreen();
+            },
+          );
+        },
+      ),
       GoRoute(
         path: '/quick-editor/edit',
         builder: (context, state) {

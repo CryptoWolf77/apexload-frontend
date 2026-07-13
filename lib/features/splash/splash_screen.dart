@@ -1,23 +1,20 @@
 import 'dart:async';
 
-import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
-import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -44,8 +41,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final edition = ref.watch(appEditionProvider);
     final curved = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutBack,
@@ -96,9 +91,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          edition.isStore
-                              ? l.t('storeSubtitle')
-                              : AppConstants.subtitle,
+                          AppConstants.subtitle,
                           style: TextStyle(
                             color: AppTone.textSecondary(context),
                             fontSize: 16,
@@ -106,9 +99,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          edition.isStore
-                              ? l.t('storeTagline')
-                              : AppConstants.tagline,
+                          AppConstants.tagline,
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ],
