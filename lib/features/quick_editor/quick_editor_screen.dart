@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_file_type_groups.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
@@ -193,6 +194,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final isStore = ref.watch(appEditionProvider).isStore;
     final state = ref.watch(quickEditorControllerProvider);
     ref.listen<QuickEditorState>(quickEditorControllerProvider, (
       previous,
@@ -374,6 +376,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                 ),
                 const SizedBox(height: 12),
                 _ReelsShortsCard(
+                  isStoreEdition: isStore,
                   sourceName: _selectedVideoFile ?? widget.item.fileName,
                   localFilePath:
                       _selectedVideoPath ?? widget.item.localFilePath,
@@ -577,6 +580,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         'resizeMode': _reelsResizeMode,
         'quality': _reelsQuality,
         'mute': _reelsMute,
+        'storeEdition': ref.read(appEditionProvider).isStore,
       },
     };
   }
@@ -1706,6 +1710,7 @@ class _VideoToGifCard extends StatelessWidget {
 
 class _ReelsShortsCard extends StatelessWidget {
   const _ReelsShortsCard({
+    required this.isStoreEdition,
     required this.sourceName,
     required this.localFilePath,
     required this.preset,
@@ -1720,6 +1725,7 @@ class _ReelsShortsCard extends StatelessWidget {
     required this.onCreate,
   });
 
+  final bool isStoreEdition;
   final String sourceName;
   final String localFilePath;
   final String preset;
@@ -1750,7 +1756,7 @@ class _ReelsShortsCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            l.t('choosePlatform'),
+            l.t(isStoreEdition ? 'chooseCanvas' : 'choosePlatform'),
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
@@ -1770,37 +1776,51 @@ class _ReelsShortsCard extends StatelessWidget {
               _PlatformPresetCard(
                 selected: preset == 'instagram',
                 icon: Icons.camera_alt_rounded,
-                title: l.t('instagramReel'),
-                badge: l
-                    .t('readyForPlatform')
-                    .replaceFirst('{platform}', 'Instagram'),
+                title: l.t(
+                  isStoreEdition ? 'verticalNineSixteen' : 'instagramReel',
+                ),
+                badge: isStoreEdition
+                    ? l.t('readyForVerticalVideo')
+                    : l
+                          .t('readyForPlatform')
+                          .replaceFirst('{platform}', 'Instagram'),
                 onTap: () => onPresetChanged('instagram'),
               ),
               _PlatformPresetCard(
                 selected: preset == 'youtube',
                 icon: Icons.play_circle_fill_rounded,
-                title: l.t('youtubeShort'),
-                badge: l
-                    .t('readyForPlatform')
-                    .replaceFirst('{platform}', 'YouTube'),
+                title: l.t(
+                  isStoreEdition ? 'verticalShortVideo' : 'youtubeShort',
+                ),
+                badge: isStoreEdition
+                    ? l.t('readyForShortVideo')
+                    : l
+                          .t('readyForPlatform')
+                          .replaceFirst('{platform}', 'YouTube'),
                 onTap: () => onPresetChanged('youtube'),
               ),
               _PlatformPresetCard(
                 selected: preset == 'tiktok',
                 icon: Icons.music_video_rounded,
-                title: l.t('tiktokVideo'),
-                badge: l
-                    .t('readyForPlatform')
-                    .replaceFirst('{platform}', 'TikTok'),
+                title: l.t(isStoreEdition ? 'portraitVideo' : 'tiktokVideo'),
+                badge: isStoreEdition
+                    ? l.t('readyForPortraitVideo')
+                    : l
+                          .t('readyForPlatform')
+                          .replaceFirst('{platform}', 'TikTok'),
                 onTap: () => onPresetChanged('tiktok'),
               ),
               _PlatformPresetCard(
                 selected: preset == 'snapchat',
                 icon: Icons.flash_on_rounded,
-                title: l.t('snapchatSpotlight'),
-                badge: l
-                    .t('readyForPlatform')
-                    .replaceFirst('{platform}', 'Snapchat'),
+                title: l.t(
+                  isStoreEdition ? 'fullScreenStory' : 'snapchatSpotlight',
+                ),
+                badge: isStoreEdition
+                    ? l.t('readyForFullScreen')
+                    : l
+                          .t('readyForPlatform')
+                          .replaceFirst('{platform}', 'Snapchat'),
                 onTap: () => onPresetChanged('snapchat'),
               ),
             ],
@@ -1868,14 +1888,15 @@ class _ReelsShortsCard extends StatelessWidget {
           FilledButton.icon(
             onPressed: onCreate,
             icon: const Icon(Icons.auto_awesome_motion_rounded),
-            label: Text(_createLabel(l, preset)),
+            label: Text(_createLabel(l, preset, isStoreEdition)),
           ),
         ],
       ),
     );
   }
 
-  String _createLabel(AppLocalizations l, String preset) {
+  String _createLabel(AppLocalizations l, String preset, bool isStoreEdition) {
+    if (isStoreEdition) return l.t('createReelShort');
     return switch (preset) {
       'youtube' => l.t('createYouTubeShort'),
       'tiktok' => l.t('createTikTokVideo'),

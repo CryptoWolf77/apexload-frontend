@@ -1,3 +1,4 @@
+import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
@@ -44,8 +45,11 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   Widget build(BuildContext context) {
     final active = ref.watch(subscriptionControllerProvider).isPremium;
     final l = AppLocalizations.of(context);
+    final edition = ref.watch(appEditionProvider);
+    final isStore = edition.isStore;
     final showWhatsappStatusSaver =
-        kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
+        edition.isFull &&
+        (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS);
     return GradientScaffold(
       appBar: AppBar(
         title: Text(l.t('premium')),
@@ -95,77 +99,112 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 1.34,
-            children: [
-              _Benefit(
-                icon: Icons.all_inclusive_rounded,
-                label: l.t('unlimitedDownloads'),
-                subtitle: l.t('premiumUnlimitedDescription'),
-              ),
-              _Benefit(
-                icon: Icons.high_quality_rounded,
-                label: l.t('premiumHdDownloads'),
-                subtitle: l.t('premiumHdDownloadsDescription'),
-              ),
-              _Benefit(
-                icon: Icons.playlist_add_check_rounded,
-                label: l.t('batchDownloads'),
-                subtitle: l.t('premiumBatchDescription'),
-              ),
-              _Benefit(
-                icon: Icons.graphic_eq_rounded,
-                label: l.t('premiumMp3Extraction'),
-                subtitle: l.t('premiumMp3Description'),
-              ),
-              _Benefit(
-                icon: Icons.verified_rounded,
-                label: l.t('premiumNoWatermark'),
-                subtitle: l.t('premiumNoWatermarkDescription'),
-              ),
-              if (showWhatsappStatusSaver)
-                _Benefit(
-                  icon: Icons.phone_android_rounded,
-                  label: l.t('whatsappStatusSaver'),
-                  subtitle: l.t('whatsappStatusBenefit'),
-                ),
-              _Benefit(
-                icon: Icons.auto_fix_high_rounded,
-                label: l.t('premiumQuickEditorTools'),
-                subtitle: l.t('quickEditorBenefit'),
-              ),
-              _Benefit(
-                icon: Icons.speed_rounded,
-                label: l.t('premiumFasterQueue'),
-                subtitle: l.t('premiumFasterQueueDescription'),
-              ),
-              _Benefit(
-                icon: Icons.block_rounded,
-                label: l.t('noAds'),
-                subtitle: l.t('premiumNoAdsDescription'),
-              ),
-            ],
+            children: isStore
+                ? [
+                    _Benefit(
+                      icon: Icons.auto_fix_high_rounded,
+                      label: l.t('premiumQuickEditorTools'),
+                      subtitle: l.t('quickEditorBenefit'),
+                    ),
+                    _Benefit(
+                      icon: Icons.graphic_eq_rounded,
+                      label: l.t('premiumMp3Extraction'),
+                      subtitle: l.t('premiumMp3DescriptionStore'),
+                    ),
+                    _Benefit(
+                      icon: Icons.swap_horizontal_circle_rounded,
+                      label: l.t('advancedAudioSwap'),
+                      subtitle: l.t('advancedAudioSwapBenefit'),
+                    ),
+                    _Benefit(
+                      icon: Icons.gif_box_rounded,
+                      label: l.t('videoToGif'),
+                      subtitle: l.t('videoToGifBenefit'),
+                    ),
+                    _Benefit(
+                      icon: Icons.photo_size_select_small_rounded,
+                      label: l.t('reelsShortsCreator'),
+                      subtitle: l.t('reelsShortsBenefitStore'),
+                    ),
+                    _Benefit(
+                      icon: Icons.tune_rounded,
+                      label: l.t('videoOptimizer'),
+                      subtitle: l.t('videoOptimizerBenefit'),
+                    ),
+                  ]
+                : [
+                    _Benefit(
+                      icon: Icons.all_inclusive_rounded,
+                      label: l.t('unlimitedDownloads'),
+                      subtitle: l.t('premiumUnlimitedDescription'),
+                    ),
+                    _Benefit(
+                      icon: Icons.high_quality_rounded,
+                      label: l.t('premiumHdDownloads'),
+                      subtitle: l.t('premiumHdDownloadsDescription'),
+                    ),
+                    _Benefit(
+                      icon: Icons.playlist_add_check_rounded,
+                      label: l.t('batchDownloads'),
+                      subtitle: l.t('premiumBatchDescription'),
+                    ),
+                    _Benefit(
+                      icon: Icons.graphic_eq_rounded,
+                      label: l.t('premiumMp3Extraction'),
+                      subtitle: l.t('premiumMp3Description'),
+                    ),
+                    _Benefit(
+                      icon: Icons.verified_rounded,
+                      label: l.t('premiumNoWatermark'),
+                      subtitle: l.t('premiumNoWatermarkDescription'),
+                    ),
+                    if (showWhatsappStatusSaver)
+                      _Benefit(
+                        icon: Icons.phone_android_rounded,
+                        label: l.t('whatsappStatusSaver'),
+                        subtitle: l.t('whatsappStatusBenefit'),
+                      ),
+                    _Benefit(
+                      icon: Icons.auto_fix_high_rounded,
+                      label: l.t('premiumQuickEditorTools'),
+                      subtitle: l.t('quickEditorBenefit'),
+                    ),
+                    _Benefit(
+                      icon: Icons.speed_rounded,
+                      label: l.t('premiumFasterQueue'),
+                      subtitle: l.t('premiumFasterQueueDescription'),
+                    ),
+                    _Benefit(
+                      icon: Icons.block_rounded,
+                      label: l.t('noAds'),
+                      subtitle: l.t('premiumNoAdsDescription'),
+                    ),
+                  ],
           ),
           const SizedBox(height: 18),
-          _FeatureSection(
-            title: l.t('premiumDownloads'),
-            features: [
-              _PremiumFeature(
-                icon: Icons.high_quality_rounded,
-                title: l.t('fhd4kDownloads'),
-                body: l.t('fhd4kDownloadsWhenAvailable'),
-              ),
-              _PremiumFeature(
-                icon: Icons.graphic_eq_rounded,
-                title: l.t('audioExtraction'),
-                body: l.t('audioExtractionPremiumMessage'),
-              ),
-              _PremiumFeature(
-                icon: Icons.block_rounded,
-                title: l.t('noAds'),
-                body: l.t('premiumSubtitle'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+          if (!isStore) ...[
+            _FeatureSection(
+              title: l.t('premiumDownloads'),
+              features: [
+                _PremiumFeature(
+                  icon: Icons.high_quality_rounded,
+                  title: l.t('fhd4kDownloads'),
+                  body: l.t('fhd4kDownloadsWhenAvailable'),
+                ),
+                _PremiumFeature(
+                  icon: Icons.graphic_eq_rounded,
+                  title: l.t('audioExtraction'),
+                  body: l.t('audioExtractionPremiumMessage'),
+                ),
+                _PremiumFeature(
+                  icon: Icons.block_rounded,
+                  title: l.t('noAds'),
+                  body: l.t('premiumSubtitle'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
           _FeatureSection(
             title: l.t('premiumCreatorTools'),
             features: [

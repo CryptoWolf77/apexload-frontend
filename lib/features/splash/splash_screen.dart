@@ -1,20 +1,23 @@
 import 'dart:async';
 
+import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
+import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -41,6 +44,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final edition = ref.watch(appEditionProvider);
     final curved = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutBack,
@@ -91,15 +96,19 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          AppConstants.subtitle,
+                          edition.isStore
+                              ? l.t('storeSubtitle')
+                              : AppConstants.subtitle,
                           style: TextStyle(
                             color: AppTone.textSecondary(context),
                             fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          AppConstants.tagline,
+                        Text(
+                          edition.isStore
+                              ? l.t('storeTagline')
+                              : AppConstants.tagline,
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ],

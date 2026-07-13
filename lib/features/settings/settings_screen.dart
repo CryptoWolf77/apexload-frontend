@@ -1,4 +1,5 @@
 import 'package:apexload/core/constants/app_config.dart';
+import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
@@ -20,6 +21,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final subscription = ref.watch(subscriptionControllerProvider);
+    final isStore = ref.watch(appEditionProvider).isStore;
     final downloads = ref.watch(libraryControllerProvider).length;
     final locale = ref.watch(localeControllerProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
@@ -86,7 +88,9 @@ class SettingsScreen extends ConsumerWidget {
                     unlocked: subscription.isPremium,
                   ),
                   _FeaturePill(
-                    label: l.t('batchDownloads'),
+                    label: isStore
+                        ? l.t('videoOptimizer')
+                        : l.t('batchDownloads'),
                     unlocked: subscription.isPremium,
                   ),
                   _FeaturePill(

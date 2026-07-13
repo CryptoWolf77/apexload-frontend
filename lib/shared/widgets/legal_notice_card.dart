@@ -1,15 +1,21 @@
+import 'package:apexload/core/constants/app_edition.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LegalNoticeCard extends StatelessWidget {
+class LegalNoticeCard extends ConsumerWidget {
   const LegalNoticeCard({super.key, this.compact = false});
 
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final store = ref.watch(appEditionProvider).isStore;
+    final textKey = store
+        ? (compact ? 'storeLegalShort' : 'storeLegalFull')
+        : (compact ? 'legalShort' : 'legalFull');
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 14),
       decoration: BoxDecoration(
@@ -28,7 +34,7 @@ class LegalNoticeCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              compact ? l.t('legalShort') : l.t('legalFull'),
+              l.t(textKey),
               style: TextStyle(
                 color: AppTone.textSecondary(context),
                 fontSize: compact ? 12 : 13,
