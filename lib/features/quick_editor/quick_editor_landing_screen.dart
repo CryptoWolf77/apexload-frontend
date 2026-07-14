@@ -92,10 +92,29 @@ class _SourcePickerCard extends ConsumerWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              FilledButton.icon(
-                onPressed: premium ? () => _pickLocalVideo(context) : null,
-                icon: const Icon(Icons.folder_open_rounded),
-                label: Text(l.t('chooseLocalVideo')),
+              Semantics(
+                button: true,
+                label: premium
+                    ? l.t('chooseLocalVideo')
+                    : '${l.t('chooseLocalVideo')}. ${l.t('premiumRequired')}',
+                hint: premium ? null : l.t('localVideoPremiumMessage'),
+                child: FilledButton.icon(
+                  onPressed: () => premium
+                      ? _pickLocalVideo(context)
+                      : _showLocalVideoPremiumDialog(context),
+                  style: premium
+                      ? null
+                      : FilledButton.styleFrom(
+                          backgroundColor: AppTone.cardSecondary(
+                            context,
+                          ).withValues(alpha: 0.88),
+                          foregroundColor: AppTone.textSecondary(context),
+                        ),
+                  icon: Icon(
+                    premium ? Icons.folder_open_rounded : Icons.lock_rounded,
+                  ),
+                  label: Text(l.t('chooseLocalVideo')),
+                ),
               ),
               OutlinedButton.icon(
                 onPressed: () => context.go('/downloads'),
@@ -151,6 +170,30 @@ class _SourcePickerCard extends ConsumerWidget {
       if (!context.mounted) return;
       AppNotification.error(context, message: l.t('somethingWentWrong'));
     }
+  }
+
+  Future<void> _showLocalVideoPremiumDialog(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.t('localVideoPremiumTitle')),
+        content: Text(l.t('localVideoPremiumMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l.t('notNow')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.push('/premium');
+            },
+            child: Text(l.t('viewPremium')),
+          ),
+        ],
+      ),
+    );
   }
 }
 

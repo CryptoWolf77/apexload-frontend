@@ -133,6 +133,9 @@ class AppLocalizations {
       'chooseVideoSourceDescription':
           'Use an ApexLoad download or pick a video stored on this device.',
       'chooseLocalVideo': 'Choose local video',
+      'localVideoPremiumTitle': 'Premium feature',
+      'localVideoPremiumMessage':
+          'Choosing a local video is available with ApexLoad Premium. Upgrade to Premium to import videos from your device and use the Quick Editor tools.',
       'chooseFromDownloads': 'Choose from Downloads',
       'noEditableVideosYet':
           'No downloaded videos yet. Download a video first or choose a local file.',
@@ -261,6 +264,7 @@ class AppLocalizations {
       'download': 'Download',
       'openAudioTool': 'Open audio extraction tool',
       'viewPremium': 'View Premium',
+      'notNow': 'Not now',
       'premiumOption': 'Premium option',
       'premiumFeatureSummary':
           'Unlock FHD & 4K quality, no watermark when available, Quick Editor, audio extraction, and batch downloads.',
@@ -853,6 +857,9 @@ class AppLocalizations {
       'chooseVideoSourceDescription':
           'استخدم فيديو من تنزيلات ApexLoad أو اختر فيديو محفوظًا على هذا الجهاز.',
       'chooseLocalVideo': 'اختيار فيديو من الجهاز',
+      'localVideoPremiumTitle': 'ميزة بريميوم',
+      'localVideoPremiumMessage':
+          'اختيار فيديو من الجهاز متاح لمشتركي ApexLoad Premium. قم بالترقية إلى بريميوم لاستيراد الفيديوهات من جهازك واستخدام أدوات المحرر السريع.',
       'chooseFromDownloads': 'اختيار من التنزيلات',
       'noEditableVideosYet':
           'لا توجد فيديوهات قابلة للتعديل بعد. نزّل فيديو أولًا أو اختر ملفًا من جهازك.',
@@ -979,6 +986,7 @@ class AppLocalizations {
       'howToUse': 'طريقة الاستخدام',
       'openAudioTool': 'فتح أداة استخراج الصوت',
       'viewPremium': 'عرض بريميوم',
+      'notNow': 'ليس الآن',
       'premiumOption': 'خيار بريميوم',
       'premiumFeatureSummary':
           'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، واستخراج الصوت، وتحميل الدفعات.',
