@@ -4,6 +4,7 @@ import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
+import 'package:apexload/shared/widgets/download_rights_confirmation_dialog.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/premium_locked_card.dart';
@@ -39,6 +40,23 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
     if (url.isEmpty) {
       AppNotification.info(context, message: l.t('pasteFirst'));
       return;
+    }
+    final legalConsent = ref.read(legalConsentServiceProvider);
+    final acceptedResponsibleUse = await legalConsent
+        .hasAcceptedResponsibleUse();
+    if (!mounted) return;
+    if (!acceptedResponsibleUse) {
+      context.push('/responsible-use');
+      return;
+    }
+    final hasConfirmedRights = await legalConsent.hasConfirmedDownloadRights();
+    if (!mounted) return;
+    if (!hasConfirmedRights) {
+      final confirmed = await showDownloadRightsConfirmationDialog(context);
+      if (!mounted) return;
+      if (!confirmed) return;
+      await legalConsent.confirmDownloadRights();
+      if (!mounted) return;
     }
 
     final format = DownloadFormatModel(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:apexload/core/constants/app_constants.dart';
+import 'package:apexload/shared/services/legal_consent_service.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
@@ -28,8 +29,17 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 2), () async {
       final prefs = await SharedPreferences.getInstance();
       final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+      final hasAcceptedResponsibleUse =
+          prefs.getBool(LegalConsentService.responsibleUseAgreementKey) ??
+          false;
       if (!mounted) return;
-      context.go(hasSeenOnboarding ? '/home' : '/onboarding');
+      if (!hasSeenOnboarding) {
+        context.go('/onboarding');
+      } else if (!hasAcceptedResponsibleUse) {
+        context.go('/responsible-use');
+      } else {
+        context.go('/home');
+      }
     });
   }
 

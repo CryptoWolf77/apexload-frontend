@@ -94,6 +94,41 @@ class AppLocalizations {
       'legalShort': 'Only download content you own or have permission to use.',
       'legalFull':
           'This app is intended only for downloading content you own, have permission to use, or content that is publicly allowed to be downloaded. Users are responsible for respecting copyright and platform terms.',
+      'responsibleUseAgreementTitle': 'Responsible Use Agreement',
+      'responsibleUseSummary':
+          'ApexLoad is intended for downloading and editing publicly accessible media that you own or have permission to use.',
+      'responsibleUseMustNotDownload': 'You must not use ApexLoad to download:',
+      'responsibleUseNoPrivateProfiles': 'Private profiles or private posts',
+      'responsibleUseNoLoginOnly': 'Login-only media',
+      'responsibleUseNoPaidMedia': 'Paid or subscriber-only media',
+      'responsibleUseNoDrm': 'DRM-protected media',
+      'responsibleUseNoRestricted': 'Restricted media',
+      'responsibleUseNoCopyright': 'Copyrighted content without authorization',
+      'responsibleUseNoPrivacyViolations':
+          'Content that violates privacy rights',
+      'responsibleUseNoIllegalOrPlatformViolations':
+          'Content whose downloading violates applicable law or platform rules',
+      'responsibleUseCheckbox':
+          'I have read and agree to the Terms of Use and Acceptable Use Policy.',
+      'decline': 'Decline',
+      'agreeAndContinue': 'Agree and Continue',
+      'legalLinks': 'Legal links',
+      'acceptableUsePolicy': 'Acceptable Use Policy',
+      'copyrightPolicy': 'Copyright Policy',
+      'takedownRequest': 'Takedown Request',
+      'submitTakedownRequest': 'Submit Takedown Request',
+      'legalAndResponsibleUse': 'Legal and Responsible Use',
+      'reviewResponsibleUseAgreement': 'Review Responsible Use Agreement',
+      'reviewResponsibleUseAgreementSubtitle':
+          'Review the rules for lawful and permitted downloads',
+      'couldNotOpenLink': 'Could not open this link. Please try again.',
+      'backendProcessingDisclosure':
+          'ApexLoad sends the link you submit to api.apexload.org to analyze the media and prepare your requested download.',
+      'confirmDownloadRightsTitle': 'Confirm your right to download',
+      'confirmDownloadRightsMessage':
+          'Only download content you own, created yourself, or have permission to save and use. Do not download private, paid, protected, restricted, or copyrighted content without authorization.',
+      'confirmDownloadRightsCheckbox':
+          'I confirm that I own this content or have permission to download and use it.',
       'supportedPlatforms': 'Supported platforms',
       'recentDownloads': 'Recent downloads',
       'viewAll': 'View all',
@@ -818,6 +853,40 @@ class AppLocalizations {
       'legalShort': 'حمّل فقط المحتوى الذي تملكه أو لديك إذن باستخدامه.',
       'legalFull':
           'هذا التطبيق مخصص فقط لتحميل المحتوى الذي تملكه، أو لديك إذن لاستخدامه، أو المحتوى المسموح بتحميله بشكل عام. أنت مسؤول عن احترام حقوق النشر وشروط المنصات.',
+      'responsibleUseAgreementTitle': 'اتفاقية الاستخدام المسؤول',
+      'responsibleUseSummary':
+          'ApexLoad مخصص لتحميل وتعديل الوسائط العامة التي تملكها أو لديك إذن باستخدامها.',
+      'responsibleUseMustNotDownload': 'يجب ألا تستخدم ApexLoad لتحميل:',
+      'responsibleUseNoPrivateProfiles': 'الحسابات أو المنشورات الخاصة',
+      'responsibleUseNoLoginOnly': 'الوسائط التي تتطلب تسجيل الدخول',
+      'responsibleUseNoPaidMedia': 'الوسائط المدفوعة أو الخاصة بالمشتركين فقط',
+      'responsibleUseNoDrm': 'الوسائط المحمية بإدارة الحقوق الرقمية',
+      'responsibleUseNoRestricted': 'الوسائط المقيّدة',
+      'responsibleUseNoCopyright': 'محتوى محمي بحقوق النشر دون تصريح',
+      'responsibleUseNoPrivacyViolations': 'محتوى ينتهك حقوق الخصوصية',
+      'responsibleUseNoIllegalOrPlatformViolations':
+          'محتوى يخالف تحميله القانون أو قواعد المنصة',
+      'responsibleUseCheckbox':
+          'لقد قرأت وأوافق على شروط الاستخدام وسياسة الاستخدام المقبول.',
+      'decline': 'رفض',
+      'agreeAndContinue': 'الموافقة والمتابعة',
+      'legalLinks': 'روابط قانونية',
+      'acceptableUsePolicy': 'سياسة الاستخدام المقبول',
+      'copyrightPolicy': 'سياسة حقوق النشر',
+      'takedownRequest': 'طلب إزالة المحتوى',
+      'submitTakedownRequest': 'إرسال طلب إزالة',
+      'legalAndResponsibleUse': 'القانون والاستخدام المسؤول',
+      'reviewResponsibleUseAgreement': 'مراجعة اتفاقية الاستخدام المسؤول',
+      'reviewResponsibleUseAgreementSubtitle':
+          'راجع قواعد التحميل القانوني والمسموح',
+      'couldNotOpenLink': 'تعذّر فتح هذا الرابط. يرجى المحاولة مرة أخرى.',
+      'backendProcessingDisclosure':
+          'يرسل ApexLoad الرابط الذي تدخله إلى api.apexload.org لتحليل الوسائط وتجهيز التحميل الذي طلبته.',
+      'confirmDownloadRightsTitle': 'تأكيد حقك في التحميل',
+      'confirmDownloadRightsMessage':
+          'قم بتحميل المحتوى الذي تملكه أو أنشأته بنفسك أو لديك إذن بحفظه واستخدامه فقط. لا تقم بتحميل محتوى خاص أو مدفوع أو محمي أو مقيّد أو محمي بحقوق النشر دون تصريح.',
+      'confirmDownloadRightsCheckbox':
+          'أؤكد أنني أملك هذا المحتوى أو لدي إذن لتحميله واستخدامه.',
       'supportedPlatforms': 'المنصات المدعومة',
       'recentDownloads': 'آخر التحميلات',
       'viewAll': 'عرض الكل',

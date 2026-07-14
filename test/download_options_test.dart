@@ -3,6 +3,8 @@ import 'package:apexload/core/theme/app_theme.dart';
 import 'package:apexload/features/download_options/download_options_screen.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
+import 'package:apexload/shared/services/api_download_service.dart';
+import 'package:apexload/shared/services/app_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,6 +65,44 @@ void main() {
 
     expect(find.text('No watermark applied when available'), findsOneWidget);
     expect(find.text('No watermark when available'), findsNothing);
+  });
+
+  testWidgets('first download rights confirmation can cancel download', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'responsible_use_agreement_v1': true,
+    });
+    final fakeDownloadService = _FakeApiDownloadService();
+
+    await _pumpDownloadOptions(
+      tester,
+      media: _videoMedia(),
+      apiDownloadService: fakeDownloadService,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('MP4 480p'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Download'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    await tester.tap(find.text('Download'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Confirm your right to download'), findsOneWidget);
+    final continueButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Continue'),
+    );
+    expect(continueButton.onPressed, isNull);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(fakeDownloadService.called, isFalse);
   });
 }
 
@@ -189,6 +229,7 @@ MediaInfoModel _imageMedia() {
 Future<void> _pumpDownloadOptions(
   WidgetTester tester, {
   required MediaInfoModel media,
+  ApiDownloadService? apiDownloadService,
 }) {
   tester.view.physicalSize = const Size(430, 1400);
   tester.view.devicePixelRatio = 1;
@@ -196,6 +237,10 @@ Future<void> _pumpDownloadOptions(
   addTearDown(tester.view.resetDevicePixelRatio);
   return tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        if (apiDownloadService != null)
+          apiDownloadServiceProvider.overrideWithValue(apiDownloadService),
+      ],
       child: MaterialApp(
         theme: AppTheme.dark,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -209,4 +254,23 @@ Future<void> _pumpDownloadOptions(
       ),
     ),
   );
+}
+
+class _FakeApiDownloadService extends ApiDownloadService {
+  bool called = false;
+
+  @override
+  Future<ApiDownloadJob> startDownload({
+    required String url,
+    required List<DownloadFormatModel> selectedFormats,
+    required bool premium,
+    required bool noWatermark,
+  }) async {
+    called = true;
+    return const ApiDownloadJob(
+      jobId: 'job_test',
+      status: 'queued',
+      message: 'Download job created',
+    );
+  }
 }

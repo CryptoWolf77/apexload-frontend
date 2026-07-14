@@ -1,5 +1,6 @@
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
+import 'package:apexload/shared/services/legal_consent_service.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/legal_notice_card.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
@@ -27,8 +28,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finishOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_seen_onboarding', true);
+    final acceptedResponsibleUse =
+        prefs.getBool(LegalConsentService.responsibleUseAgreementKey) ?? false;
     if (!mounted) return;
-    context.go('/home');
+    context.go(acceptedResponsibleUse ? '/home' : '/responsible-use');
   }
 
   @override

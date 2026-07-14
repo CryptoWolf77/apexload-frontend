@@ -7,6 +7,7 @@ import 'package:apexload/features/download_progress/download_progress_screen.dar
 import 'package:apexload/features/home/home_screen.dart';
 import 'package:apexload/features/library/library_screen.dart';
 import 'package:apexload/features/legal/legal_document_screen.dart';
+import 'package:apexload/features/legal/responsible_use_agreement_screen.dart';
 import 'package:apexload/features/onboarding/onboarding_screen.dart';
 import 'package:apexload/features/premium/premium_screen.dart';
 import 'package:apexload/features/quick_editor/quick_editor_landing_screen.dart';
@@ -98,6 +99,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/terms',
         builder: (context, state) =>
             const LegalDocumentScreen(document: ApexLoadLegalDocuments.terms),
+      ),
+      GoRoute(
+        path: '/responsible-use',
+        builder: (context, state) => ResponsibleUseAgreementScreen(
+          reviewOnly: state.uri.queryParameters['review'] == 'true',
+        ),
       ),
       GoRoute(
         path: '/account',

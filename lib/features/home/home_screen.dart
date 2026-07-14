@@ -58,12 +58,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _analyze() async {
+    final l = AppLocalizations.of(context);
     final url = _urlController.text.trim();
     if (url.isEmpty) {
-      AppNotification.info(
-        context,
-        message: AppLocalizations.of(context).t('pasteFirst'),
-      );
+      AppNotification.info(context, message: l.t('pasteFirst'));
+      return;
+    }
+    final accepted = await ref
+        .read(legalConsentServiceProvider)
+        .hasAcceptedResponsibleUse();
+    if (!mounted) return;
+    if (!accepted) {
+      context.push('/responsible-use');
       return;
     }
     setState(() => _loading = true);
@@ -253,6 +259,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     tooltip: 'Paste from clipboard',
                     onPressed: _paste,
                     icon: const Icon(Icons.content_paste_rounded),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Semantics(
+                label: l.t('backendProcessingDisclosure'),
+                child: Text(
+                  l.t('backendProcessingDisclosure'),
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    fontSize: 12,
+                    height: 1.35,
                   ),
                 ),
               ),

@@ -5,6 +5,7 @@ import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
+import 'package:apexload/shared/widgets/download_rights_confirmation_dialog.dart';
 import 'package:apexload/shared/widgets/format_option_card.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
@@ -96,6 +97,14 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
       AppNotification.error(context, message: l.t('downloadJobFailed'));
       return;
     }
+    final legalConsent = ref.read(legalConsentServiceProvider);
+    final acceptedResponsibleUse = await legalConsent
+        .hasAcceptedResponsibleUse();
+    if (!mounted) return;
+    if (!acceptedResponsibleUse) {
+      context.push('/responsible-use');
+      return;
+    }
 
     final premiumLocked = selected.where((format) => format.isPremium).toList();
     if (premiumLocked.isNotEmpty && !premiumActive) {
@@ -119,6 +128,15 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
         icon: Icons.all_inclusive_rounded,
       );
       return;
+    }
+    final hasConfirmedRights = await legalConsent.hasConfirmedDownloadRights();
+    if (!mounted) return;
+    if (!hasConfirmedRights) {
+      final confirmed = await showDownloadRightsConfirmationDialog(context);
+      if (!mounted) return;
+      if (!confirmed) return;
+      await legalConsent.confirmDownloadRights();
+      if (!mounted) return;
     }
     String? apiJobId;
     setState(() => _creatingDownloadJob = true);

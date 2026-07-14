@@ -6,6 +6,7 @@ import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/clipboard_helper_service.dart';
+import 'package:apexload/shared/services/legal_consent_service.dart';
 import 'package:apexload/shared/services/local_editor_service.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/services/mock_download_service.dart';
@@ -31,6 +32,9 @@ final subscriptionServiceProvider = Provider(
   (ref) => MockSubscriptionService(),
 );
 final clipboardServiceProvider = Provider((ref) => ClipboardHelperService());
+final legalConsentServiceProvider = Provider(
+  (ref) => const LegalConsentService(),
+);
 
 final localeControllerProvider = NotifierProvider<LocaleController, Locale?>(
   LocaleController.new,

@@ -196,6 +196,14 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: l.t('clearCacheSubtitle'),
           onTap: () => _clearCache(context, ref),
         ),
+        const SizedBox(height: 14),
+        _SectionTitle(l.t('legalAndResponsibleUse')),
+        _SettingsTile(
+          icon: Icons.verified_user_rounded,
+          title: l.t('reviewResponsibleUseAgreement'),
+          subtitle: l.t('reviewResponsibleUseAgreementSubtitle'),
+          onTap: () => context.push('/responsible-use?review=true'),
+        ),
         _SettingsTile(
           icon: Icons.privacy_tip_rounded,
           title: l.t('privacyPolicy'),
@@ -207,6 +215,24 @@ class SettingsScreen extends ConsumerWidget {
           title: l.t('termsOfUse'),
           subtitle: l.t('termsOfUseSubtitle'),
           onTap: () => context.push('/terms'),
+        ),
+        _SettingsTile(
+          icon: Icons.rule_rounded,
+          title: l.t('acceptableUsePolicy'),
+          subtitle: AppConfig.acceptableUseUrl,
+          onTap: () => _openLegalUrl(context, AppConfig.acceptableUseUrl),
+        ),
+        _SettingsTile(
+          icon: Icons.copyright_rounded,
+          title: l.t('copyrightPolicy'),
+          subtitle: AppConfig.copyrightUrl,
+          onTap: () => _openLegalUrl(context, AppConfig.copyrightUrl),
+        ),
+        _SettingsTile(
+          icon: Icons.report_problem_rounded,
+          title: l.t('submitTakedownRequest'),
+          subtitle: AppConfig.takedownUrl,
+          onTap: () => _openLegalUrl(context, AppConfig.takedownUrl),
         ),
         _SettingsTile(
           icon: Icons.support_agent_rounded,
@@ -458,6 +484,25 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openLegalUrl(BuildContext context, String url) async {
+    final l = AppLocalizations.of(context);
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    } on Object catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ApexLoad legal URL launch failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+    if (!opened && context.mounted) {
+      AppNotification.error(context, message: l.t('couldNotOpenLink'));
+    }
   }
 
   Future<void> _rateApp(BuildContext context) async {
