@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
+import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/clipboard_helper_service.dart';
@@ -18,7 +19,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final analyzeServiceProvider = Provider((ref) => ApiAnalyzeService());
 final apiDownloadServiceProvider = Provider((ref) => ApiDownloadService());
-final localMediaServiceProvider = Provider((ref) => LocalMediaService());
+final activeOperationWakelockServiceProvider =
+    Provider<ActiveOperationWakelockService>((ref) {
+      final service = ActiveOperationWakelockService();
+      ref.onDispose(() => unawaited(service.dispose()));
+      return service;
+    });
+final localMediaServiceProvider = Provider(
+  (ref) => LocalMediaService(
+    wakelockService: ref.watch(activeOperationWakelockServiceProvider),
+  ),
+);
 final localEditorServiceProvider = Provider(
   (ref) =>
       LocalEditorService(mediaService: ref.watch(localMediaServiceProvider)),
@@ -44,6 +55,10 @@ final themeModeControllerProvider =
 final autoSaveToGalleryControllerProvider =
     NotifierProvider<AutoSaveToGalleryController, bool>(
       AutoSaveToGalleryController.new,
+    );
+final keepScreenAwakeControllerProvider =
+    NotifierProvider<KeepScreenAwakeController, bool>(
+      KeepScreenAwakeController.new,
     );
 final subscriptionControllerProvider =
     NotifierProvider<SubscriptionController, UserSubscriptionModel>(
@@ -92,6 +107,38 @@ class AutoSaveToGalleryController extends Notifier<bool> {
     final prefs = await SharedPreferences.getInstance();
     if (!ref.mounted) return;
     state = prefs.getBool(_preferenceKey) ?? true;
+  }
+}
+
+class KeepScreenAwakeController extends Notifier<bool> {
+  static const preferenceKey = 'keep_screen_awake_during_downloads';
+  Future<void>? _loadFuture;
+
+  @override
+  bool build() {
+    _loadFuture = _load();
+    return true;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    final load = _loadFuture;
+    if (load != null) await load;
+    state = enabled;
+    await ref
+        .read(activeOperationWakelockServiceProvider)
+        .setUserEnabled(enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(preferenceKey, enabled);
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!ref.mounted) return;
+    final enabled = prefs.getBool(preferenceKey) ?? true;
+    state = enabled;
+    await ref
+        .read(activeOperationWakelockServiceProvider)
+        .setUserEnabled(enabled);
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:apexload/core/routing/app_router.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/widgets/active_operation_note.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/download_rights_confirmation_dialog.dart';
 import 'package:apexload/shared/widgets/format_option_card.dart';
@@ -142,12 +143,17 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
     setState(() => _creatingDownloadJob = true);
     try {
       final job = await ref
-          .read(apiDownloadServiceProvider)
-          .startDownload(
-            url: widget.media.sourceUrl,
-            selectedFormats: selected,
-            premium: false,
-            noWatermark: premiumActive && _isVideo,
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () => ref
+                .read(apiDownloadServiceProvider)
+                .startDownload(
+                  url: widget.media.sourceUrl,
+                  selectedFormats: selected,
+                  premium: false,
+                  noWatermark: premiumActive && _isVideo,
+                ),
+            reason: 'create download job',
           );
       apiJobId = job.jobId.isEmpty ? null : job.jobId;
       if (!mounted) return;
@@ -417,6 +423,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
                 ? null
                 : () => _download(premiumActive),
           ),
+          const ActiveOperationNote(),
           if (_isVideo)
             TextButton.icon(
               onPressed: () => context.push('/audio'),

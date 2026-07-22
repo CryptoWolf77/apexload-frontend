@@ -1,6 +1,7 @@
 import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
+import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -31,6 +32,11 @@ class CacheClearResult {
 }
 
 class LocalMediaService {
+  LocalMediaService({ActiveOperationWakelockService? wakelockService})
+    : _wakelockService = wakelockService;
+
+  final ActiveOperationWakelockService? _wakelockService;
+
   Future<void> ensureFolders() async {}
 
   Future<LocalMediaSaveResult> saveRemoteFile({
@@ -41,14 +47,16 @@ class LocalMediaService {
     void Function()? onIndeterminateProgress,
     bool publishToGallery = true,
   }) async {
-    onProgress?.call(1);
-    return LocalMediaSaveResult(
-      localFilePath: '',
-      thumbnailPath: '',
-      fileName: fileName,
-      sizeLabel: '',
-      galleryUri: '',
-    );
+    return _runWithWakelock(() async {
+      onProgress?.call(1);
+      return LocalMediaSaveResult(
+        localFilePath: '',
+        thumbnailPath: '',
+        fileName: fileName,
+        sizeLabel: '',
+        galleryUri: '',
+      );
+    }, reason: 'save remote file');
   }
 
   Future<LocalMediaSaveResult> saveLocalFile({
@@ -57,12 +65,15 @@ class LocalMediaService {
     required DownloadType type,
     bool statusFile = false,
   }) async {
-    return LocalMediaSaveResult(
-      localFilePath: '',
-      thumbnailPath: '',
-      fileName: fileName,
-      sizeLabel: '',
-      galleryUri: '',
+    return _runWithWakelock(
+      () async => LocalMediaSaveResult(
+        localFilePath: '',
+        thumbnailPath: '',
+        fileName: fileName,
+        sizeLabel: '',
+        galleryUri: '',
+      ),
+      reason: 'save local file',
     );
   }
 
@@ -142,5 +153,14 @@ class LocalMediaService {
     required String suffix,
   }) {
     throw UnsupportedError('Local editing is not available on web.');
+  }
+
+  Future<T> _runWithWakelock<T>(
+    Future<T> Function() task, {
+    required String reason,
+  }) {
+    final service = _wakelockService;
+    if (service == null) return task();
+    return service.runWithWakelock(task, reason: reason);
   }
 }

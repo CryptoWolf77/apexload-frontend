@@ -10,6 +10,7 @@ import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
+import 'package:apexload/shared/widgets/active_operation_note.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/mock_ad_dialog.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
@@ -42,6 +43,7 @@ class _DownloadProgressScreenState
   DownloadItemModel? _completedItem;
   String? _localSavedPath;
   List<ApiDownloadFile> _latestFiles = const [];
+  var _operationWakeLockStarted = false;
 
   @override
   void initState() {
@@ -54,6 +56,7 @@ class _DownloadProgressScreenState
       _markFailed(AppLocalizations.of(context).t('downloadJobFailed'));
       return;
     }
+    _beginOperationWakelock();
     unawaited(_pollStatus());
     _timer = Timer.periodic(
       const Duration(milliseconds: 1500),
@@ -271,6 +274,7 @@ class _DownloadProgressScreenState
       _completedItem = items.first;
       _localSavedPath = savedFiles[status.files.first.fileId];
     });
+    unawaited(_endOperationWakelock());
     saveStageWatch.stop();
     _logSavePerf(
       'total save stage completed in: ${saveStageWatch.elapsedMilliseconds} ms',
@@ -335,6 +339,7 @@ class _DownloadProgressScreenState
       _status = l.t('downloadFailed');
       _statusMessage = message.trim().isEmpty ? l.t('downloadFailed') : message;
     });
+    unawaited(_endOperationWakelock());
     AppNotification.error(
       context,
       message: message.trim().isEmpty ? l.t('downloadFailed') : message,
@@ -344,6 +349,7 @@ class _DownloadProgressScreenState
   @override
   void dispose() {
     _timer?.cancel();
+    unawaited(_endOperationWakelock());
     super.dispose();
   }
 
@@ -466,6 +472,7 @@ class _DownloadProgressScreenState
                         returnedFiles: _latestFiles,
                       ),
                     ],
+                    const ActiveOperationNote(),
                     if (_showLargeSavingHint) ...[
                       const SizedBox(height: 12),
                       _LargeFileInfoCard(
@@ -715,6 +722,24 @@ class _DownloadProgressScreenState
   void _logSavePerf(String message) {
     if (!kDebugMode) return;
     debugPrint('[ApexLoad Save Perf] $message');
+  }
+
+  void _beginOperationWakelock() {
+    if (_operationWakeLockStarted) return;
+    _operationWakeLockStarted = true;
+    unawaited(
+      ref
+          .read(activeOperationWakelockServiceProvider)
+          .begin(reason: 'download progress'),
+    );
+  }
+
+  Future<void> _endOperationWakelock() async {
+    if (!_operationWakeLockStarted) return;
+    _operationWakeLockStarted = false;
+    await ref
+        .read(activeOperationWakelockServiceProvider)
+        .end(reason: 'download progress');
   }
 }
 

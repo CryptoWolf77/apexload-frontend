@@ -71,11 +71,13 @@ class QuickEditorController extends Notifier<QuickEditorState> {
     try {
       state = state.copyWith(progress: 0.12, clearMessage: true);
       final service = ref.read(localEditorServiceProvider);
-      final completed = await service.runJob(
-        source: sourceItem,
-        job: job,
-        options: options,
-      );
+      final completed = await ref
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () =>
+                service.runJob(source: sourceItem, job: job, options: options),
+            reason: 'quick editor ${job.operation}',
+          );
       if (_cancelled) return;
       state = QuickEditorState(
         progress: 1,

@@ -74,7 +74,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     setState(() => _loading = true);
     try {
-      final result = await ref.read(analyzeServiceProvider).analyze(url);
+      final result = await ref
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () => ref.read(analyzeServiceProvider).analyze(url),
+            reason: 'analyze link',
+          );
       if (!mounted) return;
       setState(() => _loading = false);
       if (result.usedMockFallback) {

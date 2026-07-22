@@ -24,6 +24,7 @@ class SettingsScreen extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
     final autoSaveToGallery = ref.watch(autoSaveToGalleryControllerProvider);
+    final keepScreenAwake = ref.watch(keepScreenAwakeControllerProvider);
     final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     final galleryPublishingSupported =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -166,6 +167,18 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 14),
+        SwitchListTile(
+          value: keepScreenAwake,
+          onChanged: (value) => ref
+              .read(keepScreenAwakeControllerProvider.notifier)
+              .setEnabled(value),
+          title: Text(l.t('keepScreenAwakeDuringDownloads')),
+          subtitle: Text(
+            l.t('keepScreenAwakeDuringDownloadsSubtitle'),
+            style: TextStyle(color: AppTone.textSecondary(context)),
+          ),
+          contentPadding: EdgeInsets.zero,
+        ),
         SwitchListTile(
           value: galleryPublishingSupported && autoSaveToGallery,
           onChanged: galleryPublishingSupported

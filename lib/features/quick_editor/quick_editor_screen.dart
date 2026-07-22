@@ -8,6 +8,7 @@ import 'package:apexload/features/quick_editor/quick_editor_models.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/widgets/active_operation_note.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
@@ -703,13 +704,18 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
     );
     try {
       final path = await ref
-          .read(localEditorServiceProvider)
-          .createGifPreview(
-            source: source,
-            startTime: _gifRange.start,
-            endTime: _gifRange.end,
-            fps: _gifFps,
-            size: _gifSize.toLowerCase(),
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () => ref
+                .read(localEditorServiceProvider)
+                .createGifPreview(
+                  source: source,
+                  startTime: _gifRange.start,
+                  endTime: _gifRange.end,
+                  fps: _gifFps,
+                  size: _gifSize.toLowerCase(),
+                ),
+            reason: 'quick editor gif preview',
           );
       await ref
           .read(localMediaServiceProvider)
@@ -745,12 +751,17 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
     }
     try {
       final previewPath = await ref
-          .read(localEditorServiceProvider)
-          .createAudioSwapPreview(
-            source: widget.item,
-            audioPath: audioPath,
-            audioStartTime: _audioStartPosition,
-            previewDuration: _previewDurationForAudioSwap,
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () => ref
+                .read(localEditorServiceProvider)
+                .createAudioSwapPreview(
+                  source: widget.item,
+                  audioPath: audioPath,
+                  audioStartTime: _audioStartPosition,
+                  previewDuration: _previewDurationForAudioSwap,
+                ),
+            reason: 'quick editor audio swap preview',
           );
       final previewItem = widget.item.copyWith(
         id: '${widget.item.id}_audio_swap_preview',
@@ -2261,6 +2272,7 @@ class _ProgressPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           LinearProgressIndicator(value: progress),
+          const ActiveOperationNote(),
           if (showLargeFileHint) ...[
             const SizedBox(height: 10),
             _EditorLargeFileInfoCard(

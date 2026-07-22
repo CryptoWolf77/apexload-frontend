@@ -81,6 +81,8 @@ class AppLocalizations {
           'Large video detected. Saving may take a little longer. Please keep ApexLoad open while we finish preparing your file.',
       'largeVideoSavingSubtitle':
           'This can take longer for 1080p, 4K, or large files.',
+      'activeOperationWakelockNote':
+          'Keep ApexLoad open while this finishes. The screen will stay awake during downloading or saving.',
       'downloadSaveFailed':
           'The download completed, but the file could not be saved on your device. Please try again.',
       'addingToGallery': 'Adding to Gallery',
@@ -489,6 +491,9 @@ class AppLocalizations {
       'autoSaveToGallery': 'Auto-save to gallery',
       'autoSaveAndroidDescription':
           'Publish supported downloads to your device gallery automatically.',
+      'keepScreenAwakeDuringDownloads': 'Keep screen awake during downloads',
+      'keepScreenAwakeDuringDownloadsSubtitle':
+          'Prevents the screen from sleeping while downloading, saving, or exporting media.',
       'autoSaveIosDescription':
           'Downloads are saved in Files > On My iPhone > ApexLoad. Automatic Photos export is not enabled.',
       'downloadLocation': 'Download location',
@@ -1518,6 +1523,11 @@ class AppLocalizations {
       'permissionRevoked': 'تم إلغاء الإذن',
       'folderNotFound': 'لم يتم العثور على المجلد',
       'noStatusesFound': 'لا توجد حالات',
+      'activeOperationWakelockNote':
+          'يرجى إبقاء ApexLoad مفتوحًا حتى تكتمل العملية. ستبقى الشاشة نشطة أثناء التنزيل أو الحفظ.',
+      'keepScreenAwakeDuringDownloads': 'إبقاء الشاشة نشطة أثناء التنزيل',
+      'keepScreenAwakeDuringDownloadsSubtitle':
+          'يمنع إطفاء الشاشة أثناء تنزيل أو حفظ أو تصدير الوسائط.',
       'madeBy': 'صنع بواسطة',
     },
   };

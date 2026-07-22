@@ -4,6 +4,7 @@ import 'package:apexload/shared/models/media_info_model.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
+import 'package:apexload/shared/widgets/active_operation_note.dart';
 import 'package:apexload/shared/widgets/download_rights_confirmation_dialog.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
@@ -70,12 +71,17 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
     setState(() => _loading = true);
     try {
       final job = await ref
-          .read(apiDownloadServiceProvider)
-          .startDownload(
-            url: url,
-            selectedFormats: [format],
-            premium: false,
-            noWatermark: false,
+          .read(activeOperationWakelockServiceProvider)
+          .runWithWakelock(
+            () => ref
+                .read(apiDownloadServiceProvider)
+                .startDownload(
+                  url: url,
+                  selectedFormats: [format],
+                  premium: false,
+                  noWatermark: false,
+                ),
+            reason: 'audio extraction download job',
           );
       if (!mounted) return;
       setState(() => _loading = false);
@@ -180,6 +186,7 @@ class _AudioExtractionScreenState extends ConsumerState<AudioExtractionScreen> {
                   isLoading: _loading,
                   onPressed: _loading ? null : _extract,
                 ),
+                const ActiveOperationNote(),
               ],
             )
           : Center(

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
+import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
@@ -41,12 +42,15 @@ class CacheClearResult {
 }
 
 class LocalMediaService {
-  LocalMediaService({Dio? dio}) : _dio = dio ?? _sharedDio;
+  LocalMediaService({Dio? dio, ActiveOperationWakelockService? wakelockService})
+    : _dio = dio ?? _sharedDio,
+      _wakelockService = wakelockService;
 
   static final Dio _sharedDio = Dio();
   static Future<void>? _folderSetupFuture;
   static Future<Directory>? _rootDirectoryFuture;
   final Dio _dio;
+  final ActiveOperationWakelockService? _wakelockService;
   static const _androidChannel = MethodChannel('apexload/android');
 
   Future<void> ensureFolders() async {
@@ -80,6 +84,27 @@ class LocalMediaService {
   }
 
   Future<LocalMediaSaveResult> saveRemoteFile({
+    required String url,
+    required String fileName,
+    required DownloadType type,
+    void Function(double progress)? onProgress,
+    VoidCallback? onIndeterminateProgress,
+    bool publishToGallery = true,
+  }) async {
+    return _runWithWakelock(
+      () => _saveRemoteFile(
+        url: url,
+        fileName: fileName,
+        type: type,
+        onProgress: onProgress,
+        onIndeterminateProgress: onIndeterminateProgress,
+        publishToGallery: publishToGallery,
+      ),
+      reason: 'save remote file',
+    );
+  }
+
+  Future<LocalMediaSaveResult> _saveRemoteFile({
     required String url,
     required String fileName,
     required DownloadType type,
@@ -183,21 +208,40 @@ class LocalMediaService {
     required String fileName,
     required DownloadType type,
   }) async {
-    final watch = Stopwatch()..start();
-    final uri = await publishToGallery(
-      localFilePath: localFilePath,
-      fileName: fileName,
-      type: type,
-    );
-    watch.stop();
-    _logSavePerf(
-      uri == null
-          ? 'gallery scan finished without uri in: ${watch.elapsedMilliseconds} ms'
-          : 'gallery scan finished in: ${watch.elapsedMilliseconds} ms',
-    );
+    await _runWithWakelock(() async {
+      final watch = Stopwatch()..start();
+      final uri = await publishToGallery(
+        localFilePath: localFilePath,
+        fileName: fileName,
+        type: type,
+      );
+      watch.stop();
+      _logSavePerf(
+        uri == null
+            ? 'gallery scan finished without uri in: ${watch.elapsedMilliseconds} ms'
+            : 'gallery scan finished in: ${watch.elapsedMilliseconds} ms',
+      );
+    }, reason: 'publish to gallery');
   }
 
   Future<LocalMediaSaveResult> saveLocalFile({
+    required String sourcePath,
+    required String fileName,
+    required DownloadType type,
+    bool statusFile = false,
+  }) async {
+    return _runWithWakelock(
+      () => _saveLocalFile(
+        sourcePath: sourcePath,
+        fileName: fileName,
+        type: type,
+        statusFile: statusFile,
+      ),
+      reason: 'save local file',
+    );
+  }
+
+  Future<LocalMediaSaveResult> _saveLocalFile({
     required String sourcePath,
     required String fileName,
     required DownloadType type,
@@ -685,5 +729,14 @@ class LocalMediaService {
             : 'audio/mpeg',
       DownloadType.image => 'image/*',
     };
+  }
+
+  Future<T> _runWithWakelock<T>(
+    Future<T> Function() task, {
+    required String reason,
+  }) {
+    final service = _wakelockService;
+    if (service == null) return task();
+    return service.runWithWakelock(task, reason: reason);
   }
 }
