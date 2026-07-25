@@ -8,6 +8,7 @@ class LocalEditorService {
     required DownloadItemModel source,
     required QuickEditorJob job,
     required Map<String, Object?> options,
+    void Function(double progress)? onProgress,
   }) {
     throw const LocalEditorException('local_editor_unavailable');
   }

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Apexload</string>
+	<string>ApexLoad</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -28,6 +28,10 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>ApexLoad may request camera access when an embedded web page or system picker needs it, such as scanning a QR code to connect a supported service.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>ApexLoad needs permission to save downloaded videos and images to your Photos library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

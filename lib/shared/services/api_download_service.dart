@@ -273,4 +273,21 @@ class ApiDownloadFile {
   final String type;
   final String size;
   final String downloadUrl;
+
+  int? get sizeBytes {
+    final match = RegExp(
+      r'^([\d.,]+)\s*(B|KB|MB|GB)$',
+      caseSensitive: false,
+    ).firstMatch(size.trim());
+    if (match == null) return null;
+    final value = double.tryParse(match.group(1)!.replaceAll(',', ''));
+    if (value == null || value < 0) return null;
+    final multiplier = switch (match.group(2)!.toUpperCase()) {
+      'KB' => 1024,
+      'MB' => 1024 * 1024,
+      'GB' => 1024 * 1024 * 1024,
+      _ => 1,
+    };
+    return (value * multiplier).round();
+  }
 }

@@ -13,7 +13,6 @@ import 'package:apexload/shared/widgets/platform_chip.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -146,8 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l = AppLocalizations.of(context);
     final recent = ref.watch(libraryControllerProvider).take(2).toList();
     final subscription = ref.watch(subscriptionControllerProvider);
-    final showWhatsappStatusSaver =
-        kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
+    const showWhatsappStatusSaver = true;
     final remainingText = l
         .t('freeDownloadsLeft')
         .replaceFirst(
@@ -384,65 +382,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        if (!subscription.isPremium)
-          GlassCard(
-            onTap: () => context.push('/premium'),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: AppColors.premiumGold,
-                  size: 34,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l.t('upgradeToPremium'),
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${l.t('homeUpgradeCopy')} ${l.t('noWatermarkWhenAvailable').toLowerCase()}.',
-                        style: TextStyle(color: AppTone.textSecondary(context)),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTone.textSecondary(context),
-                ),
-              ],
-            ),
-          )
-        else
-          GlassCard(
-            onTap: () => context.push('/premium'),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.verified_rounded,
-                  color: AppColors.premiumGold,
-                  size: 32,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    l.t('premiumActive'),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTone.textSecondary(context),
-                ),
-              ],
-            ),
-          ),
         const SizedBox(height: 14),
         const LegalNoticeCard(compact: true),
         const SizedBox(height: 22),

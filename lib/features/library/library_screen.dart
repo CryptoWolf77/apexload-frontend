@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
@@ -112,12 +114,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        if (hasNonMp4Video) ...[
-          _PlaybackTipCard(
-            onOpenQuickEditor: () => context.go('/quick-editor'),
-          ),
-          const SizedBox(height: 14),
-        ],
         if (items.isEmpty)
           SizedBox(
             height: 360,
@@ -148,6 +144,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               const SizedBox(height: 10),
             ],
           ],
+        if (hasNonMp4Video) ...[
+          const SizedBox(height: 12),
+          _PlaybackTipCard(
+            onOpenQuickEditor: () => context.go('/quick-editor'),
+          ),
+        ],
+        const SizedBox(height: 22),
       ],
     );
   }
@@ -187,6 +190,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Future<void> _openItem(DownloadItemModel item) async {
     try {
+      final localPath = item.localFilePath.trim();
+      if (item.type == DownloadType.image &&
+          localPath.isNotEmpty &&
+          File(localPath).existsSync()) {
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                _LibraryImagePreview(filePath: localPath, title: item.fileName),
+          ),
+        );
+        return;
+      }
       await ref.read(localMediaServiceProvider).openItem(item);
     } on Object catch (error) {
       if (!mounted) return;
@@ -351,6 +366,80 @@ class _PlaybackTipCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LibraryImagePreview extends StatelessWidget {
+  const _LibraryImagePreview({required this.filePath, required this.title});
+
+  final String filePath;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFF050914),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 6,
+                child: Center(
+                  child: Image.file(
+                    File(filePath),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.broken_image_rounded,
+                          size: 54,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          strings.t('couldNotOpenFile'),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            PositionedDirectional(
+              top: 10,
+              start: 12,
+              end: 12,
+              child: Row(
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: strings.t('close'),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

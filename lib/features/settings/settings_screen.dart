@@ -27,7 +27,9 @@ class SettingsScreen extends ConsumerWidget {
     final keepScreenAwake = ref.watch(keepScreenAwakeControllerProvider);
     final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     final galleryPublishingSupported =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
     final planLabel = subscription.isPremium
         ? _premiumPlanLabel(l, subscription.planName)
         : l.t('freePlan');
@@ -87,10 +89,6 @@ class SettingsScreen extends ConsumerWidget {
                     unlocked: subscription.isPremium,
                   ),
                   _FeaturePill(
-                    label: l.t('batchDownloads'),
-                    unlocked: subscription.isPremium,
-                  ),
-                  _FeaturePill(
                     label: l.t('audioSwap'),
                     unlocked: subscription.isPremium,
                   ),
@@ -130,134 +128,199 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 18),
-        _SectionTitle(l.t('language')),
-        DropdownButtonFormField<String>(
-          initialValue: locale?.languageCode ?? 'system',
-          items: [
-            DropdownMenuItem(
-              value: 'system',
-              child: Text(l.t('systemDefault')),
-            ),
-            DropdownMenuItem(value: 'en', child: Text(l.t('english'))),
-            DropdownMenuItem(value: 'ar', child: Text(l.t('arabic'))),
-          ],
-          onChanged: (value) {
-            final controller = ref.read(localeControllerProvider.notifier);
-            if (value == 'ar') controller.setArabic();
-            if (value == 'en') controller.setEnglish();
-            if (value == 'system') controller.setSystem();
-          },
+        _SectionTitle(l.t('appPreferences')),
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.t('language'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: locale?.languageCode ?? 'system',
+                items: [
+                  DropdownMenuItem(
+                    value: 'system',
+                    child: Text(l.t('systemDefault')),
+                  ),
+                  DropdownMenuItem(value: 'en', child: Text(l.t('english'))),
+                  DropdownMenuItem(value: 'ar', child: Text(l.t('arabic'))),
+                ],
+                onChanged: (value) {
+                  final controller = ref.read(
+                    localeControllerProvider.notifier,
+                  );
+                  if (value == 'ar') controller.setArabic();
+                  if (value == 'en') controller.setEnglish();
+                  if (value == 'system') controller.setSystem();
+                },
+              ),
+              const SizedBox(height: 14),
+              Text(
+                l.t('theme'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<ThemeMode>(
+                initialValue: themeMode,
+                items: [
+                  DropdownMenuItem(
+                    value: ThemeMode.system,
+                    child: Text(l.t('system')),
+                  ),
+                  DropdownMenuItem(
+                    value: ThemeMode.dark,
+                    child: Text(l.t('dark')),
+                  ),
+                  DropdownMenuItem(
+                    value: ThemeMode.light,
+                    child: Text(l.t('light')),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    ref
+                        .read(themeModeControllerProvider.notifier)
+                        .setMode(value);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              Divider(color: AppTone.border(context)),
+              Material(
+                color: Colors.transparent,
+                child: SwitchListTile(
+                  value: keepScreenAwake,
+                  onChanged: (value) => ref
+                      .read(keepScreenAwakeControllerProvider.notifier)
+                      .setEnabled(value),
+                  title: Text(l.t('keepScreenAwakeDuringDownloads')),
+                  subtitle: Text(
+                    l.t('keepScreenAwakeDuringDownloadsSubtitle'),
+                    style: TextStyle(color: AppTone.textSecondary(context)),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              Divider(color: AppTone.border(context)),
+              Material(
+                color: Colors.transparent,
+                child: SwitchListTile(
+                  value: galleryPublishingSupported && autoSaveToGallery,
+                  onChanged: galleryPublishingSupported
+                      ? (value) => ref
+                            .read(autoSaveToGalleryControllerProvider.notifier)
+                            .setEnabled(value)
+                      : null,
+                  title: Text(l.t('autoSaveToGallery')),
+                  subtitle: Text(
+                    isIos
+                        ? l.t('autoSaveIosDescription')
+                        : l.t('autoSaveAndroidDescription'),
+                    style: TextStyle(color: AppTone.textSecondary(context)),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 14),
-        _SectionTitle(l.t('theme')),
-        DropdownButtonFormField<ThemeMode>(
-          initialValue: themeMode,
-          items: [
-            DropdownMenuItem(
-              value: ThemeMode.system,
-              child: Text(l.t('system')),
-            ),
-            DropdownMenuItem(value: ThemeMode.dark, child: Text(l.t('dark'))),
-            DropdownMenuItem(value: ThemeMode.light, child: Text(l.t('light'))),
-          ],
-          onChanged: (value) {
-            if (value != null) {
-              ref.read(themeModeControllerProvider.notifier).setMode(value);
-            }
-          },
-        ),
-        const SizedBox(height: 14),
-        SwitchListTile(
-          value: keepScreenAwake,
-          onChanged: (value) => ref
-              .read(keepScreenAwakeControllerProvider.notifier)
-              .setEnabled(value),
-          title: Text(l.t('keepScreenAwakeDuringDownloads')),
-          subtitle: Text(
-            l.t('keepScreenAwakeDuringDownloadsSubtitle'),
-            style: TextStyle(color: AppTone.textSecondary(context)),
+        _SectionTitle(l.t('storageAndDownloads')),
+        GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Column(
+            children: [
+              _SettingsTile(
+                icon: Icons.folder_rounded,
+                title: l.t('downloadLocation'),
+                subtitle: isIos
+                    ? l.t('downloadLocationIosSubtitle')
+                    : l.t('downloadLocationAndroidSubtitle'),
+                onTap: () => _showDownloadLocation(context, ref),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.cleaning_services_rounded,
+                title: l.t('clearCache'),
+                subtitle: l.t('clearCacheSubtitle'),
+                onTap: () => _clearCache(context, ref),
+              ),
+            ],
           ),
-          contentPadding: EdgeInsets.zero,
-        ),
-        SwitchListTile(
-          value: galleryPublishingSupported && autoSaveToGallery,
-          onChanged: galleryPublishingSupported
-              ? (value) => ref
-                    .read(autoSaveToGalleryControllerProvider.notifier)
-                    .setEnabled(value)
-              : null,
-          title: Text(l.t('autoSaveToGallery')),
-          subtitle: Text(
-            isIos
-                ? l.t('autoSaveIosDescription')
-                : l.t('autoSaveAndroidDescription'),
-            style: TextStyle(color: AppTone.textSecondary(context)),
-          ),
-          contentPadding: EdgeInsets.zero,
-        ),
-        _SettingsTile(
-          icon: Icons.folder_rounded,
-          title: l.t('downloadLocation'),
-          subtitle: isIos
-              ? l.t('downloadLocationIosSubtitle')
-              : l.t('downloadLocationAndroidSubtitle'),
-          onTap: () => _showDownloadLocation(context, ref),
-        ),
-        _SettingsTile(
-          icon: Icons.cleaning_services_rounded,
-          title: l.t('clearCache'),
-          subtitle: l.t('clearCacheSubtitle'),
-          onTap: () => _clearCache(context, ref),
         ),
         const SizedBox(height: 14),
         _SectionTitle(l.t('legalAndResponsibleUse')),
-        _SettingsTile(
-          icon: Icons.verified_user_rounded,
-          title: l.t('reviewResponsibleUseAgreement'),
-          subtitle: l.t('reviewResponsibleUseAgreementSubtitle'),
-          onTap: () => context.push('/responsible-use?review=true'),
+        GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Column(
+            children: [
+              _SettingsTile(
+                icon: Icons.verified_user_rounded,
+                title: l.t('reviewResponsibleUseAgreement'),
+                subtitle: l.t('reviewResponsibleUseAgreementSubtitle'),
+                onTap: () => context.push('/responsible-use?review=true'),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.privacy_tip_rounded,
+                title: l.t('privacyPolicy'),
+                subtitle: l.t('privacyPolicySubtitle'),
+                onTap: () => context.push('/privacy'),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.article_rounded,
+                title: l.t('termsOfUse'),
+                subtitle: l.t('termsOfUseSubtitle'),
+                onTap: () => context.push('/terms'),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.rule_rounded,
+                title: l.t('acceptableUsePolicy'),
+                subtitle: 'apexload.org',
+                onTap: () => _openLegalUrl(context, AppConfig.acceptableUseUrl),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.copyright_rounded,
+                title: l.t('copyrightPolicy'),
+                subtitle: 'apexload.org',
+                onTap: () => _openLegalUrl(context, AppConfig.copyrightUrl),
+              ),
+              Divider(height: 1, color: AppTone.border(context)),
+              _SettingsTile(
+                icon: Icons.report_problem_rounded,
+                title: l.t('submitTakedownRequest'),
+                subtitle: 'apexload.org',
+                onTap: () => _openLegalUrl(context, AppConfig.takedownUrl),
+              ),
+            ],
+          ),
         ),
-        _SettingsTile(
-          icon: Icons.privacy_tip_rounded,
-          title: l.t('privacyPolicy'),
-          subtitle: l.t('privacyPolicySubtitle'),
-          onTap: () => context.push('/privacy'),
-        ),
-        _SettingsTile(
-          icon: Icons.article_rounded,
-          title: l.t('termsOfUse'),
-          subtitle: l.t('termsOfUseSubtitle'),
-          onTap: () => context.push('/terms'),
-        ),
-        _SettingsTile(
-          icon: Icons.rule_rounded,
-          title: l.t('acceptableUsePolicy'),
-          subtitle: AppConfig.acceptableUseUrl,
-          onTap: () => _openLegalUrl(context, AppConfig.acceptableUseUrl),
-        ),
-        _SettingsTile(
-          icon: Icons.copyright_rounded,
-          title: l.t('copyrightPolicy'),
-          subtitle: AppConfig.copyrightUrl,
-          onTap: () => _openLegalUrl(context, AppConfig.copyrightUrl),
-        ),
-        _SettingsTile(
-          icon: Icons.report_problem_rounded,
-          title: l.t('submitTakedownRequest'),
-          subtitle: AppConfig.takedownUrl,
-          onTap: () => _openLegalUrl(context, AppConfig.takedownUrl),
-        ),
-        _SettingsTile(
-          icon: Icons.support_agent_rounded,
-          title: l.t('contactSupport'),
-          subtitle: 'support@apexload.org',
-          onTap: () => _contactSupport(context),
-        ),
-        _SettingsTile(
-          icon: Icons.star_rate_rounded,
-          title: l.t('rateApp'),
-          subtitle: l.t('rateAppSubtitle'),
-          onTap: () => _rateApp(context),
+        const SizedBox(height: 14),
+        _SectionTitle(l.t('support')),
+        GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Column(
+            children: [
+              _SettingsTile(
+                icon: Icons.support_agent_rounded,
+                title: l.t('contactSupport'),
+                subtitle: 'support@apexload.org',
+                onTap: () => _contactSupport(context),
+              ),
+              _SettingsTile(
+                icon: Icons.star_rate_rounded,
+                title: l.t('rateApp'),
+                subtitle: l.t('rateAppSubtitle'),
+                onTap: () => _rateApp(context),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 10),
         Center(
@@ -561,7 +624,6 @@ class SettingsScreen extends ConsumerWidget {
     return switch (planName) {
       'Monthly' => l.t('premiumMonthly'),
       'Yearly' => l.t('premiumYearly'),
-      'Lifetime' => l.t('premiumLifetime'),
       _ => l.t('premiumActive'),
     };
   }
@@ -691,16 +753,19 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: AppColors.primaryEnd),
-      title: Text(title),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: AppTone.textSecondary(context)),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: AppColors.primaryEnd),
+        title: Text(title),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: AppTone.textSecondary(context)),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
       ),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
     );
   }
 }

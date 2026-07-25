@@ -2,6 +2,7 @@ import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/core/routing/app_router.dart';
 import 'package:apexload/core/theme/app_theme.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/services/store_subscription_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ class ApexLoadApp extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
     final router = ref.watch(appRouterProvider);
+    ref.watch(subscriptionStoreControllerProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

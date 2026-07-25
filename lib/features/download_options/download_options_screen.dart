@@ -158,7 +158,6 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
       apiJobId = job.jobId.isEmpty ? null : job.jobId;
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
-      AppNotification.success(context, message: l.t('downloadJobCreated'));
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
@@ -178,7 +177,8 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
             : _fileController.text.trim(),
         saveToGallery:
             !kIsWeb &&
-            defaultTargetPlatform == TargetPlatform.android &&
+            (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS) &&
             ref.read(autoSaveToGalleryControllerProvider),
         apiJobId: apiJobId,
       ),
@@ -253,7 +253,9 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
     final subscription = ref.watch(subscriptionControllerProvider);
     final autoSaveToGallery = ref.watch(autoSaveToGalleryControllerProvider);
     final galleryPublishingSupported =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
     final premiumActive = subscription.isPremium;
     final l = AppLocalizations.of(context);
     final remainingText = l
@@ -390,26 +392,52 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
             ),
             const SizedBox(height: 10),
           ],
-          SwitchListTile(
-            value: galleryPublishingSupported && autoSaveToGallery,
-            onChanged: galleryPublishingSupported
-                ? (value) => ref
-                      .read(autoSaveToGalleryControllerProvider.notifier)
-                      .setEnabled(value)
-                : null,
-            title: Text(l.t('saveToGallery')),
-            subtitle: Text(
-              galleryPublishingSupported
-                  ? l.t('autoSaveAndroidDescription')
-                  : l.t('autoSaveIosDescription'),
-            ),
-            contentPadding: EdgeInsets.zero,
+          const SizedBox(height: 4),
+          Text(
+            l.t('saveOptions'),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          TextField(
-            controller: _fileController,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.drive_file_rename_outline_rounded),
-              labelText: l.t('customFilename'),
+          const SizedBox(height: 10),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: SwitchListTile(
+                    value: galleryPublishingSupported && autoSaveToGallery,
+                    onChanged: galleryPublishingSupported
+                        ? (value) => ref
+                              .read(
+                                autoSaveToGalleryControllerProvider.notifier,
+                              )
+                              .setEnabled(value)
+                        : null,
+                    title: Text(l.t('saveToGallery')),
+                    subtitle: Text(
+                      galleryPublishingSupported
+                          ? l.t('autoSaveAndroidDescription')
+                          : l.t('autoSaveIosDescription'),
+                      style: TextStyle(
+                        color: AppTone.textSecondary(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                Divider(color: AppTone.border(context)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _fileController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(
+                      Icons.drive_file_rename_outline_rounded,
+                    ),
+                    labelText: l.t('customFilename'),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

@@ -270,7 +270,7 @@ class _FakeApiDownloadService extends ApiDownloadService {
     return const ApiDownloadJob(
       jobId: 'job_test',
       status: 'queued',
-      message: 'Download job created',
+      message: 'queued',
     );
   }
 }

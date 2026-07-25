@@ -7,6 +7,8 @@ import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:open_filex/open_filex.dart';
@@ -49,9 +51,14 @@ class LocalMediaService {
   static final Dio _sharedDio = Dio();
   static Future<void>? _folderSetupFuture;
   static Future<Directory>? _rootDirectoryFuture;
+  static const _androidParallelDownloadThresholdBytes = 32 * 1024 * 1024;
+  static const _androidFourPartDownloadThresholdBytes = 96 * 1024 * 1024;
+  static const _iosParallelDownloadThresholdBytes = 8 * 1024 * 1024;
+  static const _iosFourPartDownloadThresholdBytes = 32 * 1024 * 1024;
   final Dio _dio;
   final ActiveOperationWakelockService? _wakelockService;
   static const _androidChannel = MethodChannel('apexload/android');
+  static const _iosChannel = MethodChannel('apexload/ios');
 
   Future<void> ensureFolders() async {
     final setup = _folderSetupFuture ??= _createFolders();
@@ -87,6 +94,7 @@ class LocalMediaService {
     required String url,
     required String fileName,
     required DownloadType type,
+    int? expectedSizeBytes,
     void Function(double progress)? onProgress,
     VoidCallback? onIndeterminateProgress,
     bool publishToGallery = true,
@@ -96,6 +104,7 @@ class LocalMediaService {
         url: url,
         fileName: fileName,
         type: type,
+        expectedSizeBytes: expectedSizeBytes,
         onProgress: onProgress,
         onIndeterminateProgress: onIndeterminateProgress,
         publishToGallery: publishToGallery,
@@ -108,6 +117,7 @@ class LocalMediaService {
     required String url,
     required String fileName,
     required DownloadType type,
+    int? expectedSizeBytes,
     void Function(double progress)? onProgress,
     VoidCallback? onIndeterminateProgress,
     bool publishToGallery = true,
@@ -118,6 +128,8 @@ class LocalMediaService {
     final folder = await _folderFor(type);
     final safeName = _safeFileName(fileName, fallback: _defaultFileName(type));
     final file = await _uniqueFile(folder, safeName);
+    var savedFile = file;
+    final prepareForIosPlayback = Platform.isIOS && type == DownloadType.video;
     _logSavePerf('downloadUrl: $url');
     _logSavePerf('targetPath: ${file.path}');
     _logIosSave('Starting save');
@@ -126,25 +138,16 @@ class LocalMediaService {
     _logIosSave('Expected filename: $safeName');
     _logIosSave('Target: ${file.path}');
     _logIosSave('Directory exists: ${folder.existsSync()}');
-    var loggedContentLength = false;
     final downloadWatch = Stopwatch()..start();
     try {
-      await _dio.download(
-        url,
-        file.path,
-        deleteOnError: true,
-        options: Options(responseType: ResponseType.stream),
-        onReceiveProgress: (received, total) {
-          if (!loggedContentLength) {
-            loggedContentLength = true;
-            _logSavePerf('contentLength: ${total > 0 ? total : 'unknown'}');
-          }
-          if (total <= 0) {
-            onIndeterminateProgress?.call();
-            return;
-          }
-          onProgress?.call((received / total).clamp(0, 1));
-        },
+      await _downloadToFile(
+        url: url,
+        file: file,
+        expectedSizeBytes: expectedSizeBytes,
+        onProgress: prepareForIosPlayback
+            ? (progress) => onProgress?.call(progress * 0.82)
+            : onProgress,
+        onIndeterminateProgress: onIndeterminateProgress,
       );
     } on Object catch (error, stackTrace) {
       _logIosSave('Failed: ${error.runtimeType}: $error');
@@ -162,12 +165,24 @@ class LocalMediaService {
     );
     final verifyWatch = Stopwatch()..start();
     final exists = file.existsSync();
-    final size = exists ? await file.length() : 0;
+    var size = exists ? await file.length() : 0;
     _logIosSave('File exists: $exists');
     _logIosSave('File size: $size');
     if (!exists || size == 0) {
       _logIosSave('Failed: saved file missing or empty');
       throw StateError('Downloaded file could not be saved.');
+    }
+    if (prepareForIosPlayback) {
+      try {
+        savedFile = await _prepareVideoForIosPlayback(
+          file,
+          onProgress: onProgress,
+        );
+      } on Object {
+        if (file.existsSync()) await file.delete();
+        rethrow;
+      }
+      size = await savedFile.length();
     }
     verifyWatch.stop();
     _logSavePerf(
@@ -177,8 +192,8 @@ class LocalMediaService {
       final galleryQueueWatch = Stopwatch()..start();
       unawaited(
         _publishToGalleryAfterSave(
-          localFilePath: file.path,
-          fileName: file.uri.pathSegments.last,
+          localFilePath: savedFile.path,
+          fileName: savedFile.uri.pathSegments.last,
           type: type,
         ),
       );
@@ -195,12 +210,297 @@ class LocalMediaService {
     );
     _logIosSave('Completed');
     return LocalMediaSaveResult(
-      localFilePath: file.path,
+      localFilePath: savedFile.path,
       thumbnailPath: '',
-      fileName: file.uri.pathSegments.last,
+      fileName: savedFile.uri.pathSegments.last,
       sizeLabel: _formatBytes(size),
       galleryUri: '',
     );
+  }
+
+  Future<File> _prepareVideoForIosPlayback(
+    File source, {
+    void Function(double progress)? onProgress,
+  }) async {
+    onProgress?.call(0.84);
+    final probeSession = await FFprobeKit.getMediaInformation(source.path);
+    final media = probeSession.getMediaInformation();
+    if (media == null) {
+      throw StateError('Downloaded video could not be inspected.');
+    }
+
+    final videoStreams = media
+        .getStreams()
+        .where((stream) => stream.getType()?.toLowerCase() == 'video')
+        .toList(growable: false);
+    if (videoStreams.isEmpty) {
+      throw StateError('Downloaded video does not contain a video track.');
+    }
+
+    final codecs = videoStreams
+        .map((stream) => stream.getCodec()?.toLowerCase().trim() ?? '')
+        .where((codec) => codec.isNotEmpty)
+        .toSet();
+    final extension = _extension(source.uri.pathSegments.last);
+    final compatibleContainer = {'mp4', 'm4v', 'mov'}.contains(extension);
+    final compatibleVideo =
+        codecs.isNotEmpty &&
+        codecs.every((codec) => codec == 'h264' || codec == 'hevc');
+    if (compatibleContainer && compatibleVideo) {
+      _logIosSave('Native video codec detected: ${codecs.join(', ')}');
+      onProgress?.call(1);
+      return source;
+    }
+
+    _logIosSave(
+      'Converting video for iOS playback: '
+      'container=$extension codec=${codecs.join(', ')}',
+    );
+    final sourceName = source.uri.pathSegments.last;
+    final finalFile = extension == 'mp4'
+        ? source
+        : await _uniqueFile(source.parent, '${_baseName(sourceName)}.mp4');
+    final workingFile = File(
+      '${finalFile.path}.apexload_ios_compat_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
+    final durationMs = (double.tryParse(media.getDuration() ?? '') ?? 0) * 1000;
+    final completion = Completer<FFmpegSession>();
+    await FFmpegKit.executeWithArgumentsAsync(
+      [
+        '-y',
+        '-i',
+        source.path,
+        '-map',
+        '0:v:0',
+        '-map',
+        '0:a?',
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
+        '-crf',
+        '18',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        workingFile.path,
+      ],
+      (session) {
+        if (!completion.isCompleted) completion.complete(session);
+      },
+      null,
+      (statistics) {
+        if (durationMs <= 0) return;
+        final converted = (statistics.getTime() / durationMs).clamp(0.0, 1.0);
+        onProgress?.call(0.84 + converted * 0.15);
+      },
+    );
+    final session = await completion.future;
+    final code = await session.getReturnCode();
+    if (!ReturnCode.isSuccess(code) ||
+        !workingFile.existsSync() ||
+        workingFile.lengthSync() == 0) {
+      if (workingFile.existsSync()) await workingFile.delete();
+      throw StateError('Downloaded video could not be made iPhone-compatible.');
+    }
+
+    if (finalFile.existsSync()) await finalFile.delete();
+    final convertedFile = await workingFile.rename(finalFile.path);
+    if (source.path != convertedFile.path && source.existsSync()) {
+      await source.delete();
+    }
+    onProgress?.call(1);
+    _logIosSave('iOS-compatible H.264 MP4 created');
+    return convertedFile;
+  }
+
+  Future<void> _downloadToFile({
+    required String url,
+    required File file,
+    int? expectedSizeBytes,
+    void Function(double progress)? onProgress,
+    VoidCallback? onIndeterminateProgress,
+  }) async {
+    final supportsParallelDownload = Platform.isAndroid || Platform.isIOS;
+    final parallelThreshold = Platform.isIOS
+        ? _iosParallelDownloadThresholdBytes
+        : _androidParallelDownloadThresholdBytes;
+    final shouldProbeForParallelDownload = Platform.isIOS
+        ? expectedSizeBytes != null && expectedSizeBytes >= parallelThreshold
+        : expectedSizeBytes == null || expectedSizeBytes >= parallelThreshold;
+    if (supportsParallelDownload && shouldProbeForParallelDownload) {
+      try {
+        final downloadedInParallel = await _tryParallelDownload(
+          url: url,
+          file: file,
+          parallelThresholdBytes: parallelThreshold,
+          fourPartThresholdBytes: Platform.isIOS
+              ? _iosFourPartDownloadThresholdBytes
+              : _androidFourPartDownloadThresholdBytes,
+          onProgress: onProgress,
+        );
+        if (downloadedInParallel) return;
+      } on Object catch (error) {
+        _logSavePerf('parallel download unavailable; using one stream: $error');
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+    } else if (supportsParallelDownload) {
+      _logSavePerf(
+        'known small file: $expectedSizeBytes bytes; starting direct transfer',
+      );
+    }
+
+    var loggedContentLength = false;
+    await _dio.download(
+      url,
+      file.path,
+      deleteOnError: true,
+      options: Options(responseType: ResponseType.stream),
+      onReceiveProgress: (received, total) {
+        if (!loggedContentLength) {
+          loggedContentLength = true;
+          _logSavePerf('contentLength: ${total > 0 ? total : 'unknown'}');
+        }
+        if (total <= 0) {
+          onIndeterminateProgress?.call();
+          return;
+        }
+        onProgress?.call((received / total).clamp(0, 1));
+      },
+    );
+  }
+
+  Future<bool> _tryParallelDownload({
+    required String url,
+    required File file,
+    required int parallelThresholdBytes,
+    required int fourPartThresholdBytes,
+    void Function(double progress)? onProgress,
+  }) async {
+    final probe = await _dio.get<ResponseBody>(
+      url,
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: const {'Range': 'bytes=0-0', 'Accept-Encoding': 'identity'},
+        validateStatus: (status) => status == 200 || status == 206,
+      ),
+    );
+    final probeBody = probe.data;
+    if (probeBody == null) return false;
+    if (probe.statusCode != 206) {
+      await _cancelResponseBody(probeBody);
+      _logSavePerf(
+        'range requests unsupported; canceled probe before downloading file',
+      );
+      return false;
+    }
+    await probeBody.stream.drain<void>();
+
+    final totalBytes = _contentRangeTotal(probe.headers.value('content-range'));
+    if (totalBytes == null || totalBytes < parallelThresholdBytes) {
+      return false;
+    }
+
+    var receivedBytes = 0;
+    final partCount = totalBytes >= fourPartThresholdBytes ? 4 : 2;
+    final partSize = (totalBytes / partCount).ceil();
+    final ranges = <(int, int)>[];
+    for (var index = 0; index < partCount; index++) {
+      final start = index * partSize;
+      if (start >= totalBytes) break;
+      final proposedEnd = start + partSize - 1;
+      final end = proposedEnd < totalBytes ? proposedEnd : totalBytes - 1;
+      ranges.add((start, end));
+    }
+
+    _logSavePerf(
+      'large file detected: $totalBytes bytes; using ${ranges.length} streams',
+    );
+    final handles = <RandomAccessFile>[];
+    try {
+      for (var index = 0; index < ranges.length; index++) {
+        handles.add(await file.open(mode: FileMode.writeOnly));
+      }
+      await handles.first.truncate(totalBytes);
+      await Future.wait([
+        for (var index = 0; index < ranges.length; index++)
+          _downloadRange(
+            url: url,
+            start: ranges[index].$1,
+            end: ranges[index].$2,
+            handle: handles[index],
+            onBytes: (count) {
+              receivedBytes += count;
+              onProgress?.call((receivedBytes / totalBytes).clamp(0, 1));
+            },
+          ),
+      ]);
+    } finally {
+      for (final handle in handles) {
+        await handle.close();
+      }
+    }
+    if (await file.length() != totalBytes) {
+      throw StateError('Parallel download size verification failed.');
+    }
+    onProgress?.call(1);
+    return true;
+  }
+
+  Future<void> _downloadRange({
+    required String url,
+    required int start,
+    required int end,
+    required RandomAccessFile handle,
+    required ValueChanged<int> onBytes,
+  }) async {
+    final response = await _dio.get<ResponseBody>(
+      url,
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: {'Range': 'bytes=$start-$end', 'Accept-Encoding': 'identity'},
+        validateStatus: (status) => status == 206,
+      ),
+    );
+    final body = response.data;
+    if (response.statusCode != 206 || body == null) {
+      throw StateError('The server did not return the requested file range.');
+    }
+
+    final expectedBytes = end - start + 1;
+    var writtenBytes = 0;
+    await handle.setPosition(start);
+    await for (final chunk in body.stream) {
+      final remaining = expectedBytes - writtenBytes;
+      if (remaining <= 0) break;
+      final count = chunk.length < remaining ? chunk.length : remaining;
+      await handle.writeFrom(chunk, 0, count);
+      writtenBytes += count;
+      onBytes(count);
+    }
+    if (writtenBytes != expectedBytes) {
+      throw StateError(
+        'File range was incomplete ($writtenBytes of $expectedBytes bytes).',
+      );
+    }
+  }
+
+  Future<void> _cancelResponseBody(ResponseBody body) async {
+    final subscription = body.stream.listen((_) {});
+    await subscription.cancel();
+  }
+
+  int? _contentRangeTotal(String? value) {
+    if (value == null) return null;
+    final match = RegExp(r'^bytes\s+\d+-\d+\/(\d+)$').firstMatch(value.trim());
+    return match == null ? null : int.tryParse(match.group(1)!);
   }
 
   Future<void> _publishToGalleryAfterSave({
@@ -284,11 +584,13 @@ class LocalMediaService {
     required DownloadType type,
     String? category,
   }) async {
-    if (!Platform.isAndroid) return null;
+    if (!Platform.isAndroid && !Platform.isIOS) return null;
+    if (Platform.isIOS && type == DownloadType.audio) return null;
     final file = File(localFilePath);
     if (!file.existsSync()) return null;
     try {
-      return await _androidChannel.invokeMethod<String>('publishToGallery', {
+      final channel = Platform.isIOS ? _iosChannel : _androidChannel;
+      return await channel.invokeMethod<String>('publishToGallery', {
         'sourcePath': localFilePath,
         'fileName': fileName,
         'type': type.name,
@@ -297,6 +599,30 @@ class LocalMediaService {
     } on Object {
       return null;
     }
+  }
+
+  void publishToGalleryInBackground({
+    required String localFilePath,
+    required String fileName,
+    required DownloadType type,
+    String? category,
+  }) {
+    unawaited(
+      _runWithWakelock(() async {
+        final watch = Stopwatch()..start();
+        await publishToGallery(
+          localFilePath: localFilePath,
+          fileName: fileName,
+          type: type,
+          category: category,
+        );
+        watch.stop();
+        _logSavePerf(
+          'background editor gallery publish finished in: '
+          '${watch.elapsedMilliseconds} ms',
+        );
+      }, reason: 'publish editor output'),
+    );
   }
 
   Future<String?> generateThumbnail({
@@ -348,7 +674,15 @@ class LocalMediaService {
   Future<void> openItem(DownloadItemModel item) async {
     final localPath = item.localFilePath.trim();
     if (localPath.isNotEmpty && File(localPath).existsSync()) {
-      final result = await OpenFilex.open(localPath, type: _mimeType(item));
+      var playablePath = localPath;
+      if (Platform.isIOS &&
+          item.type == DownloadType.video &&
+          _extension(item.fileName) == 'mp4') {
+        playablePath = (await _prepareVideoForIosPlayback(
+          File(localPath),
+        )).path;
+      }
+      final result = await OpenFilex.open(playablePath, type: _mimeType(item));
       if (result.type == ResultType.done) return;
       throw StateError(result.message);
     }

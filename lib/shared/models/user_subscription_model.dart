@@ -19,6 +19,7 @@ class UserSubscriptionModel {
 
   bool get adsEnabled => !isPremium;
   bool get hasDailyLimit => !isPremium;
+  bool get isStoreManagedPremium => isPremium && !premiumActivatedMock;
   int get remainingDownloadsToday => isPremium
       ? 999999
       : (dailyDownloadLimit - downloadsUsedToday).clamp(0, dailyDownloadLimit);
@@ -42,6 +43,8 @@ class UserSubscriptionModel {
   factory UserSubscriptionModel.premium({
     required String planName,
     DateTime? now,
+    DateTime? expiresAt,
+    bool premiumActivatedMock = false,
   }) {
     final date = now ?? DateTime.now();
     return UserSubscriptionModel(
@@ -50,8 +53,8 @@ class UserSubscriptionModel {
       dailyDownloadLimit: 5,
       downloadsUsedToday: 0,
       lastResetDate: DateTime(date.year, date.month, date.day),
-      premiumActivatedMock: true,
-      expiresAt: DateTime(2099, 1, 1),
+      premiumActivatedMock: premiumActivatedMock,
+      expiresAt: expiresAt,
     );
   }
 
@@ -98,8 +101,7 @@ class UserSubscriptionModel {
 
 enum PremiumPlan {
   monthly('Monthly'),
-  yearly('Yearly'),
-  lifetime('Lifetime');
+  yearly('Yearly');
 
   const PremiumPlan(this.label);
 
@@ -109,7 +111,6 @@ enum PremiumPlan {
     return switch (key) {
       'monthly' => PremiumPlan.monthly,
       'yearly' => PremiumPlan.yearly,
-      'lifetime' => PremiumPlan.lifetime,
       _ => PremiumPlan.yearly,
     };
   }

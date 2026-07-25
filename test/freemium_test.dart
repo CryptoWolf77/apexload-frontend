@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('free users get 5 downloads per day and ads after every 2', () async {
+  test('free users get 5 downloads per day without placeholder ads', () async {
     SharedPreferences.setMockInitialValues({});
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -19,9 +19,9 @@ void main() {
     );
 
     expect(await controller.recordSuccessfulDownload(), isFalse);
-    expect(await controller.recordSuccessfulDownload(), isTrue);
     expect(await controller.recordSuccessfulDownload(), isFalse);
-    expect(await controller.recordSuccessfulDownload(), isTrue);
+    expect(await controller.recordSuccessfulDownload(), isFalse);
+    expect(await controller.recordSuccessfulDownload(), isFalse);
     expect(await controller.recordSuccessfulDownload(), isFalse);
 
     final blocked = await controller.checkDownloadAllowance();
@@ -64,23 +64,76 @@ void main() {
     },
   );
 
-  test('premium users bypass limits and never trigger mock ads', () async {
+  test('store premium users bypass limits and never trigger ads', () async {
     SharedPreferences.setMockInitialValues({});
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
     final controller = container.read(subscriptionControllerProvider.notifier);
-    await controller.activatePremium(PremiumPlan.yearly);
+    await controller.activateStoreEntitlement(
+      plan: PremiumPlan.yearly,
+      expiresAt: DateTime.now().add(const Duration(days: 365)),
+    );
 
     final allowance = await controller.checkDownloadAllowance();
     expect(allowance.allowed, isTrue);
     expect(container.read(subscriptionControllerProvider).isPremium, isTrue);
     expect(container.read(subscriptionControllerProvider).planName, 'Yearly');
+    expect(
+      container.read(subscriptionControllerProvider).isStoreManagedPremium,
+      isTrue,
+    );
 
     for (var i = 0; i < 6; i++) {
       expect(await controller.recordSuccessfulDownload(), isFalse);
     }
   });
+
+  test('expired store entitlement returns the user to the free plan', () async {
+    SharedPreferences.setMockInitialValues({
+      'subscription_is_premium': true,
+      'subscription_plan_name': 'Monthly',
+      'subscription_downloads_used_today': 2,
+      'subscription_last_reset_date': DateTime.now().toIso8601String(),
+      'subscription_premium_mock': false,
+      'subscription_expires_at': DateTime.now()
+          .subtract(const Duration(minutes: 1))
+          .toIso8601String(),
+    });
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(subscriptionControllerProvider.notifier)
+        .checkDownloadAllowance();
+
+    final subscription = container.read(subscriptionControllerProvider);
+    expect(subscription.isPremium, isFalse);
+    expect(subscription.downloadsUsedToday, 2);
+  });
+
+  test(
+    'legacy lifetime state remains premium without a lifetime plan',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'subscription_is_premium': true,
+        'subscription_plan_name': 'Lifetime',
+        'subscription_downloads_used_today': 0,
+        'subscription_last_reset_date': DateTime.now().toIso8601String(),
+        'subscription_premium_mock': true,
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final allowance = await container
+          .read(subscriptionControllerProvider.notifier)
+          .checkDownloadAllowance();
+
+      expect(allowance.allowed, isTrue);
+      expect(container.read(subscriptionControllerProvider).isPremium, isTrue);
+      expect(PremiumPlan.values, [PremiumPlan.monthly, PremiumPlan.yearly]);
+    },
+  );
 
   test('auto-save to gallery preference is persisted', () async {
     SharedPreferences.setMockInitialValues({});
@@ -100,5 +153,19 @@ void main() {
     restored.read(autoSaveToGalleryControllerProvider);
     await pumpEventQueue();
     expect(restored.read(autoSaveToGalleryControllerProvider), isFalse);
+  });
+
+  test('legacy auto-save preference is migrated to enabled once', () async {
+    SharedPreferences.setMockInitialValues({'auto_save_to_gallery': false});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    container.read(autoSaveToGalleryControllerProvider);
+    await pumpEventQueue();
+
+    expect(container.read(autoSaveToGalleryControllerProvider), isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('auto_save_to_gallery'), isTrue);
+    expect(prefs.getBool('auto_save_to_gallery_default_enabled_v2'), isTrue);
   });
 }

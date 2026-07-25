@@ -15,6 +15,7 @@ import 'package:apexload/features/quick_editor/quick_editor_screen.dart';
 import 'package:apexload/features/settings/settings_screen.dart';
 import 'package:apexload/features/splash/splash_screen.dart';
 import 'package:apexload/features/video_optimizer/video_optimizer_screen.dart';
+import 'package:apexload/features/whatsapp_status/ios/ios_whatsapp_status_screen.dart';
 import 'package:apexload/features/whatsapp_status/whatsapp_status_screen.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
@@ -120,9 +121,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return Consumer(
             builder: (context, ref, child) {
               final l = AppLocalizations.of(context);
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-                return const WhatsAppStatusAndroidOnlyScreen();
-              }
               final premium = ref
                   .watch(subscriptionControllerProvider)
                   .isPremium;
@@ -139,6 +137,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                 );
+              }
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+                return const IosWhatsAppStatusScreen();
               }
               return const WhatsAppStatusScreen();
             },

@@ -43,6 +43,7 @@ class LocalMediaService {
     required String url,
     required String fileName,
     required DownloadType type,
+    int? expectedSizeBytes,
     void Function(double progress)? onProgress,
     void Function()? onIndeterminateProgress,
     bool publishToGallery = true,
@@ -85,6 +86,13 @@ class LocalMediaService {
   }) async {
     return null;
   }
+
+  void publishToGalleryInBackground({
+    required String localFilePath,
+    required String fileName,
+    required DownloadType type,
+    String? category,
+  }) {}
 
   Future<String?> generateThumbnail({
     required String localFilePath,

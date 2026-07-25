@@ -133,8 +133,42 @@ void main() {
       expect(job.jobId, 'job_demo_test');
       expect(status.progress, 100);
       expect(status.files.single.fileId, 'demo_video_1');
+      expect(status.files.single.sizeBytes, 24 * 1024 * 1024);
     },
   );
+
+  test('ApiDownloadFile parses backend size labels into bytes', () {
+    expect(
+      const ApiDownloadFile(
+        fileId: 'kb',
+        fileName: 'small.jpg',
+        type: 'image',
+        size: '860 KB',
+        downloadUrl: '/api/file/kb',
+      ).sizeBytes,
+      860 * 1024,
+    );
+    expect(
+      const ApiDownloadFile(
+        fileId: 'gb',
+        fileName: 'large.mp4',
+        type: 'video',
+        size: '1.5 GB',
+        downloadUrl: '/api/file/gb',
+      ).sizeBytes,
+      (1.5 * 1024 * 1024 * 1024).round(),
+    );
+    expect(
+      const ApiDownloadFile(
+        fileId: 'unknown',
+        fileName: 'unknown.mp4',
+        type: 'video',
+        size: 'Calculating...',
+        downloadUrl: '/api/file/unknown',
+      ).sizeBytes,
+      isNull,
+    );
+  });
 
   test('ApiDownloadService rejects missing job id', () async {
     final service = ApiDownloadService(

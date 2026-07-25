@@ -41,8 +41,9 @@ void main() {
     );
     expect(agreeButton.onPressed, isNull);
 
-    await tester.scrollUntilVisible(find.byType(CheckboxListTile), -400);
-    await tester.tap(find.byType(CheckboxListTile));
+    const consentKey = ValueKey('responsible-use-consent');
+    await tester.scrollUntilVisible(find.byKey(consentKey), -400);
+    await tester.tap(find.byKey(consentKey));
     await tester.pumpAndSettle();
 
     final enabledAgreeButton = tester.widget<FilledButton>(
@@ -98,5 +99,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Unlock ApexLoad Premium'), findsOneWidget);
+    expect(find.text('Yearly'), findsOneWidget);
+    expect(find.text('Monthly'), findsOneWidget);
+    expect(find.text('Lifetime'), findsNothing);
+    expect(find.text('Batch downloads'), findsNothing);
   });
 }

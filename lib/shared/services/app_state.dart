@@ -11,7 +11,6 @@ import 'package:apexload/shared/services/legal_consent_service.dart';
 import 'package:apexload/shared/services/local_editor_service.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/services/mock_download_service.dart';
-import 'package:apexload/shared/services/mock_subscription_service.dart';
 import 'package:apexload/shared/services/whatsapp_status_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,9 +38,6 @@ final whatsappStatusServiceProvider = Provider(
       WhatsAppStatusService(mediaService: ref.watch(localMediaServiceProvider)),
 );
 final downloadServiceProvider = Provider((ref) => MockDownloadService());
-final subscriptionServiceProvider = Provider(
-  (ref) => MockSubscriptionService(),
-);
 final clipboardServiceProvider = Provider((ref) => ClipboardHelperService());
 final legalConsentServiceProvider = Provider(
   (ref) => const LegalConsentService(),
@@ -87,6 +83,8 @@ class ThemeModeController extends Notifier<ThemeMode> {
 
 class AutoSaveToGalleryController extends Notifier<bool> {
   static const _preferenceKey = 'auto_save_to_gallery';
+  static const _defaultEnabledMigrationKey =
+      'auto_save_to_gallery_default_enabled_v2';
   Future<void>? _loadFuture;
 
   @override
@@ -106,6 +104,13 @@ class AutoSaveToGalleryController extends Notifier<bool> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     if (!ref.mounted) return;
+    if (prefs.getBool(_defaultEnabledMigrationKey) != true) {
+      await prefs.setBool(_preferenceKey, true);
+      await prefs.setBool(_defaultEnabledMigrationKey, true);
+      if (!ref.mounted) return;
+      state = true;
+      return;
+    }
     state = prefs.getBool(_preferenceKey) ?? true;
   }
 }
@@ -148,6 +153,7 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
   static const _downloadsUsedKey = 'subscription_downloads_used_today';
   static const _lastResetDateKey = 'subscription_last_reset_date';
   static const _premiumActivatedMockKey = 'subscription_premium_mock';
+  static const _expiresAtKey = 'subscription_expires_at';
 
   SharedPreferences? _prefs;
   Future<void>? _loadFuture;
@@ -158,9 +164,26 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     return UserSubscriptionModel.free();
   }
 
-  Future<void> activatePremium(PremiumPlan plan) async {
+  Future<void> activateStoreEntitlement({
+    required PremiumPlan plan,
+    required DateTime expiresAt,
+  }) async {
     await _ensureLoaded();
-    state = await ref.read(subscriptionServiceProvider).activatePremium(plan);
+    state = UserSubscriptionModel.premium(
+      planName: plan.label,
+      expiresAt: expiresAt,
+    );
+    await _save();
+  }
+
+  Future<void> clearStoreEntitlement() async {
+    await _ensureLoaded();
+    if (!state.isStoreManagedPremium) return;
+    state = UserSubscriptionModel.free(
+      now: state.lastResetDate,
+      used: state.downloadsUsedToday,
+    );
+    _resetDailyIfNeeded();
     await _save();
   }
 
@@ -185,11 +208,11 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
       return false;
     }
 
-    final previousCount = state.downloadsUsedToday;
     state = state.incrementFreeDownload(DateTime.now(), count: count);
     await _save();
-    return state.adsEnabled &&
-        (previousCount ~/ 2) < (state.downloadsUsedToday ~/ 2);
+    // Real ad mediation is intentionally not enabled in this release build yet.
+    // Keep tracking the free download count, but do not show placeholder ads.
+    return false;
   }
 
   Future<void> _ensureLoaded() async {
@@ -209,9 +232,16 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     final resetText = prefs.getString(_lastResetDateKey);
     final resetDate = DateTime.tryParse(resetText ?? '') ?? now;
     final premiumMock = prefs.getBool(_premiumActivatedMockKey) ?? false;
+    final expiresAt = DateTime.tryParse(prefs.getString(_expiresAtKey) ?? '');
 
-    if (isPremium) {
-      state = UserSubscriptionModel.premium(planName: planName, now: now);
+    if (isPremium &&
+        (premiumMock || (expiresAt != null && expiresAt.isAfter(now)))) {
+      state = UserSubscriptionModel.premium(
+        planName: planName,
+        now: now,
+        expiresAt: premiumMock ? DateTime(2099, 1, 1) : expiresAt,
+        premiumActivatedMock: premiumMock,
+      );
       return;
     }
 
@@ -247,6 +277,12 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
       _premiumActivatedMockKey,
       snapshot.premiumActivatedMock,
     );
+    final expiresAt = snapshot.expiresAt;
+    if (expiresAt == null) {
+      await prefs.remove(_expiresAtKey);
+    } else {
+      await prefs.setString(_expiresAtKey, expiresAt.toIso8601String());
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:apexload/core/constants/app_file_type_groups.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
+import 'package:apexload/features/quick_editor/editor_completion_panel.dart';
 import 'package:apexload/features/quick_editor/quick_editor_controller.dart';
 import 'package:apexload/features/quick_editor/quick_editor_models.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
@@ -18,6 +19,7 @@ import 'package:file_selector/file_selector.dart' show openFile;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 String _formatEditorTime(num seconds) {
   final totalSeconds = seconds.isFinite
@@ -90,7 +92,6 @@ class QuickEditorScreen extends ConsumerStatefulWidget {
 
 class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _convertToMp4Key = GlobalKey();
   RangeValues _trimRange = const RangeValues(0, 10);
   var _trimMax = 32.0;
   var _removeAudio = true;
@@ -155,29 +156,18 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l.t('goToConvertMp4')),
+            child: Text(l.t('convertToMp4')),
           ),
         ],
       ),
     );
     if (goToConvert != true || !mounted) return;
-    var targetContext = _convertToMp4Key.currentContext;
-    if (targetContext == null && _scrollController.hasClients) {
-      await _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 550),
-        curve: Curves.easeOutCubic,
-      );
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return;
-      targetContext = _convertToMp4Key.currentContext;
-    }
-    if (targetContext == null || !targetContext.mounted) return;
-    await Scrollable.ensureVisible(
-      targetContext,
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeOutCubic,
-      alignment: 0.75,
+    _run(
+      const QuickEditorJob(
+        type: QuickEditorJobType.export,
+        operation: 'convert',
+        successMessageKey: 'exportSuccess',
+      ),
     );
   }
 
@@ -213,6 +203,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         }
         AppNotification.success(context, message: l.t(messageKey));
         ref.read(quickEditorControllerProvider.notifier).clearMessage();
+        _revealCompletion();
       }
     });
 
@@ -241,6 +232,15 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                 ),
                 const SizedBox(height: 16),
                 _VideoInfoCard(item: widget.item),
+                if (state.completedItem != null) ...[
+                  const SizedBox(height: 14),
+                  EditorCompletionPanel(
+                    item: state.completedItem!,
+                    onOpen: () => _openCompletedItem(state.completedItem!),
+                    onViewDownloads: _viewCompletedItemInDownloads,
+                    onDismiss: _dismissCompletedItem,
+                  ),
+                ],
                 const SizedBox(height: 14),
                 _TrimCard(
                   localFilePath: widget.item.localFilePath,
@@ -401,22 +401,19 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                KeyedSubtree(
-                  key: _convertToMp4Key,
-                  child: PrimaryGradientButton(
-                    label: l.t('convertVideoToMp4'),
-                    icon: Icons.ios_share_rounded,
-                    isLoading: state.activeJob == QuickEditorJobType.export,
-                    onPressed: state.isProcessing
-                        ? null
-                        : () => _run(
-                            const QuickEditorJob(
-                              type: QuickEditorJobType.export,
-                              operation: 'convert',
-                              successMessageKey: 'exportSuccess',
-                            ),
+                PrimaryGradientButton(
+                  label: l.t('convertVideoToMp4'),
+                  icon: Icons.ios_share_rounded,
+                  isLoading: state.activeJob == QuickEditorJobType.export,
+                  onPressed: state.isProcessing
+                      ? null
+                      : () => _run(
+                          const QuickEditorJob(
+                            type: QuickEditorJobType.export,
+                            operation: 'convert',
+                            successMessageKey: 'exportSuccess',
                           ),
-                  ),
+                        ),
                 ),
               ],
             ),
@@ -434,6 +431,42 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         ),
       ),
     );
+  }
+
+  void _revealCompletion() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      unawaited(
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+    });
+  }
+
+  Future<void> _openCompletedItem(DownloadItemModel item) async {
+    try {
+      await ref.read(localMediaServiceProvider).openItem(item);
+      if (!mounted) return;
+      _dismissCompletedItem();
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('couldNotOpenFile'),
+      );
+    }
+  }
+
+  void _viewCompletedItemInDownloads() {
+    _dismissCompletedItem();
+    context.go('/downloads');
+  }
+
+  void _dismissCompletedItem() {
+    ref.read(quickEditorControllerProvider.notifier).dismissResult();
   }
 
   ThemeData _editorButtonTheme(BuildContext context) {
@@ -540,14 +573,25 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
       QuickEditorJobType.trim => {
         'startTime': _trimRange.start,
         'endTime': _trimRange.end,
+        'sourceDuration': _trimMax,
       },
-      QuickEditorJobType.extractAudio => {'format': _audioFormat.toLowerCase()},
-      QuickEditorJobType.compress => {'quality': 'medium'},
+      QuickEditorJobType.extractAudio => {
+        'format': _audioFormat.toLowerCase(),
+        'sourceDuration': _trimMax,
+      },
+      QuickEditorJobType.compress => {
+        'quality': 'medium',
+        'sourceDuration': _trimMax,
+      },
       QuickEditorJobType.export => {
         'format': 'mp4',
         'quality': AppLocalizations.of(context).t('highestQuality'),
+        'sourceDuration': _trimMax,
       },
-      QuickEditorJobType.mute => {'mute': _removeAudio},
+      QuickEditorJobType.mute => {
+        'mute': _removeAudio,
+        'sourceDuration': _trimMax,
+      },
       QuickEditorJobType.audioSwap => {
         'audioPath': _selectedAudioPath,
         'audioStart': _audioStartPosition,
@@ -572,12 +616,14 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         'fps': _gifFps,
         'loop': _gifLoop,
         'speed': _gifSpeed,
+        'sourceDuration': _trimMax,
       },
       QuickEditorJobType.reelsShorts => {
         'preset': _reelsPreset,
         'resizeMode': _reelsResizeMode,
         'quality': _reelsQuality,
         'mute': _reelsMute,
+        'sourceDuration': _trimMax,
       },
     };
   }
@@ -2276,7 +2322,7 @@ class _ProgressPanel extends StatelessWidget {
           if (showLargeFileHint) ...[
             const SizedBox(height: 10),
             _EditorLargeFileInfoCard(
-              title: l.t('preparingLargeVideo'),
+              title: l.t('processingLargeVideo'),
               message: l.t('largeVideoProcessingMessage'),
             ),
           ],

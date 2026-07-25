@@ -144,7 +144,7 @@ void main() {
 
       expect(find.text('For the best editing compatibility'), findsOneWidget);
       expect(find.text('Continue editing'), findsOneWidget);
-      expect(find.text('Go to Convert to MP4'), findsOneWidget);
+      expect(find.text('Convert to MP4'), findsOneWidget);
 
       await tester.tap(find.text('Continue editing'));
       await tester.pumpAndSettle();

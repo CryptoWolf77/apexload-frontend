@@ -1,11 +1,11 @@
 {
-    "name": "apexload",
-    "short_name": "apexload",
+    "name": "ApexLoad",
+    "short_name": "ApexLoad",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#050A1C",
+    "theme_color": "#050A1C",
+    "description": "ApexLoad helps you save, manage, and edit supported media.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

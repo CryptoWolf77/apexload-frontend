@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:apexload/features/quick_editor/quick_editor_models.dart';
@@ -5,6 +6,7 @@ import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_session.dart';
 import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/foundation.dart';
@@ -20,6 +22,7 @@ class LocalEditorService {
     required DownloadItemModel source,
     required QuickEditorJob job,
     required Map<String, Object?> options,
+    void Function(double progress)? onProgress,
   }) async {
     final inputPath = source.localFilePath.trim();
     if (inputPath.isEmpty || !File(inputPath).existsSync()) {
@@ -38,6 +41,7 @@ class LocalEditorService {
         throw const LocalEditorException('invalid_trim_range');
       }
     }
+    onProgress?.call(0.04);
     final args = _argumentsFor(
       inputPath: inputPath,
       outputPath: output.path,
@@ -56,7 +60,16 @@ class LocalEditorService {
         'ApexLoad local editor input=$inputPath output=${output.path}',
       );
     }
-    final session = await FFmpegKit.executeWithArguments(args);
+    final expectedDuration = await _expectedOutputDuration(
+      inputPath: inputPath,
+      job: job,
+      options: options,
+    );
+    final session = await _executeWithProgress(
+      args,
+      expectedDuration: expectedDuration,
+      onProgress: onProgress,
+    );
     var code = await session.getReturnCode();
     debugPrint(
       'ApexLoad editor lazy initialization result: returnCode=${code?.getValue()}',
@@ -71,7 +84,11 @@ class LocalEditorService {
         job: job,
         options: options,
       );
-      final fallback = await FFmpegKit.executeWithArguments(fallbackArgs);
+      final fallback = await _executeWithProgress(
+        fallbackArgs,
+        expectedDuration: expectedDuration,
+        onProgress: onProgress,
+      );
       code = await fallback.getReturnCode();
     }
 
@@ -82,6 +99,7 @@ class LocalEditorService {
       throw LocalEditorException(_failureKeyFor(job));
     }
     debugPrint('ApexLoad editor lazy initialization succeeded');
+    onProgress?.call(0.93);
 
     final type = job.type == QuickEditorJobType.extractAudio
         ? DownloadType.audio
@@ -93,7 +111,8 @@ class LocalEditorService {
       fileName: output.uri.pathSegments.last,
       type: type,
     );
-    final galleryUri = await _mediaService.publishToGallery(
+    onProgress?.call(0.98);
+    _mediaService.publishToGalleryInBackground(
       localFilePath: output.path,
       fileName: output.uri.pathSegments.last,
       type: type,
@@ -109,7 +128,7 @@ class LocalEditorService {
       fileName: output.uri.pathSegments.last,
       localFilePath: output.path,
       thumbnailPath: thumbnail ?? '',
-      galleryUri: galleryUri ?? '',
+      galleryUri: '',
       fileId: '',
       downloadUrl: '',
       sizeLabel: _formatBytes(output.lengthSync()),
@@ -138,7 +157,7 @@ class LocalEditorService {
     );
     final duration = previewDuration.clamp(1, 12).toDouble();
     final args = [
-      '-y',
+      ..._commandPreamble,
       '-t',
       _secondsToTimestamp(duration),
       '-i',
@@ -152,12 +171,10 @@ class LocalEditorService {
       '-map',
       '1:a:0',
       '-c:v',
-      'libx264',
+      'copy',
       '-c:a',
       'aac',
       '-shortest',
-      '-movflags',
-      '+faststart',
       output.path,
     ];
     final session = await FFmpegKit.executeWithArguments(args);
@@ -265,23 +282,30 @@ class LocalEditorService {
   }) {
     return switch (job.type) {
       QuickEditorJobType.trim => [
-        '-y',
+        ..._commandPreamble,
         '-ss',
         _secondsToTimestamp(_doubleOption(options, 'startTime', 0)),
-        '-to',
-        _secondsToTimestamp(_doubleOption(options, 'endTime', 10)),
         '-i',
         inputPath,
+        '-t',
+        _secondsToTimestamp(
+          _doubleOption(options, 'endTime', 10) -
+              _doubleOption(options, 'startTime', 0),
+        ),
         '-c:v',
         'libx264',
+        '-preset',
+        'superfast',
+        '-crf',
+        '20',
+        '-threads',
+        '0',
         '-c:a',
         'aac',
-        '-movflags',
-        '+faststart',
         outputPath,
       ],
       QuickEditorJobType.mute => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         '-an',
@@ -290,7 +314,7 @@ class LocalEditorService {
         outputPath,
       ],
       QuickEditorJobType.extractAudio => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         '-vn',
@@ -301,10 +325,12 @@ class LocalEditorService {
         if ((options['format'] as String? ?? 'mp3').toLowerCase() == 'mp3')
           '-q:a',
         if ((options['format'] as String? ?? 'mp3').toLowerCase() == 'mp3') '2',
+        '-threads',
+        '0',
         outputPath,
       ],
       QuickEditorJobType.compress => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         '-vcodec',
@@ -312,27 +338,31 @@ class LocalEditorService {
         '-crf',
         _crfFor(options['quality'] as String?),
         '-preset',
-        'veryfast',
+        'superfast',
+        '-threads',
+        '0',
         '-acodec',
         'aac',
-        '-movflags',
-        '+faststart',
         outputPath,
       ],
       QuickEditorJobType.export => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         '-vcodec',
         'libx264',
+        '-preset',
+        'ultrafast',
+        '-crf',
+        '20',
+        '-threads',
+        '0',
         '-acodec',
         'aac',
-        '-movflags',
-        '+faststart',
         outputPath,
       ],
       QuickEditorJobType.audioSwap => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         if (_boolOption(options, 'loopAudio', false)) '-stream_loop',
@@ -358,13 +388,16 @@ class LocalEditorService {
         outputPath,
       ],
       QuickEditorJobType.videoToGif => [
-        '-y',
+        ..._commandPreamble,
         '-ss',
         _secondsToTimestamp(_doubleOption(options, 'startTime', 0)),
-        '-to',
-        _secondsToTimestamp(_doubleOption(options, 'endTime', 6)),
         '-i',
         inputPath,
+        '-t',
+        _secondsToTimestamp(
+          _doubleOption(options, 'endTime', 6) -
+              _doubleOption(options, 'startTime', 0),
+        ),
         '-vf',
         _gifFilter(options),
         '-loop',
@@ -372,7 +405,7 @@ class LocalEditorService {
         outputPath,
       ],
       QuickEditorJobType.reelsShorts => [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         '-vf',
@@ -383,11 +416,11 @@ class LocalEditorService {
         '-c:v',
         'libx264',
         '-preset',
-        'veryfast',
+        'superfast',
         '-crf',
         _crfFor(options['quality'] as String?),
-        '-movflags',
-        '+faststart',
+        '-threads',
+        '0',
         outputPath,
       ],
     };
@@ -401,7 +434,7 @@ class LocalEditorService {
   }) {
     if (job.type == QuickEditorJobType.audioSwap) {
       return [
-        '-y',
+        ..._commandPreamble,
         '-i',
         inputPath,
         if (_boolOption(options, 'loopAudio', false)) '-stream_loop',
@@ -418,29 +451,97 @@ class LocalEditorService {
         '1:a:0',
         '-c:v',
         'libx264',
+        '-preset',
+        'ultrafast',
+        '-crf',
+        '20',
+        '-threads',
+        '0',
         '-c:a',
         'aac',
         if (!_boolOption(options, 'loopAudio', false)) '-af',
         if (!_boolOption(options, 'loopAudio', false)) 'apad',
         '-t',
         _secondsToTimestamp(_doubleOption(options, 'videoDuration', 20)),
-        '-movflags',
-        '+faststart',
         outputPath,
       ];
     }
     return [
-      '-y',
+      ..._commandPreamble,
       '-i',
       inputPath,
       '-an',
       '-c:v',
       'libx264',
-      '-movflags',
-      '+faststart',
+      '-preset',
+      'ultrafast',
+      '-crf',
+      '20',
+      '-threads',
+      '0',
       outputPath,
     ];
   }
+
+  Future<FFmpegSession> _executeWithProgress(
+    List<String> arguments, {
+    required double expectedDuration,
+    void Function(double progress)? onProgress,
+  }) async {
+    final completer = Completer<FFmpegSession>();
+    await FFmpegKit.executeWithArgumentsAsync(
+      arguments,
+      (session) {
+        if (!completer.isCompleted) completer.complete(session);
+      },
+      null,
+      (statistics) {
+        if (expectedDuration <= 0) return;
+        final processedSeconds = statistics.getTime() / 1000;
+        final ratio = (processedSeconds / expectedDuration).clamp(0.0, 1.0);
+        onProgress?.call(0.08 + ratio * 0.82);
+      },
+    );
+    return completer.future;
+  }
+
+  Future<double> _expectedOutputDuration({
+    required String inputPath,
+    required QuickEditorJob job,
+    required Map<String, Object?> options,
+  }) async {
+    if (job.type == QuickEditorJobType.trim ||
+        job.type == QuickEditorJobType.videoToGif) {
+      final selectedDuration =
+          (_doubleOption(options, 'endTime', 0) -
+                  _doubleOption(options, 'startTime', 0))
+              .clamp(0.0, 86400.0);
+      if (job.type == QuickEditorJobType.videoToGif) {
+        final speed = _doubleOption(options, 'speed', 1).clamp(0.5, 2.0);
+        return selectedDuration / speed;
+      }
+      return selectedDuration;
+    }
+    if (job.type == QuickEditorJobType.audioSwap) {
+      return _doubleOption(options, 'videoDuration', 0);
+    }
+    final supplied = _doubleOption(options, 'sourceDuration', 0);
+    if (supplied > 0) return supplied;
+    return await mediaDuration(inputPath) ?? 0;
+  }
+
+  @visibleForTesting
+  List<String> buildArgumentsForTest({
+    required String inputPath,
+    required String outputPath,
+    required QuickEditorJob job,
+    required Map<String, Object?> options,
+  }) => _argumentsFor(
+    inputPath: inputPath,
+    outputPath: outputPath,
+    job: job,
+    options: options,
+  );
 
   String _audioPath(Map<String, Object?> options) {
     final path = (options['audioPath'] as String? ?? '').trim();
@@ -459,8 +560,8 @@ class LocalEditorService {
     };
     final speed = _doubleOption(options, 'speed', 1).clamp(0.5, 2.0);
     final scale = width == -1
-        ? 'scale=iw:ih:flags=lanczos'
-        : 'scale=$width:-1:flags=lanczos';
+        ? 'scale=iw:ih:flags=bilinear'
+        : 'scale=$width:-1:flags=bilinear';
     return 'fps=$fps,$scale,setpts=PTS/$speed';
   }
 
@@ -474,16 +575,24 @@ class LocalEditorService {
     };
     if (mode == 'fit_blur') {
       // Keep this single-input filter reliable on mobile FFmpeg builds.
-      return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=decrease,'
+      return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=decrease:flags=bilinear,'
           'pad=${size.w}:${size.h}:(ow-iw)/2:(oh-ih)/2:#101828';
     }
     if (mode == 'fit_solid') {
-      return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=decrease,'
+      return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=decrease:flags=bilinear,'
           'pad=${size.w}:${size.h}:(ow-iw)/2:(oh-ih)/2:black';
     }
-    return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=increase,'
+    return 'scale=${size.w}:${size.h}:force_original_aspect_ratio=increase:flags=bilinear,'
         'crop=${size.w}:${size.h}';
   }
+
+  static const _commandPreamble = [
+    '-y',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-nostdin',
+  ];
 
   bool _boolOption(Map<String, Object?> options, String key, bool fallback) {
     final value = options[key];

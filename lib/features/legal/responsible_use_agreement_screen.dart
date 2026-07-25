@@ -97,19 +97,30 @@ class _ResponsibleUseAgreementScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.verified_user_rounded,
-                        color: AppColors.primaryEnd,
-                        size: 30,
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              AppColors.primaryStart,
+                              AppColors.primaryEnd,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.verified_user_rounded,
+                          color: Colors.white,
+                          size: 25,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          l.t('responsibleUseAgreementTitle'),
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w900),
+                          l.t('responsibleUseMustNotDownload'),
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ),
                     ],
@@ -123,11 +134,6 @@ class _ResponsibleUseAgreementScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    l.t('responsibleUseMustNotDownload'),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 10),
                   for (final key in prohibited)
                     _ProhibitedItem(label: l.t(key)),
                 ],
@@ -140,31 +146,40 @@ class _ResponsibleUseAgreementScreenState
                 children: [
                   Text(
                     l.t('legalLinks'),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   _LegalLinkTile(
                     label: l.t('termsOfUse'),
+                    icon: Icons.article_outlined,
                     url: AppConfig.termsUrl,
                     onTap: _openUrl,
                   ),
+                  const Divider(height: 1),
                   _LegalLinkTile(
                     label: l.t('privacyPolicy'),
+                    icon: Icons.privacy_tip_outlined,
                     url: AppConfig.privacyUrl,
                     onTap: _openUrl,
                   ),
+                  const Divider(height: 1),
                   _LegalLinkTile(
                     label: l.t('acceptableUsePolicy'),
+                    icon: Icons.rule_rounded,
                     url: AppConfig.acceptableUseUrl,
                     onTap: _openUrl,
                   ),
+                  const Divider(height: 1),
                   _LegalLinkTile(
                     label: l.t('copyrightPolicy'),
+                    icon: Icons.copyright_rounded,
                     url: AppConfig.copyrightUrl,
                     onTap: _openUrl,
                   ),
+                  const Divider(height: 1),
                   _LegalLinkTile(
                     label: l.t('takedownRequest'),
+                    icon: Icons.report_outlined,
                     url: AppConfig.takedownUrl,
                     onTap: _openUrl,
                   ),
@@ -172,43 +187,132 @@ class _ResponsibleUseAgreementScreenState
               ),
             ),
             const SizedBox(height: 14),
-            Semantics(
+            _ConsentCard(
+              key: const ValueKey('responsible-use-consent'),
+              selected: _checked,
               label: l.t('responsibleUseCheckbox'),
-              checked: _checked,
-              child: CheckboxListTile(
-                value: _checked,
-                onChanged: (value) => setState(() => _checked = value == true),
-                title: Text(l.t('responsibleUseCheckbox')),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
+              onTap: _saving
+                  ? null
+                  : () => setState(() => _checked = !_checked),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _checked && !_saving ? _agree : null,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded),
+                label: Text(
+                  l.t('agreeAndContinue'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: _saving ? null : _decline,
+                child: Text(l.t(widget.reviewOnly ? 'close' : 'decline')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsentCard extends StatelessWidget {
+  const _ConsentCard({
+    super.key,
+    required this.selected,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? AppColors.primaryEnd : AppTone.border(context);
+    return Semantics(
+      button: true,
+      checked: selected,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primaryEnd.withValues(alpha: 0.1)
+                  : AppTone.card(context).withValues(alpha: 0.76),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: accent, width: selected ? 1.5 : 1),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primaryEnd.withValues(alpha: 0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _saving ? null : _decline,
-                    child: Text(l.t(widget.reviewOnly ? 'close' : 'decline')),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primaryStart
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primaryStart
+                          : AppTone.textSecondary(context),
+                      width: 2,
+                    ),
                   ),
+                  child: selected
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        )
+                      : null,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _checked && !_saving ? _agree : null,
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check_rounded),
-                    label: Text(l.t('agreeAndContinue')),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: AppTone.textPrimary(context),
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -239,11 +343,13 @@ class _ProhibitedItem extends StatelessWidget {
 class _LegalLinkTile extends StatelessWidget {
   const _LegalLinkTile({
     required this.label,
+    required this.icon,
     required this.url,
     required this.onTap,
   });
 
   final String label;
+  final IconData icon;
   final String url;
   final ValueChanged<String> onTap;
 
@@ -254,13 +360,33 @@ class _LegalLinkTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: ListTile(
-          contentPadding: EdgeInsets.zero,
+          minTileHeight: 58,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primaryEnd.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primaryEnd, size: 20),
+          ),
           title: Text(
             label,
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
-          subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: const Icon(Icons.open_in_new_rounded, size: 20),
+          subtitle: Text(
+            'apexload.org',
+            style: TextStyle(
+              color: AppTone.textSecondary(context),
+              fontSize: 12,
+            ),
+          ),
+          trailing: Icon(
+            Icons.arrow_outward_rounded,
+            color: AppTone.textSecondary(context),
+            size: 20,
+          ),
           onTap: () => onTap(url),
         ),
       ),

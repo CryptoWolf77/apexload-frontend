@@ -18,8 +18,10 @@ class AppLocalizations {
     'en': {
       'home': 'Home',
       'downloads': 'Downloads',
-      'batch': 'Batch',
       'settings': 'Settings',
+      'appPreferences': 'App preferences',
+      'storageAndDownloads': 'Storage and downloads',
+      'support': 'Support',
       'skip': 'Skip',
       'continue': 'Continue',
       'next': 'Next',
@@ -34,15 +36,15 @@ class AppLocalizations {
           'Download video, extract audio, save thumbnails, and more.',
       'onboardingTitle3': 'Go Premium for more power',
       'onboardingDesc3':
-          'Unlock FHD & 4K quality, no watermark when available, batch downloads, Quick Editor, Audio Swap, faster queue, and no ads.',
+          'Unlock FHD & 4K quality, no watermark when available, Quick Editor, Audio Swap, faster queue, and no ads.',
       'pasteYourVideoLink': 'Paste your video link',
       'howToUse': 'How to use',
       'analyzeLink': 'Analyze link',
       'downloadCompleted': 'Download completed',
       'downloadSavedToLibrary': 'Download saved to your library.',
       'analyzeFailed': 'Could not analyze this link. Please try again.',
-      'backendUnavailableDemo': 'Backend unavailable. Showing demo result.',
-      'downloadJobCreated': 'Download job created.',
+      'backendUnavailableDemo':
+          'Service is temporarily unavailable. Please try again shortly.',
       'downloadJobFailed': 'Could not create download job. Please try again.',
       'downloadFailed': 'Download failed. Please try another format or link.',
       'downloadFailedNoFiles':
@@ -71,18 +73,18 @@ class AppLocalizations {
       'queued': 'Queued',
       'downloading': 'Downloading',
       'readyToOpen': 'Ready to open',
-      'preparingYourFile': 'Preparing your file',
+      'preparingYourFile': 'Starting device transfer',
       'preparingYourFileDescription':
-          'Saving and preparing the file on your device before actions become available.',
-      'savingToDevice': 'Saving to your device',
-      'savingFileToDevice': 'Saving file to your device...',
-      'preparingLargeVideo': 'Preparing large video',
+          'The server finished preparing your file. Starting a secure transfer to this device.',
+      'savingToDevice': 'Downloading to your device',
+      'savingFileToDevice': 'Transferring to your device...',
+      'preparingLargeVideo': 'Transferring a large video',
       'largeVideoSavingMessage':
-          'Large video detected. Saving may take a little longer. Please keep ApexLoad open while we finish preparing your file.',
+          '1080p and 4K videos are larger, so transfer time depends on the file size and your connection speed.',
       'largeVideoSavingSubtitle':
-          'This can take longer for 1080p, 4K, or large files.',
+          'Keep ApexLoad open until the transfer finishes.',
       'activeOperationWakelockNote':
-          'Keep ApexLoad open while this finishes. The screen will stay awake during downloading or saving.',
+          'Keep ApexLoad open while this finishes. The screen will stay awake during downloading, transferring, or processing.',
       'downloadSaveFailed':
           'The download completed, but the file could not be saved on your device. Please try again.',
       'addingToGallery': 'Adding to Gallery',
@@ -142,7 +144,7 @@ class AppLocalizations {
       'noWatermarkDownloads': 'No watermark downloads',
       'noWatermarkWhenAvailable': 'No watermark when available',
       'homeUpgradeCopy':
-          'Go Premium for FHD & 4K downloads, no ads, batch downloads, Quick Editor, Audio Swap, and',
+          'Go Premium for FHD & 4K downloads, no ads, Quick Editor, Audio Swap, and',
       'fhd4kDownloads': 'FHD & 4K downloads when available',
       'fhd4kDownloadsWhenAvailable': 'Download in FHD & 4K when available.',
       'fhd4kExport': 'FHD & 4K export',
@@ -150,10 +152,9 @@ class AppLocalizations {
       'unlockFhd4kQuality': 'Unlock FHD & 4K quality',
       'monthly': 'Monthly',
       'yearly': 'Yearly',
-      'lifetime': 'Lifetime',
+      'choosePlan': 'Choose your plan',
       'monthlyPrice': r'$0.99/month',
       'yearlyPrice': r'$9.99/year',
-      'lifetimePrice': r'$24.99 one-time',
       'import': 'Import',
       'validate': 'Validate',
       'language': 'Language',
@@ -216,16 +217,21 @@ class AppLocalizations {
       'compress': 'Compress',
       'exportSettings': 'Export Settings',
       'saveToGallery': 'Save to gallery',
+      'saveOptions': 'Save options',
       'noWatermarkNote': 'Applied only when the platform/source provides it.',
       'processingLocally': 'Processing locally on this device',
       'processingEditor': 'Processing locally on this device',
+      'processingLargeVideo': 'Processing a large video',
       'largeVideoProcessingMessage':
-          'Large video processing may take a little longer. Please keep the app open until the export is complete.',
+          'ApexLoad is using faster mobile processing for this large video. Please keep the app open until the export is complete.',
       'trimSuccess': 'Trim applied successfully',
       'muteSuccess': 'Video muted successfully',
       'audioExtractedSuccess': 'Audio extracted successfully',
       'compressSuccess': 'Video compressed successfully',
       'exportSuccess': 'Edited video exported successfully',
+      'editedFileReady': 'Your edited file is ready',
+      'openEditedFile': 'Open edited file',
+      'viewInDownloads': 'View in Downloads',
       'couldNotEditFile':
           'Could not edit this file. Please try another file or option.',
       'originalFileMissing':
@@ -262,7 +268,6 @@ class AppLocalizations {
       'premiumHdDownloads': 'HD / Full HD / 4K downloads',
       'premiumHdDownloadsDescription':
           'Higher quality downloads when the source provides them.',
-      'premiumBatchDescription': 'Queue up to 5 links at a time.',
       'premiumMp3Extraction': 'MP3 audio extraction',
       'premiumMp3Description': 'Save audio from supported videos.',
       'premiumNoWatermark': 'No watermark when possible',
@@ -285,16 +290,30 @@ class AppLocalizations {
       'localVideoConversion': 'Local video conversion',
       'localOptimization': 'Local optimization',
       'noAds': 'No ads',
-      'batchDownloads': 'Batch downloads',
       'audioExtraction': 'Audio extraction',
       'fasterQueue': 'Faster queue',
       'unlimitedDownloads': 'Unlimited downloads',
       'cloudSave': 'Cloud save',
       'bestValue': 'Best Value',
-      'premiumActivatedDemo': 'Premium activated for this demo.',
+      'premiumActivatedDemo': 'Premium is active.',
       'premiumActiveButton': 'Premium Active',
+      'subscribeNow': 'Subscribe',
+      'restorePurchases': 'Restore Purchases',
+      'restoringPurchases': 'Restoring purchases...',
+      'restorePurchasesSuccess': 'Your Premium subscription was restored.',
+      'nothingToRestore': 'No active Premium subscription was found.',
+      'purchasePending':
+          'Your purchase is pending approval. Premium will activate after Apple confirms it.',
+      'purchaseCancelled': 'Purchase cancelled.',
+      'purchaseFailed':
+          'The purchase could not be completed. Please try again.',
+      'storeUnavailable':
+          'The App Store is unavailable right now. Check your connection and try again.',
+      'subscriptionProductsUnavailable':
+          'Subscriptions are still syncing with the App Store. Please try again shortly.',
+      'retryAppStore': 'Retry App Store',
       'premiumLegalNotice':
-          'By continuing, you agree to the Terms of Use and Privacy Policy.',
+          'Payment is charged to your Apple ID at confirmation. Subscriptions renew automatically unless cancelled at least 24 hours before the current period ends. Manage or cancel in your App Store account settings. By subscribing, you agree to the Terms of Use and Privacy Policy.',
       'downloadOptions': 'Download options',
       'chooseFormat': 'Choose format',
       'customFilename': 'Custom filename',
@@ -304,7 +323,7 @@ class AppLocalizations {
       'notNow': 'Not now',
       'premiumOption': 'Premium option',
       'premiumFeatureSummary':
-          'Unlock FHD & 4K quality, no watermark when available, Quick Editor, audio extraction, and batch downloads.',
+          'Unlock FHD & 4K quality, no watermark when available, Quick Editor, and audio extraction.',
       'downloadProgress': 'Download progress',
       'selectedType': 'Selected type',
       'requestedFormat': 'Requested format',
@@ -335,17 +354,14 @@ class AppLocalizations {
       'dailyLimitReachedMessage':
           'You reached your free daily limit. Upgrade to Premium for unlimited downloads.',
       'freeDownloadsLeft': 'Free downloads left today: {count}/5',
-      'adPlaceholderTitle': 'Ad Placeholder',
-      'adPlaceholderMessage': 'This is where an ad will appear for free users.',
+      'adPlaceholderTitle': 'ApexLoad Free',
+      'adPlaceholderMessage': 'Your download is ready.',
       'premiumActivatedSuccess': 'Premium activated successfully.',
       'premiumMonthly': 'Premium Monthly',
       'premiumYearly': 'Premium Yearly',
-      'premiumLifetime': 'Premium Lifetime',
       'fhd4kPremiumTitle': 'FHD & 4K downloads are Premium.',
       'fhd4kPremiumMessage':
           'Upgrade to download in higher quality when available.',
-      'batchPremiumTitle': 'Batch downloads are Premium.',
-      'batchPremiumMessage': 'Upgrade to download multiple links together.',
       'audioExtractionPremiumTitle': 'Audio extraction is Premium.',
       'audioExtractionPremiumMessage':
           'Upgrade to extract audio from your media links.',
@@ -421,16 +437,14 @@ class AppLocalizations {
       'fps': 'FPS',
       'loop': 'Loop',
       'reelsShortsOutputNote': 'Exports locally in a social-friendly MP4 size.',
-      'demoPreviewReady': 'Demo preview is ready.',
+      'demoPreviewReady': 'Preview is ready.',
       'somethingWentWrong': 'Something went wrong. Please try again.',
-      'demoActionForNow': '{action} is a demo action for now.',
+      'demoActionForNow': '{action} is not available yet.',
       'sharingSoon': 'Sharing will be added soon.',
       'couldNotOpenFile': 'Could not open this file. Please try again.',
       'fileNoLongerAvailable':
           'This file is no longer available on your device.',
-      'demoExtractionPrepared': 'Demo {format} extraction prepared.',
-      'batchQueueCreated': 'Demo queue created. Backend will run this later.',
-      'batchLimitExceeded': 'You can download up to 5 links at a time.',
+      'demoExtractionPrepared': '{format} extraction is ready.',
       'notAvailableOnClip': 'Not available on this clip',
       'notAvailableForImage': 'Not available for this image',
       'Instagram photo posts are not available for this link. Try a Reel/video link.':
@@ -476,7 +490,6 @@ class AppLocalizations {
       'goHome': 'Go Home',
       'pasteOneLinkPerLine': 'Paste one public link per line',
       'queuePreview': 'Queue preview',
-      'startBatchDownload': 'Start batch download',
       'ready': 'Ready',
       'invalidLink': 'Invalid link',
       'pasteMediaLink': 'Paste media link',
@@ -495,7 +508,7 @@ class AppLocalizations {
       'keepScreenAwakeDuringDownloadsSubtitle':
           'Prevents the screen from sleeping while downloading, saving, or exporting media.',
       'autoSaveIosDescription':
-          'Downloads are saved in Files > On My iPhone > ApexLoad. Automatic Photos export is not enabled.',
+          'Automatically add downloaded photos and videos to Photos. Files also remain in On My iPhone > ApexLoad.',
       'downloadLocation': 'Download location',
       'deviceDownloadsFolder': 'Device downloads folder',
       'downloadLocationAndroidSubtitle': 'View your ApexLoad media folders',
@@ -554,10 +567,10 @@ class AppLocalizations {
           'Network access is used for analysis and downloads. Android may use media and folder access to publish downloads or read a WhatsApp .Statuses folder you explicitly choose. iOS uses the system file picker for files you select and exposes app documents through the Files app. ApexLoad does not request broad all-files access.',
       'privacyThirdPartiesTitle': 'Third-party services',
       'privacyThirdPartiesBody':
-          'ApexLoad interacts with the social or media platform named in the submitted link, its content delivery providers, the ApexLoad API, and operating-system sharing, storage, and email services. Those third parties operate under their own terms and privacy practices. The current app build does not include a live advertising SDK, payment SDK, or account sign-in system.',
+          'ApexLoad interacts with the social or media platform named in the submitted link, its content delivery providers, the ApexLoad API, and operating-system sharing, storage, and email services. Apple processes App Store subscription purchases and related payment information under Apple’s policies. ApexLoad does not receive your full payment-card details.',
       'privacyAccountsTitle': 'Accounts and subscriptions',
       'privacyAccountsBody':
-          'The current app does not require an ApexLoad account. Premium and subscription state used by this build is stored locally. Store-managed purchases may be introduced in a future release and would then also be governed by the relevant app store policies.',
+          'ApexLoad does not require an ApexLoad account. Premium subscriptions are purchased and managed through the Apple App Store. The app reads verified StoreKit entitlement information and stores the current Premium state and expiration date locally so Premium features can be enabled. Use Restore Purchases to recover an active subscription on another eligible device.',
       'privacyChoicesTitle': 'Your choices',
       'privacyChoicesBody':
           'You can disable automatic gallery publishing on supported Android devices, remove individual downloads, clear temporary cache, revoke folder access in system settings, or clear the app data. Disabling a setting does not delete files already saved.',
@@ -580,7 +593,7 @@ class AppLocalizations {
           'Supported platforms can change or block access without notice. A format, quality, thumbnail, audio track, or link may be unavailable. ApexLoad is not affiliated with or endorsed by the listed social platforms unless explicitly stated.',
       'termsSubscriptionsTitle': 'Premium features',
       'termsSubscriptionsBody':
-          'Premium features, limits, prices, and availability may change. The current build uses local subscription state unless a store purchase flow is explicitly offered. Any future store purchase will also be subject to the store terms shown at checkout.',
+          'ApexLoad offers monthly and yearly auto-renewing Premium subscriptions. The localized price and billing period are shown before purchase. Payment is charged to your Apple ID at confirmation. A subscription renews automatically unless cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your App Store account settings. Premium features and availability may change, subject to applicable law and App Store terms.',
       'termsLimitationsTitle': 'Service limitations and liability',
       'termsLimitationsBody':
           'ApexLoad is provided on an as-available basis. Downloads and edits may fail because of network conditions, device storage, unsupported media, platform changes, or third-party restrictions. To the extent permitted by law, ApexLoad is not responsible for unauthorized use, lost data, unavailable third-party content, or indirect damages. Keep your own backups of important files.',
@@ -588,7 +601,7 @@ class AppLocalizations {
       'editingCompatibilityMessage':
           'This video is not in MP4 format. For smoother editing on iPhone, we recommend converting it to MP4 first. You can also continue editing the original file.',
       'continueEditing': 'Continue editing',
-      'goToConvertMp4': 'Go to Convert to MP4',
+      'goToConvertMp4': 'Convert to MP4',
       'choosePlatform': 'Choose Platform',
       'instagramReel': 'Instagram Reel',
       'youtubeShort': 'YouTube Short',
@@ -780,13 +793,100 @@ class AppLocalizations {
       'permissionRevoked': 'Permission revoked',
       'folderNotFound': 'Folder not found',
       'noStatusesFound': 'No statuses found',
+      'iosWhatsappTitle': 'WhatsApp Status',
+      'iosWhatsappRefresh': 'Refresh WhatsApp Web',
+      'iosWhatsappDisconnect': 'Disconnect WhatsApp',
+      'iosWhatsappDisconnectQuestion': 'Disconnect WhatsApp?',
+      'iosWhatsappDisconnectMessage':
+          'This removes the WhatsApp Web session stored inside ApexLoad. Saved status files will not be deleted.',
+      'iosWhatsappDisconnected':
+          'The WhatsApp Web session was removed from ApexLoad.',
+      'iosWhatsappIntroTitle': 'Connect securely with WhatsApp Web',
+      'iosWhatsappIntroDescription':
+          'Open the official WhatsApp Web page inside ApexLoad, link your account, choose a status, then save it in its original quality.',
+      'iosWhatsappPrivacyTitle': 'Session stays on this device',
+      'iosWhatsappPrivacyDescription':
+          'ApexLoad does not send your WhatsApp session to its server.',
+      'iosWhatsappManualTitle': 'Only saves when you ask',
+      'iosWhatsappManualDescription':
+          'There is no automatic scanning or bulk status collection.',
+      'iosWhatsappResponsibleTitle': 'Save responsibly',
+      'iosWhatsappResponsibleDescription':
+          'Only save content you own or have permission to keep.',
+      'iosWhatsappPhaseNote':
+          'Your account remains inside the secure WhatsApp Web session on this iPhone.',
+      'iosWhatsappStart': 'Connect WhatsApp Web',
+      'iosWhatsappTutorialTitle': 'Connect WhatsApp Web',
+      'iosWhatsappTutorialSubtitle':
+          'Use phone-number linking to connect on the same iPhone.',
+      'iosWhatsappTutorialStep1Title': 'Continue in the browser',
+      'iosWhatsappTutorialStep1Description':
+          'Tap Continue to WhatsApp Web. You do not need to download WhatsApp again.',
+      'iosWhatsappTutorialStep2Title': 'Choose phone-number login',
+      'iosWhatsappTutorialStep2Description':
+          'Tap Log in with phone number below the QR code.',
+      'iosWhatsappTutorialStep3Title': 'Enter your WhatsApp number',
+      'iosWhatsappTutorialStep3Description':
+          'Select your country, enter your number, then tap Next. Enter the linking code in WhatsApp under Settings › Linked Devices › Link a Device › Link with phone number instead.',
+      'iosWhatsappOpenWeb': 'Open WhatsApp Web',
+      'iosWhatsappStatusDetected': 'Status detected',
+      'iosWhatsappConnected': 'WhatsApp connected',
+      'iosWhatsappLinkAccount': 'Link your WhatsApp account',
+      'iosWhatsappOpening': 'Opening WhatsApp Web…',
+      'iosWhatsappWaiting': 'Waiting for WhatsApp',
+      'iosWhatsappSaving': 'Saving status locally…',
+      'iosWhatsappSaveStatus': 'Save current status',
+      'iosWhatsappSavePhoto': 'Save current photo',
+      'iosWhatsappSaveVideo': 'Save current video',
+      'iosWhatsappOpenStatus': 'Open a status to save',
+      'iosWhatsappLoadFailed': 'WhatsApp Web did not load',
+      'iosWhatsappSaveFailed': 'Could not save this status',
+      'iosWhatsappTryOpenStatus': 'Please open a status and try again.',
+      'iosWhatsappSaved': 'Status saved',
+      'iosWhatsappSavedFile': '{file} is ready in Downloads.',
+      'iosWhatsappSavedSuccess': 'Status saved successfully',
+      'iosWhatsappSavedDescription':
+          'You can keep viewing statuses or open ApexLoad Downloads.',
+      'iosWhatsappKeepBrowsing': 'Keep browsing',
+      'iosWhatsappGuideTitle': 'Open a status before saving',
+      'iosWhatsappGuideSubtitle':
+          'ApexLoad saves the photo or video currently open in WhatsApp Web.',
+      'iosWhatsappGuideStep1Title': 'Open Status updates',
+      'iosWhatsappGuideStep1Description':
+          'Tap the circular Status icon in the WhatsApp Web side menu.',
+      'iosWhatsappGuideStep2Title': 'Choose a status',
+      'iosWhatsappGuideStep2Description':
+          'Select a contact, then open the photo or video you want.',
+      'iosWhatsappGuideStep3Title': 'Keep it visible and save',
+      'iosWhatsappGuideStep3Description':
+          'While the status is displayed, tap Save current status in ApexLoad.',
+      'iosWhatsappGuideTip':
+          'The save button becomes ready when ApexLoad detects an open status.',
+      'iosWhatsappSaveGuideTitle': 'How to save a WhatsApp status',
+      'iosWhatsappSaveGuideSubtitle':
+          'Follow these four steps once, then save directly from ApexLoad.',
+      'iosWhatsappSaveGuideStep1Title': 'Open Status updates',
+      'iosWhatsappSaveGuideStep1Description':
+          'Tap the circular Status icon in the WhatsApp Web side menu.',
+      'iosWhatsappSaveGuideStep2Title': 'Choose the status you want',
+      'iosWhatsappSaveGuideStep2Description':
+          'Select a contact from the recent status list.',
+      'iosWhatsappSaveGuideStep3Title': 'Save the open photo or video',
+      'iosWhatsappSaveGuideStep3Description':
+          'Keep the status visible, then tap the ApexLoad save button.',
+      'iosWhatsappSaveGuideStep4Title': 'Find it in Downloads',
+      'iosWhatsappSaveGuideStep4Description':
+          'After the confirmation appears, tap Downloads to view the saved file.',
+      'iosWhatsappGotIt': 'Got it',
       'madeBy': 'Made by',
     },
     'ar': {
       'home': 'الرئيسية',
       'downloads': 'التحميلات',
-      'batch': 'الدفعات',
       'settings': 'الإعدادات',
+      'appPreferences': 'تفضيلات التطبيق',
+      'storageAndDownloads': 'التخزين والتنزيلات',
+      'support': 'الدعم',
       'skip': 'تخطي',
       'continue': 'متابعة',
       'next': 'التالي',
@@ -800,15 +900,14 @@ class AppLocalizations {
           'نزّل الفيديو، استخرج الصوت، احفظ الصورة المصغّرة، والمزيد.',
       'onboardingTitle3': 'فعّل بريميوم لقوة أكبر',
       'onboardingDesc3':
-          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والدفعات، والمحرر السريع، وتبديل الصوت، والطابور الأسرع، وتجربة بدون إعلانات.',
+          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، وتبديل الصوت، والطابور الأسرع، وتجربة بدون إعلانات.',
       'pasteYourVideoLink': 'الصق رابط الفيديو',
       'analyzeLink': 'تحليل الرابط',
       'downloadCompleted': 'اكتمل التحميل',
       'downloadSavedToLibrary': 'تم حفظ التحميل في مكتبتك.',
       'analyzeFailed': 'تعذر تحليل الرابط، حاول مرة أخرى',
       'backendUnavailableDemo':
-          'الخادم غير متاح حالياً، سيتم عرض نتيجة تجريبية',
-      'downloadJobCreated': 'تم إنشاء مهمة التحميل',
+          'الخدمة غير متاحة مؤقتًا. يرجى المحاولة بعد قليل.',
       'downloadJobFailed': 'تعذر إنشاء مهمة التحميل، حاول مرة أخرى',
       'downloadFailed': 'فشل التحميل. جرّب صيغة أو رابطًا آخر.',
       'downloadFailedNoFiles': 'اكتمل التحميل، لكن لم يتم إرجاع أي ملفات.',
@@ -835,16 +934,15 @@ class AppLocalizations {
       'queued': 'في الانتظار',
       'downloading': 'جاري التنزيل',
       'readyToOpen': 'جاهز للفتح',
-      'preparingYourFile': 'جارٍ تجهيز الملف',
+      'preparingYourFile': 'جارٍ بدء النقل إلى جهازك',
       'preparingYourFileDescription':
-          'جارٍ حفظ وتجهيز الملف على جهازك قبل إتاحة الإجراءات.',
-      'savingToDevice': 'جارٍ الحفظ على جهازك',
-      'savingFileToDevice': 'جارٍ حفظ الملف على جهازك...',
-      'preparingLargeVideo': 'جاري تجهيز فيديو كبير',
+          'انتهى الخادم من تجهيز ملفك. جارٍ بدء نقله بأمان إلى هذا الجهاز.',
+      'savingToDevice': 'جارٍ التنزيل إلى جهازك',
+      'savingFileToDevice': 'جارٍ النقل إلى جهازك...',
+      'preparingLargeVideo': 'جارٍ نقل فيديو كبير',
       'largeVideoSavingMessage':
-          'تم اكتشاف فيديو كبير. قد يستغرق الحفظ وقتًا أطول قليلًا. يرجى إبقاء ApexLoad مفتوحًا حتى ننتهي من تجهيز الملف.',
-      'largeVideoSavingSubtitle':
-          'قد يستغرق ذلك وقتًا أطول مع ملفات 1080p أو 4K أو الملفات الكبيرة.',
+          'ملفات الفيديو بدقة 1080p و4K أكبر حجمًا، لذلك يعتمد وقت النقل على حجم الملف وسرعة اتصالك.',
+      'largeVideoSavingSubtitle': 'أبقِ ApexLoad مفتوحًا حتى يكتمل النقل.',
       'downloadSaveFailed':
           'اكتمل التحميل، ولكن تعذّر حفظ الملف على جهازك. يرجى المحاولة مرة أخرى.',
       'addingToGallery': 'جارٍ الإضافة إلى المعرض',
@@ -903,7 +1001,7 @@ class AppLocalizations {
       'noWatermarkDownloads': 'تحميلات بدون علامة مائية',
       'noWatermarkWhenAvailable': 'بدون علامة مائية عند توفرها',
       'homeUpgradeCopy':
-          'احصل على بريميوم لتحميل بجودة FHD و 4K عند توفرها، وبدون إعلانات، والدفعات، والمحرر السريع، وتبديل الصوت، و',
+          'احصل على بريميوم لتحميل بجودة FHD و 4K عند توفرها، وبدون إعلانات، والمحرر السريع، وتبديل الصوت، و',
       'fhd4kDownloads': 'تحميل بجودة FHD و 4K عند توفرها',
       'fhd4kDownloadsWhenAvailable': 'حمّل بجودة FHD و 4K عند توفرها.',
       'fhd4kExport': 'تصدير بجودة FHD و 4K',
@@ -911,10 +1009,9 @@ class AppLocalizations {
       'unlockFhd4kQuality': 'افتح جودة FHD و 4K عند توفرها',
       'monthly': 'شهري',
       'yearly': 'سنوي',
-      'lifetime': 'مدى الحياة',
+      'choosePlan': 'اختر خطتك',
       'monthlyPrice': '0.99 دولار / شهرياً',
       'yearlyPrice': '9.99 دولار / سنوياً',
-      'lifetimePrice': '24.99 دولار مرة واحدة',
       'import': 'استيراد',
       'validate': 'تحقق',
       'language': 'اللغة',
@@ -976,16 +1073,21 @@ class AppLocalizations {
       'compress': 'ضغط',
       'exportSettings': 'إعدادات التصدير',
       'saveToGallery': 'حفظ في المعرض',
+      'saveOptions': 'خيارات الحفظ',
       'noWatermarkNote': 'تطبق فقط عندما توفرها المنصة أو المصدر.',
       'processingLocally': 'تتم المعالجة محلياً على هذا الجهاز',
       'processingEditor': 'تتم المعالجة محليًا على هذا الجهاز',
+      'processingLargeVideo': 'جارٍ معالجة فيديو كبير',
       'largeVideoProcessingMessage':
-          'قد تستغرق معالجة الفيديو الكبير وقتًا أطول قليلًا. يرجى إبقاء التطبيق مفتوحًا حتى يكتمل التصدير.',
+          'يستخدم ApexLoad معالجة أسرع للهواتف لهذا الفيديو الكبير. يرجى إبقاء التطبيق مفتوحًا حتى يكتمل التصدير.',
       'trimSuccess': 'تم تطبيق القص بنجاح',
       'muteSuccess': 'تم كتم الفيديو بنجاح',
       'audioExtractedSuccess': 'تم استخراج الصوت بنجاح',
       'compressSuccess': 'تم ضغط الفيديو بنجاح',
       'exportSuccess': 'تم تصدير الفيديو المعدل بنجاح',
+      'editedFileReady': 'ملفك المعدّل جاهز',
+      'openEditedFile': 'فتح الملف المعدّل',
+      'viewInDownloads': 'عرض في التنزيلات',
       'couldNotEditFile': 'تعذّر تعديل هذا الملف. يرجى تجربة ملف أو خيار آخر.',
       'originalFileMissing':
           'تعذّر العثور على الملف الأصلي. يرجى تنزيله مرة أخرى ثم محاولة تعديله.',
@@ -1021,7 +1123,6 @@ class AppLocalizations {
       'premiumUnlimitedDescription': 'حمّل بدون حدود يومية.',
       'premiumHdDownloads': 'تحميل بجودة عالية حتى 4K',
       'premiumHdDownloadsDescription': 'جودة أعلى عند توفرها من المصدر.',
-      'premiumBatchDescription': 'حمّل حتى 5 روابط في كل مرة.',
       'premiumMp3Extraction': 'استخراج الصوت MP3',
       'premiumMp3Description': 'احفظ الصوت من الفيديوهات المدعومة.',
       'premiumNoWatermark': 'بدون علامة مائية عند الإمكان',
@@ -1043,16 +1144,29 @@ class AppLocalizations {
       'localVideoConversion': 'تحويل الفيديو محليًا',
       'localOptimization': 'تحسين الفيديو محليًا',
       'noAds': 'بدون إعلانات',
-      'batchDownloads': 'تحميل الدفعات',
       'audioExtraction': 'استخراج الصوت',
       'fasterQueue': 'طابور أسرع',
       'unlimitedDownloads': 'تحميلات غير محدودة',
       'cloudSave': 'حفظ سحابي',
       'bestValue': 'أفضل قيمة',
-      'premiumActivatedDemo': 'تم تفعيل بريميوم في النسخة التجريبية.',
+      'premiumActivatedDemo': 'اشتراك بريميوم نشط.',
       'premiumActiveButton': 'الاشتراك المميز نشط',
+      'subscribeNow': 'اشترك الآن',
+      'restorePurchases': 'استعادة المشتريات',
+      'restoringPurchases': 'جارٍ استعادة المشتريات...',
+      'restorePurchasesSuccess': 'تمت استعادة اشتراك بريميوم.',
+      'nothingToRestore': 'لم يتم العثور على اشتراك بريميوم نشط.',
+      'purchasePending':
+          'عملية الشراء بانتظار الموافقة. سيتم تفعيل بريميوم بعد تأكيد Apple.',
+      'purchaseCancelled': 'تم إلغاء عملية الشراء.',
+      'purchaseFailed': 'تعذّر إكمال عملية الشراء. يرجى المحاولة مرة أخرى.',
+      'storeUnavailable':
+          'متجر App Store غير متاح الآن. تحقق من اتصالك وحاول مرة أخرى.',
+      'subscriptionProductsUnavailable':
+          'لا تزال الاشتراكات قيد المزامنة مع App Store. يرجى المحاولة بعد قليل.',
+      'retryAppStore': 'إعادة المحاولة مع App Store',
       'premiumLegalNotice':
-          'بالمتابعة، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
+          'يتم خصم المبلغ من Apple ID عند التأكيد. تتجدد الاشتراكات تلقائيًا ما لم يتم إلغاؤها قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك الإدارة أو الإلغاء من إعدادات حساب App Store. بالاشتراك، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
       'downloadOptions': 'خيارات التحميل',
       'chooseFormat': 'اختر الصيغة',
       'customFilename': 'اسم الملف المخصص',
@@ -1063,7 +1177,7 @@ class AppLocalizations {
       'notNow': 'ليس الآن',
       'premiumOption': 'خيار بريميوم',
       'premiumFeatureSummary':
-          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، واستخراج الصوت، وتحميل الدفعات.',
+          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، واستخراج الصوت.',
       'downloadProgress': 'تقدم التحميل',
       'selectedType': 'النوع المحدد',
       'requestedFormat': 'الصيغة المطلوبة',
@@ -1094,16 +1208,13 @@ class AppLocalizations {
       'dailyLimitReachedMessage':
           'لقد وصلت إلى الحد اليومي المجاني. قم بالترقية إلى بريميوم لتحميلات غير محدودة.',
       'freeDownloadsLeft': 'التحميلات المجانية المتبقية اليوم: {count}/5',
-      'adPlaceholderTitle': 'إعلان تجريبي',
-      'adPlaceholderMessage': 'هنا سيظهر الإعلان للمستخدمين المجانيين',
+      'adPlaceholderTitle': 'ApexLoad المجاني',
+      'adPlaceholderMessage': 'التحميل جاهز.',
       'premiumActivatedSuccess': 'تم تفعيل بريميوم بنجاح.',
       'premiumMonthly': 'بريميوم شهري',
       'premiumYearly': 'بريميوم سنوي',
-      'premiumLifetime': 'بريميوم مدى الحياة',
       'fhd4kPremiumTitle': 'تحميلات FHD و 4K ميزة بريميوم.',
       'fhd4kPremiumMessage': 'قم بالترقية للتحميل بجودة أعلى عند توفرها.',
-      'batchPremiumTitle': 'تحميل الدفعات ميزة بريميوم.',
-      'batchPremiumMessage': 'قم بالترقية لتحميل عدة روابط معاً.',
       'audioExtractionPremiumTitle': 'استخراج الصوت ميزة بريميوم.',
       'audioExtractionPremiumMessage':
           'قم بالترقية لاستخراج الصوت من روابط الوسائط.',
@@ -1177,16 +1288,13 @@ class AppLocalizations {
       'loop': 'تكرار',
       'reelsShortsOutputNote':
           'يتم التصدير محليًا بصيغة MP4 مناسبة للمنصات الاجتماعية.',
-      'demoPreviewReady': 'المعاينة التجريبية جاهزة.',
+      'demoPreviewReady': 'المعاينة جاهزة.',
       'somethingWentWrong': 'حدث خطأ، حاول مرة أخرى',
-      'demoActionForNow': '{action} حالياً مجرد تجربة',
+      'demoActionForNow': '{action} غير متاح حالياً.',
       'sharingSoon': 'ستتم إضافة المشاركة قريبًا.',
       'couldNotOpenFile': 'تعذّر فتح هذا الملف. يرجى المحاولة مرة أخرى.',
       'fileNoLongerAvailable': 'هذا الملف لم يعد متاحًا على جهازك.',
-      'demoExtractionPrepared': 'تم تجهيز استخراج {format} كتجربة.',
-      'batchQueueCreated':
-          'تم إنشاء قائمة تجريبية. سيتم تشغيلها من الخادم لاحقاً.',
-      'batchLimitExceeded': 'يمكنك تحميل ما يصل إلى 5 روابط في كل مرة.',
+      'demoExtractionPrepared': 'استخراج {format} جاهز.',
       'notAvailableOnClip': 'غير متوفر لهذا المقطع',
       'notAvailableForImage': 'غير متوفر لهذه الصورة',
       'Instagram photo posts are not available for this link. Try a Reel/video link.':
@@ -1231,7 +1339,6 @@ class AppLocalizations {
       'goHome': 'العودة للرئيسية',
       'pasteOneLinkPerLine': 'الصق رابطاً عاماً في كل سطر',
       'queuePreview': 'معاينة القائمة',
-      'startBatchDownload': 'بدء تحميل الدفعة',
       'ready': 'جاهز',
       'invalidLink': 'رابط غير صالح',
       'pasteMediaLink': 'الصق رابط الوسائط',
@@ -1247,7 +1354,7 @@ class AppLocalizations {
       'autoSaveAndroidDescription':
           'نشر التحميلات المدعومة تلقائيًا في معرض الجهاز.',
       'autoSaveIosDescription':
-          'تُحفظ التحميلات في الملفات > على iPhone الخاص بي > ApexLoad. الحفظ التلقائي في الصور غير مفعّل.',
+          'إضافة الصور والفيديوهات المحمّلة تلقائيًا إلى تطبيق الصور، مع بقائها أيضًا في الملفات > على iPhone الخاص بي > ApexLoad.',
       'downloadLocation': 'مكان التحميل',
       'deviceDownloadsFolder': 'مجلد التحميلات على الجهاز',
       'downloadLocationAndroidSubtitle': 'عرض مجلدات وسائط ApexLoad',
@@ -1306,10 +1413,10 @@ class AppLocalizations {
           'يُستخدم اتصال الشبكة للتحليل والتحميل. وقد يستخدم أندرويد الوصول إلى الوسائط والمجلدات لنشر التحميلات أو قراءة مجلد .Statuses الذي تختاره بنفسك. ويستخدم iOS منتقي الملفات لاختيار الملفات ويعرض مستندات التطبيق في تطبيق الملفات. لا يطلب ApexLoad صلاحية الوصول الشامل إلى جميع الملفات.',
       'privacyThirdPartiesTitle': 'الخدمات الخارجية',
       'privacyThirdPartiesBody':
-          'يتعامل ApexLoad مع منصة التواصل أو الوسائط الموجودة في الرابط، ومزودي توزيع المحتوى، وواجهة ApexLoad البرمجية، وخدمات المشاركة والتخزين والبريد في نظام التشغيل. تخضع هذه الجهات لشروطها وسياسات الخصوصية الخاصة بها. لا يتضمن الإصدار الحالي حزمة إعلانات فعلية أو حزمة دفع أو نظام تسجيل دخول للحسابات.',
+          'يتعامل ApexLoad مع منصة التواصل أو الوسائط الموجودة في الرابط، ومزودي توزيع المحتوى، وواجهة ApexLoad البرمجية، وخدمات المشاركة والتخزين والبريد في نظام التشغيل. تعالج Apple مشتريات اشتراكات App Store ومعلومات الدفع المرتبطة بها وفق سياساتها. لا يستلم ApexLoad بيانات بطاقة الدفع الكاملة.',
       'privacyAccountsTitle': 'الحسابات والاشتراكات',
       'privacyAccountsBody':
-          'لا يتطلب الإصدار الحالي حساب ApexLoad. تُحفظ حالة بريميوم والاشتراك المستخدمة في هذا الإصدار محليًا. قد تتم إضافة مشتريات تديرها المتاجر مستقبلًا، وعندها ستخضع أيضًا لسياسات المتجر المعني.',
+          'لا يتطلب ApexLoad إنشاء حساب. يتم شراء اشتراكات بريميوم وإدارتها من خلال Apple App Store. يقرأ التطبيق معلومات الاستحقاق الموثقة من StoreKit ويحفظ حالة بريميوم الحالية وتاريخ انتهائها محليًا لتفعيل الميزات. استخدم استعادة المشتريات لاستعادة اشتراك نشط على جهاز مؤهل آخر.',
       'privacyChoicesTitle': 'خياراتك',
       'privacyChoicesBody':
           'يمكنك تعطيل النشر التلقائي في المعرض على أجهزة أندرويد المدعومة، وحذف تحميلات فردية، ومسح الملفات المؤقتة، وإلغاء إذن المجلد من إعدادات النظام، أو مسح بيانات التطبيق. تغيير الإعداد لا يحذف الملفات المحفوظة مسبقًا.',
@@ -1332,7 +1439,7 @@ class AppLocalizations {
           'قد تغيّر المنصات المدعومة طريقة عملها أو تمنع الوصول دون إشعار. وقد لا تتوفر صيغة أو جودة أو صورة مصغّرة أو مسار صوتي أو رابط. ApexLoad غير تابع للمنصات الاجتماعية المذكورة ولا يحظى بتأييدها ما لم يُذكر ذلك صراحة.',
       'termsSubscriptionsTitle': 'ميزات بريميوم',
       'termsSubscriptionsBody':
-          'قد تتغير ميزات بريميوم وحدودها وأسعارها وتوفرها. يستخدم الإصدار الحالي حالة اشتراك محلية ما لم يتم توفير شراء واضح عبر المتجر. وستخضع أي عملية شراء مستقبلية أيضًا لشروط المتجر المعروضة عند الدفع.',
+          'يوفر ApexLoad اشتراكات بريميوم شهرية وسنوية تتجدد تلقائيًا. يظهر السعر المحلي وفترة الفوترة قبل الشراء. يتم خصم المبلغ من Apple ID عند التأكيد. يتجدد الاشتراك تلقائيًا ما لم يتم إلغاؤه قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك إدارته أو إلغاؤه من إعدادات حساب App Store. قد تتغير ميزات بريميوم وتوفرها وفق القانون المعمول به وشروط App Store.',
       'termsLimitationsTitle': 'حدود الخدمة والمسؤولية',
       'termsLimitationsBody':
           'تُقدّم خدمة ApexLoad حسب توفرها. قد تفشل التحميلات أو التعديلات بسبب الشبكة أو مساحة الجهاز أو وسائط غير مدعومة أو تغييرات المنصات أو قيود الجهات الخارجية. وفي الحدود التي يسمح بها القانون، لا يتحمل ApexLoad مسؤولية الاستخدام غير المصرح به أو فقدان البيانات أو عدم توفر محتوى خارجي أو الأضرار غير المباشرة. احتفظ بنسخة احتياطية من ملفاتك المهمة.',
@@ -1340,7 +1447,7 @@ class AppLocalizations {
       'editingCompatibilityMessage':
           'هذا الفيديو ليس بصيغة MP4. لتعديل أكثر سلاسة على iPhone، نوصي بتحويله إلى MP4 أولًا. ويمكنك أيضًا متابعة تعديل الملف الأصلي.',
       'continueEditing': 'متابعة التعديل',
-      'goToConvertMp4': 'الانتقال إلى التحويل إلى MP4',
+      'goToConvertMp4': 'تحويل إلى MP4',
       'choosePlatform': 'اختر المنصة',
       'instagramReel': 'Instagram Reel',
       'youtubeShort': 'YouTube Short',
@@ -1523,8 +1630,92 @@ class AppLocalizations {
       'permissionRevoked': 'تم إلغاء الإذن',
       'folderNotFound': 'لم يتم العثور على المجلد',
       'noStatusesFound': 'لا توجد حالات',
+      'iosWhatsappTitle': 'حالات واتساب',
+      'iosWhatsappRefresh': 'تحديث واتساب ويب',
+      'iosWhatsappDisconnect': 'فصل واتساب',
+      'iosWhatsappDisconnectQuestion': 'هل تريد فصل واتساب؟',
+      'iosWhatsappDisconnectMessage':
+          'سيؤدي ذلك إلى إزالة جلسة واتساب ويب المحفوظة داخل ApexLoad، ولن تُحذف ملفات الحالات المحفوظة.',
+      'iosWhatsappDisconnected': 'تمت إزالة جلسة واتساب ويب من ApexLoad.',
+      'iosWhatsappIntroTitle': 'اتصل بأمان مع واتساب ويب',
+      'iosWhatsappIntroDescription':
+          'افتح صفحة واتساب ويب الرسمية داخل ApexLoad، واربط حسابك، واختر حالة، ثم احفظها بجودتها الأصلية.',
+      'iosWhatsappPrivacyTitle': 'تبقى الجلسة على هذا الجهاز',
+      'iosWhatsappPrivacyDescription':
+          'لا يرسل ApexLoad جلسة واتساب الخاصة بك إلى خوادمه.',
+      'iosWhatsappManualTitle': 'يحفظ فقط عندما تطلب',
+      'iosWhatsappManualDescription':
+          'لا يوجد فحص تلقائي أو جمع جماعي للحالات.',
+      'iosWhatsappResponsibleTitle': 'احفظ بمسؤولية',
+      'iosWhatsappResponsibleDescription':
+          'احفظ فقط المحتوى الذي تملكه أو لديك إذن للاحتفاظ به.',
+      'iosWhatsappPhaseNote':
+          'يبقى حسابك داخل جلسة واتساب ويب الآمنة على هذا الآيفون.',
+      'iosWhatsappStart': 'ربط واتساب ويب',
+      'iosWhatsappTutorialTitle': 'ربط واتساب ويب',
+      'iosWhatsappTutorialSubtitle':
+          'استخدم الربط برقم الهاتف للاتصال على نفس الآيفون.',
+      'iosWhatsappTutorialStep1Title': 'تابع داخل المتصفح',
+      'iosWhatsappTutorialStep1Description':
+          'اضغط متابعة إلى واتساب ويب. لا تحتاج إلى تنزيل واتساب مرة أخرى.',
+      'iosWhatsappTutorialStep2Title': 'اختر تسجيل الدخول برقم الهاتف',
+      'iosWhatsappTutorialStep2Description':
+          'اضغط تسجيل الدخول برقم الهاتف أسفل رمز QR.',
+      'iosWhatsappTutorialStep3Title': 'أدخل رقم واتساب',
+      'iosWhatsappTutorialStep3Description':
+          'اختر بلدك، وأدخل رقمك، ثم اضغط التالي. أدخل رمز الربط في واتساب من الإعدادات ‹ الأجهزة المرتبطة ‹ ربط جهاز ‹ الربط باستخدام رقم الهاتف.',
+      'iosWhatsappOpenWeb': 'فتح واتساب ويب',
+      'iosWhatsappStatusDetected': 'تم اكتشاف الحالة',
+      'iosWhatsappConnected': 'تم ربط واتساب',
+      'iosWhatsappLinkAccount': 'اربط حساب واتساب',
+      'iosWhatsappOpening': 'جارٍ فتح واتساب ويب…',
+      'iosWhatsappWaiting': 'في انتظار واتساب',
+      'iosWhatsappSaving': 'جارٍ حفظ الحالة محليًا…',
+      'iosWhatsappSaveStatus': 'حفظ الحالة الحالية',
+      'iosWhatsappSavePhoto': 'حفظ الصورة الحالية',
+      'iosWhatsappSaveVideo': 'حفظ الفيديو الحالي',
+      'iosWhatsappOpenStatus': 'افتح حالة لحفظها',
+      'iosWhatsappLoadFailed': 'تعذّر تحميل واتساب ويب',
+      'iosWhatsappSaveFailed': 'تعذّر حفظ هذه الحالة',
+      'iosWhatsappTryOpenStatus': 'افتح حالة ثم حاول مرة أخرى.',
+      'iosWhatsappSaved': 'تم حفظ الحالة',
+      'iosWhatsappSavedFile': 'أصبح {file} جاهزًا في التنزيلات.',
+      'iosWhatsappSavedSuccess': 'تم حفظ الحالة بنجاح',
+      'iosWhatsappSavedDescription':
+          'يمكنك متابعة مشاهدة الحالات أو فتح تنزيلات ApexLoad.',
+      'iosWhatsappKeepBrowsing': 'متابعة التصفح',
+      'iosWhatsappGuideTitle': 'افتح حالة قبل الحفظ',
+      'iosWhatsappGuideSubtitle':
+          'يحفظ ApexLoad الصورة أو الفيديو المعروض حاليًا في واتساب ويب.',
+      'iosWhatsappGuideStep1Title': 'افتح تحديثات الحالة',
+      'iosWhatsappGuideStep1Description':
+          'اضغط أيقونة الحالة الدائرية في القائمة الجانبية لواتساب ويب.',
+      'iosWhatsappGuideStep2Title': 'اختر حالة',
+      'iosWhatsappGuideStep2Description':
+          'اختر جهة اتصال، ثم افتح الصورة أو الفيديو الذي تريد حفظه.',
+      'iosWhatsappGuideStep3Title': 'أبقِ الحالة معروضة ثم احفظها',
+      'iosWhatsappGuideStep3Description':
+          'أثناء عرض الحالة، اضغط حفظ الحالة الحالية في ApexLoad.',
+      'iosWhatsappGuideTip':
+          'يصبح زر الحفظ جاهزًا عندما يكتشف ApexLoad حالة مفتوحة.',
+      'iosWhatsappSaveGuideTitle': 'طريقة حفظ حالة واتساب',
+      'iosWhatsappSaveGuideSubtitle':
+          'اتبع هذه الخطوات الأربع مرة واحدة، ثم احفظ مباشرة من ApexLoad.',
+      'iosWhatsappSaveGuideStep1Title': 'افتح تحديثات الحالة',
+      'iosWhatsappSaveGuideStep1Description':
+          'اضغط أيقونة الحالة الدائرية في القائمة الجانبية لواتساب ويب.',
+      'iosWhatsappSaveGuideStep2Title': 'اختر الحالة التي تريدها',
+      'iosWhatsappSaveGuideStep2Description':
+          'اختر جهة اتصال من قائمة الحالات الحديثة.',
+      'iosWhatsappSaveGuideStep3Title': 'احفظ الصورة أو الفيديو المفتوح',
+      'iosWhatsappSaveGuideStep3Description':
+          'أبقِ الحالة معروضة، ثم اضغط زر الحفظ في ApexLoad.',
+      'iosWhatsappSaveGuideStep4Title': 'اعثر عليها في التنزيلات',
+      'iosWhatsappSaveGuideStep4Description':
+          'بعد ظهور تأكيد الحفظ، اضغط التنزيلات لعرض الملف المحفوظ.',
+      'iosWhatsappGotIt': 'فهمت',
       'activeOperationWakelockNote':
-          'يرجى إبقاء ApexLoad مفتوحًا حتى تكتمل العملية. ستبقى الشاشة نشطة أثناء التنزيل أو الحفظ.',
+          'يرجى إبقاء ApexLoad مفتوحًا حتى تكتمل العملية. ستبقى الشاشة نشطة أثناء التنزيل أو النقل أو المعالجة.',
       'keepScreenAwakeDuringDownloads': 'إبقاء الشاشة نشطة أثناء التنزيل',
       'keepScreenAwakeDuringDownloadsSubtitle':
           'يمنع إطفاء الشاشة أثناء تنزيل أو حفظ أو تصدير الوسائط.',

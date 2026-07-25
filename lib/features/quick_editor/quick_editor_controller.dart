@@ -74,8 +74,15 @@ class QuickEditorController extends Notifier<QuickEditorState> {
       final completed = await ref
           .read(activeOperationWakelockServiceProvider)
           .runWithWakelock(
-            () =>
-                service.runJob(source: sourceItem, job: job, options: options),
+            () => service.runJob(
+              source: sourceItem,
+              job: job,
+              options: options,
+              onProgress: (progress) {
+                if (_cancelled) return;
+                state = state.copyWith(progress: progress.clamp(0.04, 0.98));
+              },
+            ),
             reason: 'quick editor ${job.operation}',
           );
       if (_cancelled) return;
@@ -90,6 +97,10 @@ class QuickEditorController extends Notifier<QuickEditorState> {
   }
 
   void clearMessage() {
+    state = state.copyWith(clearMessage: true, progress: 0);
+  }
+
+  void dismissResult() {
     state = state.copyWith(
       clearMessage: true,
       clearCompletedFile: true,

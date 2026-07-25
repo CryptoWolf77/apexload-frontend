@@ -12,7 +12,6 @@ import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/active_operation_note.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
-import 'package:apexload/shared/widgets/mock_ad_dialog.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +58,7 @@ class _DownloadProgressScreenState
     _beginOperationWakelock();
     unawaited(_pollStatus());
     _timer = Timer.periodic(
-      const Duration(milliseconds: 1500),
+      const Duration(milliseconds: 750),
       (_) => _pollStatus(),
     );
   }
@@ -159,6 +158,7 @@ class _DownloadProgressScreenState
               ? _fileNameFor(format)
               : file.fileName,
           type: format.type,
+          expectedSizeBytes: file.sizeBytes,
           publishToGallery: widget.args.saveToGallery,
           onIndeterminateProgress: () {
             final now = DateTime.now();
@@ -258,7 +258,7 @@ class _DownloadProgressScreenState
     _logSavePerf(
       'thumbnail queued in: ${thumbnailQueueWatch.elapsedMilliseconds} ms',
     );
-    final showAd = await ref
+    await ref
         .read(subscriptionControllerProvider.notifier)
         .recordSuccessfulDownload(count: items.length);
     if (!mounted) return;
@@ -280,9 +280,6 @@ class _DownloadProgressScreenState
       'total save stage completed in: ${saveStageWatch.elapsedMilliseconds} ms',
     );
     AppNotification.success(context, message: l.t('downloadSavedToLibrary'));
-    if (showAd) {
-      await showMockAdDialog(context);
-    }
   }
 
   String _friendlyFailureMessage(String message) {

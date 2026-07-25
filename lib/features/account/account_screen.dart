@@ -68,12 +68,6 @@ class AccountScreen extends ConsumerWidget {
                       ? l.t('unlocked')
                       : l.t('locked'),
                 ),
-                _InfoRow(
-                  label: l.t('batchDownloads'),
-                  value: subscription.isPremium
-                      ? l.t('unlocked')
-                      : l.t('locked'),
-                ),
               ],
             ),
           ),

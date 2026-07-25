@@ -7,7 +7,7 @@ class AppConstants {
   static const storeName = 'ApexLoad: Social Downloader';
   static const subtitle = 'Social Downloader';
   static const tagline = 'Download smarter. Save faster.';
-  static const version = '1.1.0';
+  static const version = '1.0.0';
 
   static const legalNotice =
       'This app is intended only for downloading content you own, have permission to use, or content that is publicly allowed to be downloaded. Users are responsible for respecting copyright and platform terms.';

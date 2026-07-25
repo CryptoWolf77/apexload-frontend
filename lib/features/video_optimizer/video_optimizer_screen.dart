@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
+import 'package:apexload/features/quick_editor/editor_completion_panel.dart';
 import 'package:apexload/features/quick_editor/quick_editor_controller.dart';
 import 'package:apexload/features/quick_editor/quick_editor_models.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
@@ -12,6 +13,7 @@ import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class VideoOptimizerScreen extends ConsumerStatefulWidget {
   const VideoOptimizerScreen({super.key, required this.item});
@@ -24,8 +26,15 @@ class VideoOptimizerScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoOptimizerScreenState extends ConsumerState<VideoOptimizerScreen> {
+  final ScrollController _scrollController = ScrollController();
   var _preset = 'balanced';
   var _format = 'mp4';
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +57,7 @@ class _VideoOptimizerScreenState extends ConsumerState<VideoOptimizerScreen> {
         }
         AppNotification.success(context, message: l.t(next.successMessageKey!));
         ref.read(quickEditorControllerProvider.notifier).clearMessage();
+        _revealCompletion();
       }
     });
 
@@ -58,6 +68,7 @@ class _VideoOptimizerScreenState extends ConsumerState<VideoOptimizerScreen> {
         elevation: 0,
       ),
       child: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 100),
         children: [
           Text(
@@ -70,6 +81,15 @@ class _VideoOptimizerScreenState extends ConsumerState<VideoOptimizerScreen> {
             style: TextStyle(color: AppTone.textSecondary(context)),
           ),
           const SizedBox(height: 16),
+          if (state.completedItem != null) ...[
+            EditorCompletionPanel(
+              item: state.completedItem!,
+              onOpen: () => _openCompletedItem(state.completedItem!),
+              onViewDownloads: _viewCompletedItemInDownloads,
+              onDismiss: _dismissCompletedItem,
+            ),
+            const SizedBox(height: 16),
+          ],
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,6 +176,42 @@ class _VideoOptimizerScreenState extends ConsumerState<VideoOptimizerScreen> {
         ],
       ),
     );
+  }
+
+  void _revealCompletion() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      unawaited(
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+    });
+  }
+
+  Future<void> _openCompletedItem(DownloadItemModel item) async {
+    try {
+      await ref.read(localMediaServiceProvider).openItem(item);
+      if (!mounted) return;
+      _dismissCompletedItem();
+    } on Object {
+      if (!mounted) return;
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('couldNotOpenFile'),
+      );
+    }
+  }
+
+  void _viewCompletedItemInDownloads() {
+    _dismissCompletedItem();
+    context.go('/downloads');
+  }
+
+  void _dismissCompletedItem() {
+    ref.read(quickEditorControllerProvider.notifier).dismissResult();
   }
 
   void _runOptimizer() {
