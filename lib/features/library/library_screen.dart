@@ -100,7 +100,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
               const SizedBox(width: 8),
               for (final platform in [
-                ...AppConstants.supportedPlatforms,
+                ...AppConstants.availablePlatforms,
                 'Editor',
               ]) ...[
                 PlatformChip(
@@ -289,33 +289,60 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   Future<void> _rename(String id, String current) async {
-    final controller = TextEditingController(text: current);
     final value = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context).t('renameFile')),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context).t('filename'),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).t('cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(AppLocalizations.of(context).t('save')),
-          ),
-        ],
-      ),
+      builder: (context) => _RenameDialog(current: current),
     );
-    controller.dispose();
     if (value != null && value.isNotEmpty) {
       ref.read(libraryControllerProvider.notifier).rename(id, value);
     }
+  }
+}
+
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.current});
+  final String current;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.current);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context).t('renameFile')),
+      content: TextField(
+        controller: _controller,
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context).t('filename'),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context).t('cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: Text(AppLocalizations.of(context).t('save')),
+        ),
+      ],
+    );
   }
 }
 

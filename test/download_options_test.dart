@@ -25,7 +25,8 @@ void main() {
     expect(find.text('Not available on this clip'), findsOneWidget);
     expect(find.text('MP3 Audio'), findsOneWidget);
     expect(find.text('Thumbnail JPG'), findsOneWidget);
-    expect(find.text('No watermark when available'), findsOneWidget);
+    // Watermark removal was withdrawn for App Review guideline 5.2.3.
+    expect(find.text('No watermark when available'), findsNothing);
     expect(find.text('No watermark applied when available'), findsNothing);
   });
 
@@ -48,7 +49,7 @@ void main() {
     expect(find.text('MP3 Audio'), findsNothing);
   });
 
-  testWidgets('premium video users see automatic no-watermark note', (
+  testWidgets('watermark removal is not offered to anyone, premium included', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -63,7 +64,7 @@ void main() {
     await _pumpDownloadOptions(tester, media: media);
     await tester.pumpAndSettle();
 
-    expect(find.text('No watermark applied when available'), findsOneWidget);
+    expect(find.text('No watermark applied when available'), findsNothing);
     expect(find.text('No watermark when available'), findsNothing);
   });
 

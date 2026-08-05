@@ -36,7 +36,7 @@ class AppLocalizations {
           'Download video, extract audio, save thumbnails, and more.',
       'onboardingTitle3': 'Go Premium for more power',
       'onboardingDesc3':
-          'Unlock FHD & 4K quality, no watermark when available, Quick Editor, Audio Swap, faster queue, and no ads.',
+          'Unlock FHD & 4K quality, Quick Editor, Audio Swap, faster queue, and no ads.',
       'pasteYourVideoLink': 'Paste your video link',
       'howToUse': 'How to use',
       'analyzeLink': 'Analyze link',
@@ -134,6 +134,13 @@ class AppLocalizations {
       'confirmDownloadRightsCheckbox':
           'I confirm that I own this content or have permission to download and use it.',
       'supportedPlatforms': 'Supported platforms',
+      'sourceNotSupported':
+          'This source is not supported. ApexLoad only works with the '
+          'platforms listed below.',
+      'contentOwnershipNotice':
+          'ApexLoad is not affiliated with, endorsed by, or sponsored by any '
+          'of these platforms. All content belongs to its respective owners. '
+          'Only save content you created, own, or have permission to save.',
       'recentDownloads': 'Recent downloads',
       'viewAll': 'View all',
       'pasteFirst': 'Paste a public media link first.',
@@ -153,6 +160,9 @@ class AppLocalizations {
       'monthly': 'Monthly',
       'yearly': 'Yearly',
       'choosePlan': 'Choose your plan',
+      'testerPremiumTitle': 'Tester Premium is active',
+      'testerPremiumMessage':
+          'All Premium features are unlocked in this tester build. No purchase is required.',
       'monthlyPrice': r'$0.99/month',
       'yearlyPrice': r'$9.99/year',
       'import': 'Import',
@@ -170,6 +180,15 @@ class AppLocalizations {
       'chooseVideoSource': 'Choose video source',
       'chooseVideoSourceDescription':
           'Use an ApexLoad download or pick a video stored on this device.',
+      'chooseAudioSource': 'Choose audio source',
+      'files': 'Files',
+      'browseDeviceFiles': 'Browse files stored on this device.',
+      'photoLibrary': 'Photo Library',
+      'gallery': 'Gallery',
+      'chooseVideoFromLibrary': 'Choose a video from your media library.',
+      'chooseVideoForAudio': 'Choose a video and use its audio track.',
+      'clearLink': 'Clear link',
+      'pasteFromClipboard': 'Paste from clipboard',
       'chooseLocalVideo': 'Choose local video',
       'localVideoPremiumTitle': 'Premium feature',
       'localVideoPremiumMessage':
@@ -299,6 +318,12 @@ class AppLocalizations {
       'premiumActiveButton': 'Premium Active',
       'subscribeNow': 'Subscribe',
       'restorePurchases': 'Restore Purchases',
+      'restorePurchasesSubtitle':
+          'Already subscribed? Bring your Premium plan back to this device.',
+      'premiumAlreadyActive': 'Premium is already active on this device.',
+      'subscriptionTemporarilyUnavailable':
+          'Subscription plans are not available right now. Please check your '
+          'connection and try again shortly.',
       'restoringPurchases': 'Restoring purchases...',
       'restorePurchasesSuccess': 'Your Premium subscription was restored.',
       'nothingToRestore': 'No active Premium subscription was found.',
@@ -310,7 +335,8 @@ class AppLocalizations {
       'storeUnavailable':
           'The App Store is unavailable right now. Check your connection and try again.',
       'subscriptionProductsUnavailable':
-          'Subscriptions are still syncing with the App Store. Please try again shortly.',
+          'Apple did not return the ApexLoad subscription products. Retry once, then share the support code below if the problem continues.',
+      'supportCode': 'Support code',
       'retryAppStore': 'Retry App Store',
       'premiumLegalNotice':
           'Payment is charged to your Apple ID at confirmation. Subscriptions renew automatically unless cancelled at least 24 hours before the current period ends. Manage or cancel in your App Store account settings. By subscribing, you agree to the Terms of Use and Privacy Policy.',
@@ -323,7 +349,7 @@ class AppLocalizations {
       'notNow': 'Not now',
       'premiumOption': 'Premium option',
       'premiumFeatureSummary':
-          'Unlock FHD & 4K quality, no watermark when available, Quick Editor, and audio extraction.',
+          'Unlock FHD & 4K quality, Quick Editor, and audio extraction.',
       'downloadProgress': 'Download progress',
       'selectedType': 'Selected type',
       'requestedFormat': 'Requested format',
@@ -601,6 +627,8 @@ class AppLocalizations {
       'editingCompatibilityMessage':
           'This video is not in MP4 format. For smoother editing on iPhone, we recommend converting it to MP4 first. You can also continue editing the original file.',
       'continueEditing': 'Continue editing',
+      'editingComplete': 'Your file is ready',
+      'editingCompleteMessage': 'Your edited file has been saved successfully. What would you like to do next?',
       'goToConvertMp4': 'Convert to MP4',
       'choosePlatform': 'Choose Platform',
       'instagramReel': 'Instagram Reel',
@@ -795,6 +823,21 @@ class AppLocalizations {
       'noStatusesFound': 'No statuses found',
       'iosWhatsappTitle': 'WhatsApp Status',
       'iosWhatsappRefresh': 'Refresh WhatsApp Web',
+      'iosWhatsappResync': 'Resync WhatsApp Web',
+      'iosWhatsappResyncHint':
+          'Reconnects and reloads every status your linked account has.',
+      'iosWhatsappResyncStarted':
+          'WhatsApp Web is reconnecting. Status updates appear as they sync.',
+      'iosWhatsappSyncing': 'Syncing your WhatsApp updates…',
+      'iosWhatsappRenderFailedTitle': 'WhatsApp Web stopped responding',
+      'iosWhatsappRenderFailedMessage':
+          'iOS closed the web page to free memory. Your linked WhatsApp '
+          'account is still connected.',
+      'iosWhatsappRenderFailedRetry': 'Reload WhatsApp Web',
+      'iosWhatsappRecovered':
+          'WhatsApp Web ran out of memory and was reloaded. Your account is '
+          'still linked.',
+      'iosWhatsappHelp': 'Show status-saving guide',
       'iosWhatsappDisconnect': 'Disconnect WhatsApp',
       'iosWhatsappDisconnectQuestion': 'Disconnect WhatsApp?',
       'iosWhatsappDisconnectMessage':
@@ -900,7 +943,7 @@ class AppLocalizations {
           'نزّل الفيديو، استخرج الصوت، احفظ الصورة المصغّرة، والمزيد.',
       'onboardingTitle3': 'فعّل بريميوم لقوة أكبر',
       'onboardingDesc3':
-          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، وتبديل الصوت، والطابور الأسرع، وتجربة بدون إعلانات.',
+          'افتح جودة FHD و 4K عند توفرها، والمحرر السريع، وتبديل الصوت، والطابور الأسرع، وتجربة بدون إعلانات.',
       'pasteYourVideoLink': 'الصق رابط الفيديو',
       'analyzeLink': 'تحليل الرابط',
       'downloadCompleted': 'اكتمل التحميل',
@@ -991,6 +1034,12 @@ class AppLocalizations {
       'confirmDownloadRightsCheckbox':
           'أؤكد أنني أملك هذا المحتوى أو لدي إذن لتحميله واستخدامه.',
       'supportedPlatforms': 'المنصات المدعومة',
+      'sourceNotSupported':
+          'هذا المصدر غير مدعوم. يعمل ApexLoad مع المنصات المذكورة أدناه فقط.',
+      'contentOwnershipNotice':
+          'ApexLoad ليس تابعًا لأي من هذه المنصات ولا معتمدًا أو مدعومًا منها. '
+          'جميع المحتويات ملك لأصحابها. احفظ فقط المحتوى الذي أنشأته أو تملكه '
+          'أو لديك إذن بحفظه.',
       'recentDownloads': 'آخر التحميلات',
       'viewAll': 'عرض الكل',
       'pasteFirst': 'الصق رابط وسائط عام أولاً.',
@@ -1010,6 +1059,9 @@ class AppLocalizations {
       'monthly': 'شهري',
       'yearly': 'سنوي',
       'choosePlan': 'اختر خطتك',
+      'testerPremiumTitle': 'اشتراك المختبر المميز مفعّل',
+      'testerPremiumMessage':
+          'جميع الميزات المميزة مفتوحة في نسخة الاختبار هذه، ولا يلزم إجراء أي عملية شراء.',
       'monthlyPrice': '0.99 دولار / شهرياً',
       'yearlyPrice': '9.99 دولار / سنوياً',
       'import': 'استيراد',
@@ -1027,6 +1079,15 @@ class AppLocalizations {
       'chooseVideoSource': 'اختر مصدر الفيديو',
       'chooseVideoSourceDescription':
           'استخدم فيديو من تنزيلات ApexLoad أو اختر فيديو محفوظًا على هذا الجهاز.',
+      'chooseAudioSource': 'اختر مصدر الصوت',
+      'files': 'الملفات',
+      'browseDeviceFiles': 'تصفح الملفات المحفوظة على هذا الجهاز.',
+      'photoLibrary': 'مكتبة الصور',
+      'gallery': 'المعرض',
+      'chooseVideoFromLibrary': 'اختر فيديو من مكتبة الوسائط.',
+      'chooseVideoForAudio': 'اختر فيديو لاستخدام مساره الصوتي.',
+      'clearLink': 'مسح الرابط',
+      'pasteFromClipboard': 'لصق من الحافظة',
       'chooseLocalVideo': 'اختيار فيديو من الجهاز',
       'localVideoPremiumTitle': 'ميزة بريميوم',
       'localVideoPremiumMessage':
@@ -1153,6 +1214,12 @@ class AppLocalizations {
       'premiumActiveButton': 'الاشتراك المميز نشط',
       'subscribeNow': 'اشترك الآن',
       'restorePurchases': 'استعادة المشتريات',
+      'restorePurchasesSubtitle':
+          'هل سبق أن اشتركت؟ استعد خطة بريميوم على هذا الجهاز.',
+      'premiumAlreadyActive': 'بريميوم مفعّل بالفعل على هذا الجهاز.',
+      'subscriptionTemporarilyUnavailable':
+          'خطط الاشتراك غير متاحة حاليًا. يرجى التحقق من الاتصال والمحاولة '
+          'مرة أخرى بعد قليل.',
       'restoringPurchases': 'جارٍ استعادة المشتريات...',
       'restorePurchasesSuccess': 'تمت استعادة اشتراك بريميوم.',
       'nothingToRestore': 'لم يتم العثور على اشتراك بريميوم نشط.',
@@ -1163,7 +1230,8 @@ class AppLocalizations {
       'storeUnavailable':
           'متجر App Store غير متاح الآن. تحقق من اتصالك وحاول مرة أخرى.',
       'subscriptionProductsUnavailable':
-          'لا تزال الاشتراكات قيد المزامنة مع App Store. يرجى المحاولة بعد قليل.',
+          'لم تُرجع Apple منتجات اشتراك ApexLoad. أعد المحاولة مرة واحدة، ثم شارك رمز الدعم أدناه إذا استمرت المشكلة.',
+      'supportCode': 'رمز الدعم',
       'retryAppStore': 'إعادة المحاولة مع App Store',
       'premiumLegalNotice':
           'يتم خصم المبلغ من Apple ID عند التأكيد. تتجدد الاشتراكات تلقائيًا ما لم يتم إلغاؤها قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك الإدارة أو الإلغاء من إعدادات حساب App Store. بالاشتراك، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
@@ -1177,7 +1245,7 @@ class AppLocalizations {
       'notNow': 'ليس الآن',
       'premiumOption': 'خيار بريميوم',
       'premiumFeatureSummary':
-          'افتح جودة FHD و 4K عند توفرها، وبدون علامة مائية عند توفرها، والمحرر السريع، واستخراج الصوت.',
+          'افتح جودة FHD و 4K عند توفرها، والمحرر السريع، واستخراج الصوت.',
       'downloadProgress': 'تقدم التحميل',
       'selectedType': 'النوع المحدد',
       'requestedFormat': 'الصيغة المطلوبة',
@@ -1447,6 +1515,8 @@ class AppLocalizations {
       'editingCompatibilityMessage':
           'هذا الفيديو ليس بصيغة MP4. لتعديل أكثر سلاسة على iPhone، نوصي بتحويله إلى MP4 أولًا. ويمكنك أيضًا متابعة تعديل الملف الأصلي.',
       'continueEditing': 'متابعة التعديل',
+      'editingComplete': 'ملفك جاهز',
+      'editingCompleteMessage': 'تم حفظ الملف المعدل بنجاح. ماذا تود أن تفعل بعد ذلك؟',
       'goToConvertMp4': 'تحويل إلى MP4',
       'choosePlatform': 'اختر المنصة',
       'instagramReel': 'Instagram Reel',
@@ -1632,6 +1702,19 @@ class AppLocalizations {
       'noStatusesFound': 'لا توجد حالات',
       'iosWhatsappTitle': 'حالات واتساب',
       'iosWhatsappRefresh': 'تحديث واتساب ويب',
+      'iosWhatsappResync': 'إعادة مزامنة واتساب ويب',
+      'iosWhatsappResyncHint': 'يعيد الاتصال ويحمّل كل حالات حسابك المرتبط.',
+      'iosWhatsappResyncStarted':
+          'جارٍ إعادة اتصال واتساب ويب. ستظهر الحالات تباعًا أثناء المزامنة.',
+      'iosWhatsappSyncing': 'جارٍ مزامنة تحديثات واتساب…',
+      'iosWhatsappRenderFailedTitle': 'توقّف واتساب ويب عن الاستجابة',
+      'iosWhatsappRenderFailedMessage':
+          'أغلق نظام iOS صفحة الويب لتحرير الذاكرة. ما زال حساب واتساب '
+          'المرتبط متصلًا.',
+      'iosWhatsappRenderFailedRetry': 'إعادة تحميل واتساب ويب',
+      'iosWhatsappRecovered':
+          'نفدت ذاكرة واتساب ويب فأُعيد تحميله. حسابك ما زال مرتبطًا.',
+      'iosWhatsappHelp': 'عرض تعليمات حفظ الحالة',
       'iosWhatsappDisconnect': 'فصل واتساب',
       'iosWhatsappDisconnectQuestion': 'هل تريد فصل واتساب؟',
       'iosWhatsappDisconnectMessage':

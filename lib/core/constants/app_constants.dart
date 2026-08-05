@@ -1,12 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AppConstants {
   const AppConstants._();
 
   static const appName = 'ApexLoad';
-  static const storeName = 'ApexLoad: Social Downloader';
-  static const subtitle = 'Social Downloader';
-  static const tagline = 'Download smarter. Save faster.';
+  static const storeName = 'ApexLoad: Video Saver & Editor';
+  static const subtitle = 'Video Saver & Editor';
+  static const tagline = 'Save smarter. Edit faster.';
   static const version = '1.0.0';
 
   static const legalNotice =
@@ -22,6 +23,39 @@ class AppConstants {
     'Reddit',
     'Snapchat',
   ];
+
+  /// YouTube's Terms of Service prohibit saving its media, and App Review
+  /// guideline 5.2.3 names YouTube explicitly. The iOS build therefore offers
+  /// no YouTube support at all — it is not listed, not detected, and URLs are
+  /// refused before any request leaves the device.
+  static const iosSupportedPlatforms = [
+    'TikTok',
+    'Instagram',
+    'Facebook',
+    'X/Twitter',
+    'Pinterest',
+    'Reddit',
+    'Snapchat',
+  ];
+
+  static const unsupportedOnIosPlatform = 'YouTube Shorts';
+
+  static bool get isIosBuild =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// Platforms this build is allowed to offer.
+  static List<String> get availablePlatforms =>
+      isIosBuild ? iosSupportedPlatforms : supportedPlatforms;
+
+  /// True when the link points at a source this build must not handle.
+  static bool isBlockedSource(String url) {
+    if (!isIosBuild) return false;
+    final value = url.toLowerCase();
+    return value.contains('youtube.') ||
+        value.contains('youtu.be') ||
+        value.contains('//youtube') ||
+        value.contains('m.youtube');
+  }
 }
 
 class AppColors {

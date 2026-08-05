@@ -33,7 +33,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _urlController.addListener(() {
-      setState(() => _platform = detectPlatformName(_urlController.text));
+      final text = _urlController.text;
+      // Never surface a platform this build does not support.
+      final detected = AppConstants.isBlockedSource(text)
+          ? 'Auto detect'
+          : detectPlatformName(text);
+      setState(() => _platform = detected);
     });
   }
 
@@ -61,6 +66,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final url = _urlController.text.trim();
     if (url.isEmpty) {
       AppNotification.info(context, message: l.t('pasteFirst'));
+      return;
+    }
+    // Refuse unsupported sources before anything leaves the device.
+    if (AppConstants.isBlockedSource(url)) {
+      AppNotification.info(context, message: l.t('sourceNotSupported'));
       return;
     }
     final accepted = await ref
@@ -258,22 +268,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 decoration: InputDecoration(
                   hintText: 'https://www.tiktok.com/@creator/video/...',
                   prefixIcon: const Icon(Icons.link_rounded),
-                  suffixIcon: IconButton(
-                    tooltip: 'Paste from clipboard',
-                    onPressed: _paste,
-                    icon: const Icon(Icons.content_paste_rounded),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Semantics(
-                label: l.t('backendProcessingDisclosure'),
-                child: Text(
-                  l.t('backendProcessingDisclosure'),
-                  style: TextStyle(
-                    color: AppTone.textSecondary(context),
-                    fontSize: 12,
-                    height: 1.35,
+                  suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _urlController,
+                    builder: (_, value, __) {
+                      final hasLink = value.text.trim().isNotEmpty;
+                      return IconButton(
+                        tooltip: hasLink
+                            ? l.t('clearLink')
+                            : l.t('pasteFromClipboard'),
+                        onPressed: hasLink
+                            ? () => _urlController.clear()
+                            : _paste,
+                        icon: Icon(
+                          hasLink
+                              ? Icons.close_rounded
+                              : Icons.content_paste_rounded,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -303,9 +315,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemBuilder: (context, index) =>
-                PlatformChip(label: AppConstants.supportedPlatforms[index]),
+                PlatformChip(label: AppConstants.availablePlatforms[index]),
             separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemCount: AppConstants.supportedPlatforms.length,
+            itemCount: AppConstants.availablePlatforms.length,
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Non-affiliation and ownership notice, matching the disclaimer
+        // pattern used by comparable apps that pass App Review.
+        Text(
+          l.t('contentOwnershipNotice'),
+          style: TextStyle(
+            color: AppTone.textSecondary(context),
+            fontSize: 12,
+            height: 1.35,
           ),
         ),
         const SizedBox(height: 14),

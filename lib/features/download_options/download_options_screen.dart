@@ -151,7 +151,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
                   url: widget.media.sourceUrl,
                   selectedFormats: selected,
                   premium: false,
-                  noWatermark: premiumActive && _isVideo,
+                  noWatermark: false,
                 ),
             reason: 'create download job',
           );
@@ -306,56 +306,11 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
               ),
             ],
           ),
-          if (_isVideo && premiumActive) ...[
-            const SizedBox(height: 10),
-            GlassCard(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.verified_rounded,
-                    color: AppColors.success,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      l.t('noWatermarkApplied'),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (_isVideo && !premiumActive) ...[
-            const SizedBox(height: 10),
-            GlassCard(
-              onTap: () => showPremiumLockSheet(
-                context: context,
-                title: l.t('noWatermarkPremiumTitle'),
-                message: l.t('noWatermarkPremiumMessage'),
-                icon: Icons.verified_rounded,
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock_rounded, color: AppColors.premiumGold),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      l.t('noWatermarkWhenAvailable'),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppTone.textSecondary(context),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          // Watermark removal was withdrawn. Stripping a platform's
+          // attribution mark is exactly what App Review guideline 5.2.3
+          // treats as facilitating infringement, and it was being sold as a
+          // Premium feature. Media is now always saved as the source
+          // provides it.
           const SizedBox(height: 10),
           if (_isImage &&
               (widget.media.platform == 'Instagram' ||

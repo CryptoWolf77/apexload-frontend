@@ -12,7 +12,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('ApexLoad'), findsOneWidget);
-    expect(find.text('Social Downloader'), findsOneWidget);
+    expect(find.text('Video Saver & Editor'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
