@@ -50,3 +50,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/build/
+
+# Generated App Store screenshots — rebuild with
+# app_store_assets/generate_marketing_screenshots.py from the source captures.
+app_store_assets/screenshots/
+app_store_assets/marketing_screenshots/
+
+# Bulk screenshot archive (duplicate of the source captures)
+ApexLoad_App_Store_Screenshots.zip
