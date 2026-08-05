@@ -15,7 +15,7 @@ import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:apexload/shared/widgets/video_preview_panel.dart';
-import 'package:file_selector/file_selector.dart' show openFile;
+import 'package:apexload/shared/widgets/media_source_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -181,6 +181,84 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
     return clean.substring(dot + 1).toLowerCase();
   }
 
+  void _showCompletionDialog(DownloadItemModel item, AppLocalizations l) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.background.withValues(alpha: 0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.primaryEnd,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l.t('editingComplete'),
+                  style: Theme.of(dialogContext).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l.t('editingCompleteMessage'),
+                  style: TextStyle(
+                    color: AppTone.textSecondary(dialogContext),
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      context.go('/downloads');
+                    },
+                    child: Text(l.t('viewInDownloads')),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                    },
+                    child: Text(l.t('continueEditing')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -203,7 +281,10 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         }
         AppNotification.success(context, message: l.t(messageKey));
         ref.read(quickEditorControllerProvider.notifier).clearMessage();
-        _revealCompletion();
+        
+        if (completedItem != null && mounted) {
+          _showCompletionDialog(completedItem, l);
+        }
       }
     });
 
@@ -217,10 +298,12 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         data: _editorButtonTheme(context),
         child: Stack(
           children: [
-            ListView(
+            SingleChildScrollView(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
-              children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 Text(
                   l.t('quickEditor'),
                   style: Theme.of(context).textTheme.headlineSmall,
@@ -417,6 +500,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
                 ),
               ],
             ),
+          ),
             if (state.isProcessing)
               Positioned(
                 left: 18,
@@ -431,19 +515,6 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
         ),
       ),
     );
-  }
-
-  void _revealCompletion() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      unawaited(
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 420),
-          curve: Curves.easeOutCubic,
-        ),
-      );
-    });
   }
 
   Future<void> _openCompletedItem(DownloadItemModel item) async {
@@ -671,9 +742,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
 
   Future<void> _pickAudioFile() async {
     try {
-      final file = await openFile(
-        acceptedTypeGroups: [AppFileTypeGroups.audio],
-      );
+      final file = await pickLocalMedia(context, kind: LocalMediaKind.audio);
       final path = file?.path;
       if (file == null || path == null || path.trim().isEmpty) return;
       setState(() {
@@ -708,9 +777,7 @@ class _QuickEditorScreenState extends ConsumerState<QuickEditorScreen> {
 
   Future<void> _pickVideoFile() async {
     try {
-      final file = await openFile(
-        acceptedTypeGroups: [AppFileTypeGroups.video],
-      );
+      final file = await pickLocalMedia(context, kind: LocalMediaKind.video);
       final path = file?.path;
       if (file == null || path == null || path.trim().isEmpty) return;
       setState(() {

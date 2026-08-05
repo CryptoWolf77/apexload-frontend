@@ -14,4 +14,13 @@ class AppConfig {
     'ANDROID_STORE_URL',
   );
   static const String iosStoreUrl = String.fromEnvironment('IOS_STORE_URL');
+
+  /// Unlocks Premium only in binaries built explicitly for testers.
+  ///
+  /// App Store builds must omit this define so verified StoreKit
+  /// entitlements remain the only way to unlock Premium.
+  static const bool testerPremiumEnabled = bool.fromEnvironment(
+    'APEXLOAD_TESTER_PREMIUM',
+    defaultValue: false,
+  );
 }

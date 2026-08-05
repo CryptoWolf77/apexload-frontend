@@ -8,7 +8,7 @@ import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/local_thumbnail_view.dart';
-import 'package:file_selector/file_selector.dart' show openFile;
+import 'package:apexload/shared/widgets/media_source_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,9 +139,7 @@ class _SourcePickerCard extends ConsumerWidget {
   Future<void> _pickLocalVideo(BuildContext context) async {
     final l = AppLocalizations.of(context);
     try {
-      final file = await openFile(
-        acceptedTypeGroups: [AppFileTypeGroups.video],
-      );
+      final file = await pickLocalMedia(context, kind: LocalMediaKind.video);
       final path = file?.path;
       if (file == null || path == null || path.trim().isEmpty) return;
       final sizeLabel = _formatBytes(await file.length());

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:apexload/core/constants/app_config.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
@@ -160,8 +161,20 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
 
   @override
   UserSubscriptionModel build() {
+    if (AppConfig.testerPremiumEnabled) {
+      _loadFuture = Future<void>.value();
+      return _testerPremiumEntitlement();
+    }
     _loadFuture = _load();
     return UserSubscriptionModel.free();
+  }
+
+  UserSubscriptionModel _testerPremiumEntitlement() {
+    return UserSubscriptionModel.premium(
+      planName: 'TestFlight Tester',
+      expiresAt: DateTime(2099, 1, 1),
+      premiumActivatedMock: true,
+    );
   }
 
   Future<void> activateStoreEntitlement({
@@ -169,6 +182,10 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     required DateTime expiresAt,
   }) async {
     await _ensureLoaded();
+    if (AppConfig.testerPremiumEnabled) {
+      state = _testerPremiumEntitlement();
+      return;
+    }
     state = UserSubscriptionModel.premium(
       planName: plan.label,
       expiresAt: expiresAt,
@@ -178,6 +195,10 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
 
   Future<void> clearStoreEntitlement() async {
     await _ensureLoaded();
+    if (AppConfig.testerPremiumEnabled) {
+      state = _testerPremiumEntitlement();
+      return;
+    }
     if (!state.isStoreManagedPremium) return;
     state = UserSubscriptionModel.free(
       now: state.lastResetDate,

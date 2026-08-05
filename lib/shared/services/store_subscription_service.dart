@@ -21,6 +21,30 @@ abstract final class ApexLoadSubscriptionProducts {
   };
 }
 
+abstract final class SubscriptionCatalogSupportCodes {
+  static const storeUnavailable = 'AL-IAP-001';
+  static const productsMissing = 'AL-IAP-002';
+  static const queryFailed = 'AL-IAP-003';
+}
+
+@visibleForTesting
+String? subscriptionCatalogSupportCode({
+  required bool storeAvailable,
+  required Set<String> returnedProductIds,
+  Object? error,
+}) {
+  if (!storeAvailable) {
+    return SubscriptionCatalogSupportCodes.storeUnavailable;
+  }
+  if (error != null) {
+    return SubscriptionCatalogSupportCodes.queryFailed;
+  }
+  if (!returnedProductIds.containsAll(ApexLoadSubscriptionProducts.ids)) {
+    return SubscriptionCatalogSupportCodes.productsMissing;
+  }
+  return null;
+}
+
 class StoreProduct {
   const StoreProduct({
     required this.id,
@@ -80,12 +104,16 @@ class SubscriptionCatalog {
     required this.storeAvailable,
     required this.products,
     required this.storeProducts,
+    this.missingProductIds = const {},
+    this.supportCode,
     this.error,
   });
 
   final bool storeAvailable;
   final Map<PremiumPlan, StoreProduct> products;
   final Map<PremiumPlan, ProductDetails> storeProducts;
+  final Set<String> missingProductIds;
+  final String? supportCode;
   final String? error;
 }
 
@@ -122,6 +150,7 @@ class AppleSubscriptionStore implements SubscriptionStore {
         storeAvailable: false,
         products: {},
         storeProducts: {},
+        supportCode: SubscriptionCatalogSupportCodes.storeUnavailable,
       );
     }
     final available = await _inAppPurchase.isAvailable();
@@ -130,20 +159,52 @@ class AppleSubscriptionStore implements SubscriptionStore {
         storeAvailable: false,
         products: {},
         storeProducts: {},
+        supportCode: SubscriptionCatalogSupportCodes.storeUnavailable,
       );
     }
 
-    final response = await _inAppPurchase.queryProductDetails(
-      ApexLoadSubscriptionProducts.ids,
-    );
-    var catalogProducts = response.productDetails;
-    var missingProductIds = response.notFoundIDs;
-    var catalogError = response.error?.message;
+    final productsById = <String, ProductDetails>{};
+    var missingProductIds = Set<String>.from(ApexLoadSubscriptionProducts.ids);
+    String? catalogError;
+
+    // StoreKit's sandbox catalog can be briefly empty immediately after the
+    // app starts. Make a bounded retry before declaring the catalog missing.
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        final response = await _inAppPurchase.queryProductDetails(
+          ApexLoadSubscriptionProducts.ids,
+        );
+        for (final product in response.productDetails) {
+          productsById[product.id] = product;
+        }
+        missingProductIds = ApexLoadSubscriptionProducts.ids.difference(
+          productsById.keys.toSet(),
+        );
+        catalogError = response.error?.message;
+        debugPrint(
+          'ApexLoad StoreKit 2 catalog attempt $attempt: '
+          'products=${productsById.keys.join(',')} '
+          'missing=${missingProductIds.join(',')} '
+          'notFound=${response.notFoundIDs.join(',')} '
+          'error=$catalogError',
+        );
+        if (missingProductIds.isEmpty) break;
+      } on Object catch (error, stackTrace) {
+        catalogError = '$error';
+        debugPrint(
+          'ApexLoad StoreKit 2 catalog attempt $attempt failed: $error',
+        );
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      if (attempt < 3) {
+        await Future<void>.delayed(Duration(milliseconds: 350 * attempt));
+      }
+    }
 
     // StoreKit 2 occasionally returns an empty response on a real device
     // without a platform error. Querying the same catalog through StoreKit 1
     // is a safe compatibility fallback and does not change the purchase IDs.
-    if (catalogProducts.isEmpty) {
+    if (missingProductIds.isNotEmpty) {
       try {
         final legacyResponse = await SKRequestMaker().startProductRequest(
           ApexLoadSubscriptionProducts.ids.toList(growable: false),
@@ -156,15 +217,22 @@ class AppleSubscriptionStore implements SubscriptionStore {
           'products=${legacyProducts.map((product) => product.id).join(',')} '
           'missing=${legacyResponse.invalidProductIdentifiers.join(',')}',
         );
-        if (legacyProducts.isNotEmpty) {
-          catalogProducts = legacyProducts;
-          missingProductIds = legacyResponse.invalidProductIdentifiers;
+        for (final product in legacyProducts) {
+          productsById[product.id] = product;
+        }
+        missingProductIds = ApexLoadSubscriptionProducts.ids.difference(
+          productsById.keys.toSet(),
+        );
+        if (missingProductIds.isEmpty) {
           catalogError = null;
         }
-      } catch (error) {
+      } on Object catch (error, stackTrace) {
+        catalogError ??= '$error';
         debugPrint('ApexLoad StoreKit 1 fallback failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
       }
     }
+    final catalogProducts = productsById.values.toList(growable: false);
     debugPrint(
       'ApexLoad StoreKit catalog: '
       'products=${catalogProducts.map((product) => product.id).join(',')} '
@@ -183,11 +251,18 @@ class AppleSubscriptionStore implements SubscriptionStore {
         localizedPrice: product.price,
       );
     }
+    final supportCode = subscriptionCatalogSupportCode(
+      storeAvailable: true,
+      returnedProductIds: productsById.keys.toSet(),
+      error: catalogError,
+    );
 
     return SubscriptionCatalog(
       storeAvailable: true,
       products: Map.unmodifiable(products),
       storeProducts: Map.unmodifiable(productDetails),
+      missingProductIds: Set.unmodifiable(missingProductIds),
+      supportCode: supportCode,
       error:
           catalogError ??
           (missingProductIds.isEmpty
@@ -246,6 +321,7 @@ class SubscriptionStoreState {
     required this.phase,
     required this.storeAvailable,
     this.products = const {},
+    this.supportCode,
     this.error,
   });
 
@@ -253,11 +329,13 @@ class SubscriptionStoreState {
     : phase = StorePurchasePhase.loading,
       storeAvailable = false,
       products = const {},
+      supportCode = null,
       error = null;
 
   final StorePurchasePhase phase;
   final bool storeAvailable;
   final Map<PremiumPlan, StoreProduct> products;
+  final String? supportCode;
   final String? error;
 
   bool get isBusy =>
@@ -272,13 +350,16 @@ class SubscriptionStoreState {
     StorePurchasePhase? phase,
     bool? storeAvailable,
     Map<PremiumPlan, StoreProduct>? products,
+    String? supportCode,
     String? error,
     bool clearError = false,
+    bool clearSupportCode = false,
   }) {
     return SubscriptionStoreState(
       phase: phase ?? this.phase,
       storeAvailable: storeAvailable ?? this.storeAvailable,
       products: products ?? this.products,
+      supportCode: clearSupportCode ? null : supportCode ?? this.supportCode,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -331,15 +412,19 @@ class SubscriptionStoreController extends Notifier<SubscriptionStoreState> {
       final catalog = await service.loadCatalog();
       if (!ref.mounted) return;
       _catalog = catalog;
+      final catalogComplete =
+          catalog.storeProducts.length ==
+          ApexLoadSubscriptionProducts.ids.length;
       state = SubscriptionStoreState(
-        phase: catalog.storeAvailable
+        phase: catalog.storeAvailable && catalogComplete
             ? StorePurchasePhase.ready
             : StorePurchasePhase.unavailable,
         storeAvailable: catalog.storeAvailable,
         products: catalog.products,
+        supportCode: catalog.supportCode,
         error: catalog.error,
       );
-      if (!catalog.storeAvailable) return;
+      if (!catalog.storeAvailable || !catalogComplete) return;
 
       final entitlement = await service.currentEntitlement();
       if (!ref.mounted) return;
@@ -354,7 +439,11 @@ class SubscriptionStoreController extends Notifier<SubscriptionStoreState> {
       debugPrint('ApexLoad StoreKit initialization failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (!ref.mounted) return;
-      state = state.copyWith(phase: StorePurchasePhase.error, error: '$error');
+      state = state.copyWith(
+        phase: StorePurchasePhase.error,
+        supportCode: SubscriptionCatalogSupportCodes.queryFailed,
+        error: '$error',
+      );
     }
   }
 
