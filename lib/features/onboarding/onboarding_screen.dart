@@ -26,10 +26,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finishOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('has_seen_onboarding', true);
-    final acceptedResponsibleUse =
-        prefs.getBool(LegalConsentService.responsibleUseAgreementKey) ?? false;
+    // Navigation must happen even if preferences cannot be written, otherwise
+    // this button silently does nothing and the user is stranded here.
+    var acceptedResponsibleUse = false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_onboarding', true);
+      acceptedResponsibleUse =
+          prefs.getBool(LegalConsentService.responsibleUseAgreementKey) ?? false;
+    } on Object catch (error) {
+      debugPrint('ApexLoad onboarding: preferences unavailable ($error)');
+    }
     if (!mounted) return;
     context.go(acceptedResponsibleUse ? '/home' : '/responsible-use');
   }

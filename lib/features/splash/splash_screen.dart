@@ -26,21 +26,40 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..forward();
-    Timer(const Duration(seconds: 2), () async {
-      final prefs = await SharedPreferences.getInstance();
+    unawaited(_leaveSplash());
+  }
+
+  /// Holds the splash for its full two seconds, then routes onward.
+  ///
+  /// The destination is resolved in parallel with the hold so preferences are
+  /// almost always ready by the time the animation finishes.
+  Future<void> _leaveSplash() async {
+    final destination = _resolveDestination();
+    await Future<void>.delayed(const Duration(seconds: 2));
+    final target = await destination;
+    if (!mounted) return;
+    context.go(target);
+  }
+
+  /// Never allowed to fail: leaving the user on an animated splash forever is
+  /// worse than starting them at onboarding.
+  Future<String> _resolveDestination() async {
+    try {
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 5),
+      );
       final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
       final hasAcceptedResponsibleUse =
           prefs.getBool(LegalConsentService.responsibleUseAgreementKey) ??
           false;
-      if (!mounted) return;
-      if (!hasSeenOnboarding) {
-        context.go('/onboarding');
-      } else if (!hasAcceptedResponsibleUse) {
-        context.go('/responsible-use');
-      } else {
-        context.go('/home');
-      }
-    });
+      if (!hasSeenOnboarding) return '/onboarding';
+      if (!hasAcceptedResponsibleUse) return '/responsible-use';
+      return '/home';
+    } on Object catch (error) {
+      // Consent state is unknown, so start before the legal gate, not after.
+      debugPrint('ApexLoad splash: preferences unavailable ($error)');
+      return '/onboarding';
+    }
   }
 
   @override

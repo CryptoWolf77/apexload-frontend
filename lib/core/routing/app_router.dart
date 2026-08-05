@@ -28,6 +28,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+final initialRouteProvider = Provider<String>((ref) => '/home');
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
@@ -45,19 +47,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (context, state) => const HomeScreen(),
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const HomeScreen(),
+            ),
           ),
           GoRoute(
             path: '/downloads',
-            builder: (context, state) => const LibraryScreen(),
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const LibraryScreen(),
+            ),
           ),
           GoRoute(
             path: '/quick-editor',
-            builder: (context, state) => const QuickEditorLandingScreen(),
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const QuickEditorLandingScreen(),
+            ),
           ),
           GoRoute(
             path: '/settings',
-            builder: (context, state) => const SettingsScreen(),
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const SettingsScreen(),
+            ),
           ),
         ],
       ),
@@ -126,6 +140,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   .isPremium;
               if (!premium) {
                 return GradientScaffold(
+                  appBar: AppBar(
+                    title: Text(l.t('whatsappStatusSaver')),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
+                    ),
+                  ),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(22),
