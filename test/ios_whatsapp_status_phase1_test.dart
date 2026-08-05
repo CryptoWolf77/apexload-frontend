@@ -46,19 +46,21 @@ void main() {
       );
     });
 
-    test('recognizes WhatsApp linking return pages without opening Safari', () {
+    test('allows official WhatsApp linking hosts', () {
       expect(
-        isIosWhatsAppReturnNavigation(Uri.parse('https://flows.whatsapp.net/')),
+        isAllowedIosWhatsAppNavigation(
+          Uri.parse('https://flows.whatsapp.net/'),
+        ),
         isTrue,
       );
       expect(
-        isIosWhatsAppReturnNavigation(
+        isAllowedIosWhatsAppNavigation(
           Uri.parse('https://cache.flows.whatsapp.net/cleanup'),
         ),
         isTrue,
       );
       expect(
-        isIosWhatsAppReturnNavigation(
+        isAllowedIosWhatsAppNavigation(
           Uri.parse('https://flows.whatsapp.net.example.com/'),
         ),
         isFalse,
@@ -96,16 +98,69 @@ void main() {
       iosWhatsAppWebProbeScript,
       contains('__apexloadExportCurrentStatus'),
     );
+    expect(iosWhatsAppWebProbeScript, contains('__apexloadRecoverStatus'));
+    expect(iosWhatsAppWebProbeScript, contains('__apexloadRequestState'));
   });
 
-  test('desktop WhatsApp Web gets an edge-to-edge adaptive viewport', () {
+  test('probe script exposes a versioned liveness ping to Dart', () {
+    expect(iosWhatsAppWebProbeScript, contains('__apexloadPing'));
+    expect(
+      iosWhatsAppWebProbeScript,
+      contains('const bridgeVersion = $iosWhatsAppBridgeVersion'),
+    );
+    // Re-injection must never install a second observer or handler set.
+    expect(
+      iosWhatsAppWebProbeScript,
+      contains('if (window.__apexloadStatusBridgeInstalled)'),
+    );
+  });
+
+  test('probe script snapshots existing statuses and keeps observing', () {
+    expect(iosWhatsAppWebProbeScript, contains('__apexloadSynchronizeStatuses'));
+    expect(iosWhatsAppWebProbeScript, contains('hydrateStatusList'));
+    expect(iosWhatsAppWebProbeScript, contains('scheduleInitialSync'));
+    expect(iosWhatsAppWebProbeScript, contains('isSyncing'));
+    expect(iosWhatsAppWebProbeScript, contains('visibilitychange'));
+    expect(iosWhatsAppWebProbeScript, contains('MutationObserver'));
+    // Every retry loop must be bounded.
+    expect(iosWhatsAppWebProbeScript, contains('readinessChecks++ >= 120'));
+    expect(iosWhatsAppWebProbeScript, contains('const maxSteps = 12'));
+    expect(iosWhatsAppWebProbeScript, isNot(contains('setInterval')));
+  });
+
+  test('status tab detection never targets the chat list', () {
+    expect(iosWhatsAppWebProbeScript, contains("target.closest('#pane-side')"));
+    expect(iosWhatsAppWebProbeScript, contains('statusLabelExact'));
+    // Repeated recovery passes must not toggle the tab back and forth.
+    expect(iosWhatsAppWebProbeScript, contains('lastStatusClickAt'));
+  });
+
+  test('desktop WhatsApp Web gets a stable edge-to-edge viewport', () {
     expect(
       iosWhatsAppWebViewportScript,
       contains('__apexloadFitDesktopViewport'),
     );
+    expect(iosWhatsAppWebViewportScript, contains('const layoutWidth = 980'));
     expect(iosWhatsAppWebViewportScript, contains('initial-scale'));
+    expect(iosWhatsAppWebViewportScript, isNot(contains('setInterval')));
+  });
+
+  test('pinch zoom stays enabled but bounded to a safe range', () {
     expect(iosWhatsAppWebViewportScript, contains('user-scalable=yes'));
-    expect(iosWhatsAppWebViewportScript, contains('minimumDesktopWidth = 800'));
+    expect(iosWhatsAppWebViewportScript, isNot(contains('user-scalable=no')));
+    // Zooming out below fit is barred; zooming in is capped well under the
+    // 2.5 absolute ceiling that starved the WebContent process.
+    expect(iosWhatsAppWebViewportScript, contains('minimum-scale=\${scale'));
+    expect(
+      iosWhatsAppWebViewportScript,
+      contains('maximum-scale=\${zoomCeiling'),
+    );
+    expect(
+      iosWhatsAppWebViewportScript,
+      contains('Math.min(2, Math.max(1, scale * 2.5))'),
+    );
+    // The tag must survive WhatsApp Web replacing its own head tags.
+    expect(iosWhatsAppWebViewportScript, contains('__apexloadViewportObserver'));
   });
 
   test(

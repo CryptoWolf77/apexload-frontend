@@ -10,6 +10,7 @@ import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +26,17 @@ class IosWhatsAppStatusScreen extends ConsumerStatefulWidget {
 }
 
 class _IosWhatsAppStatusScreenState
-    extends ConsumerState<IosWhatsAppStatusScreen> {
+    extends ConsumerState<IosWhatsAppStatusScreen>
+    with WidgetsBindingObserver {
+  /// Maximum number of times a dead WebContent process may be recovered by
+  /// rebuilding the platform view before the user is asked to retry manually.
+  /// Bounding this is what stops a crash-loop from turning into a reload loop.
+  static const _maxWebViewRebuilds = 3;
+
+  /// The budget above refills once the WebView has been stable for this long,
+  /// so a crash hours later still recovers automatically.
+  static const _webViewRebuildBudgetWindow = Duration(minutes: 2);
+
   InAppWebViewController? _controller;
   IosWhatsAppMediaBridge? _mediaBridge;
   final _guideStore = const IosWhatsAppGuideStore();
@@ -37,16 +48,36 @@ class _IosWhatsAppStatusScreenState
   var _loading = true;
   var _connected = false;
   var _qrVisible = false;
+  var _syncing = false;
   var _statusOpen = false;
   var _mediaKind = '';
   var _capturing = false;
   var _captureProgress = 0.0;
 
+  /// Rebuilding the [InAppWebView] with a fresh key recreates only the platform
+  /// view. Cookies, local storage and IndexedDB live in the shared WebKit data
+  /// store, so the linked WhatsApp session survives a recreation untouched.
+  var _webViewGeneration = 0;
+  var _webViewRebuilds = 0;
+  DateTime? _lastWebViewRebuildAt;
+  var _renderFailed = false;
+  var _recovering = false;
+
   String _t(String key) => AppLocalizations.of(context).t(key);
+
+  void _log(String message) {
+    // Deliberately structural only — never chat, contact, media or token data.
+    // Profile builds are included so a standalone test build on a real device
+    // still reports recovery behaviour. Release builds stay silent.
+    if (kDebugMode || kProfileMode) {
+      debugPrint('[ApexLoad/WhatsAppWeb] $message');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_loadGuideState());
   }
 
@@ -71,8 +102,19 @@ class _IosWhatsAppStatusScreenState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _mediaBridge?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (!_started || _controller == null) return;
+    // Resuming must not disturb a healthy page: the injected bridge already
+    // reruns its own readiness pass on `visibilitychange`. Only step in when
+    // the bridge is gone, which means WebKit restarted the content process.
+    unawaited(_ensureBridgeAlive(reason: 'app resumed'));
   }
 
   Future<void> _captureStatus() async {
@@ -282,13 +324,6 @@ class _IosWhatsAppStatusScreenState
     );
   }
 
-  Future<void> _restoreWhatsAppWeb(InAppWebViewController controller) async {
-    if (mounted) setState(() => _loading = true);
-    await controller.loadUrl(
-      urlRequest: URLRequest(url: WebUri('https://web.whatsapp.com/')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return GradientScaffold(
@@ -296,18 +331,37 @@ class _IosWhatsAppStatusScreenState
       appBar: AppBar(
         title: Text(_t('iosWhatsappTitle')),
         actions: [
+          if (_started && _connected)
+            IconButton(
+              tooltip: _t('iosWhatsappHelp'),
+              onPressed: _showStatusGuide,
+              icon: const Icon(Icons.help_outline_rounded),
+            ),
           if (_started)
             IconButton(
               tooltip: _t('iosWhatsappRefresh'),
-              onPressed: () => _controller?.reload(),
+              onPressed: _recoverWhatsAppStatus,
               icon: const Icon(Icons.refresh_rounded),
             ),
           if (_started)
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'disconnect') _clearSession();
+                if (value == 'resync') _resyncWhatsAppWeb();
               },
               itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'resync',
+                  child: ListTile(
+                    leading: const Icon(Icons.sync_rounded),
+                    title: Text(_t('iosWhatsappResync')),
+                    subtitle: Text(
+                      _t('iosWhatsappResyncHint'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'disconnect',
                   child: ListTile(
@@ -423,13 +477,20 @@ class _IosWhatsAppStatusScreenState
           loading: _loading,
           connected: _connected,
           qrVisible: _qrVisible,
+          syncing: _syncing,
           statusOpen: _statusOpen,
         ),
         Expanded(
           child: ClipRect(
             child: Stack(
               children: [
+                // An opaque backdrop so a momentarily empty WebView shows a
+                // neutral surface instead of the app's blue gradient.
+                Positioned.fill(
+                  child: ColoredBox(color: AppTone.card(context)),
+                ),
                 InAppWebView(
+                  key: ValueKey('ios-whatsapp-webview-$_webViewGeneration'),
                   initialUrlRequest: URLRequest(
                     url: WebUri('https://web.whatsapp.com/'),
                   ),
@@ -447,13 +508,19 @@ class _IosWhatsAppStatusScreenState
                   ]),
                   initialSettings: InAppWebViewSettings(
                     userAgent: iosWhatsAppWebDesktopUserAgent,
+                    preferredContentMode: UserPreferredContentMode.DESKTOP,
                     javaScriptEnabled: true,
                     domStorageEnabled: true,
                     databaseEnabled: true,
                     useShouldOverrideUrlLoading: true,
                     allowsInlineMediaPlayback: true,
                     mediaPlaybackRequiresUserGesture: false,
+                    // Zoom stays enabled but is range-bounded by the injected
+                    // viewport tag, not by `supportZoom: false` — that flag
+                    // makes iOS append its own `width=device-width` meta and
+                    // would break the desktop layout WhatsApp Web requires.
                     supportZoom: true,
+                    ignoresViewportScaleLimits: false,
                     isInspectable: false,
                   ),
                   onWebViewCreated: (controller) {
@@ -467,27 +534,18 @@ class _IosWhatsAppStatusScreenState
                       callback: _mediaBridge!.handleMediaChunk,
                     );
                   },
-                  onLoadStart: (controller, url) async {
-                    final uri = url == null ? null : Uri.tryParse('$url');
-                    if (isIosWhatsAppReturnNavigation(uri)) {
-                      await _restoreWhatsAppWeb(controller);
-                      return;
-                    }
+                  onWebContentProcessDidTerminate: (_) =>
+                      _handleWebContentTerminated(),
+                  onLoadStart: (_, _) async {
                     if (mounted) setState(() => _loading = true);
                   },
-                  onLoadStop: (controller, url) async {
-                    final uri = url == null ? null : Uri.tryParse('$url');
-                    if (isIosWhatsAppReturnNavigation(uri)) {
-                      await _restoreWhatsAppWeb(controller);
-                      return;
-                    }
-                    await controller.evaluateJavascript(
-                      source: iosWhatsAppWebViewportScript,
-                    );
-                    await controller.evaluateJavascript(
-                      source: iosWhatsAppWebProbeScript,
-                    );
-                    if (mounted) setState(() => _loading = false);
+                  onLoadStop: (_, _) {
+                    if (!mounted) return;
+                    setState(() {
+                      _loading = false;
+                      // A completed load means the render process is alive.
+                      _renderFailed = false;
+                    });
                   },
                   onProgressChanged: (_, progress) {
                     if (mounted && progress == 100) {
@@ -506,12 +564,6 @@ class _IosWhatsAppStatusScreenState
                   shouldOverrideUrlLoading: (controller, action) async {
                     final url = action.request.url;
                     final uri = url == null ? null : Uri.tryParse('$url');
-                    if (isIosWhatsAppReturnNavigation(uri)) {
-                      if (action.isForMainFrame != false) {
-                        await _restoreWhatsAppWeb(controller);
-                      }
-                      return NavigationActionPolicy.CANCEL;
-                    }
                     if (isAllowedIosWhatsAppNavigation(uri)) {
                       return NavigationActionPolicy.ALLOW;
                     }
@@ -527,6 +579,13 @@ class _IosWhatsAppStatusScreenState
                     return NavigationActionPolicy.CANCEL;
                   },
                 ),
+                if (_renderFailed)
+                  Positioned.fill(
+                    child: _RenderRecoveryOverlay(
+                      busy: _recovering,
+                      onRetry: _recoverWhatsAppStatus,
+                    ),
+                  ),
                 if (_loading)
                   const Positioned(
                     top: 0,
@@ -550,16 +609,213 @@ class _IosWhatsAppStatusScreenState
     );
   }
 
+  /// Returns the bridge version reported by the live page, or `null` when the
+  /// page cannot answer at all — which is how a terminated WebContent process
+  /// presents itself to Dart.
+  Future<int?> _pingBridge(InAppWebViewController controller) async {
+    try {
+      final result = await controller
+          .evaluateJavascript(source: 'window.__apexloadPing?.() ?? 0')
+          .timeout(const Duration(seconds: 4));
+      return (result as num?)?.toInt();
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Re-injects the viewport and probe scripts when they are missing. Both
+  /// scripts self-guard, so running this repeatedly cannot duplicate observers
+  /// or JavaScript handlers.
+  Future<bool> _ensureBridgeAlive({required String reason}) async {
+    final controller = _controller;
+    if (controller == null) return false;
+    final version = await _pingBridge(controller);
+    if (version == iosWhatsAppBridgeVersion) {
+      await _evaluateQuietly(controller, 'window.__apexloadRequestState?.();');
+      return true;
+    }
+    _log('bridge missing or stale ($reason, reported=$version); re-injecting');
+    final injected =
+        await _evaluateQuietly(controller, iosWhatsAppWebViewportScript) &&
+        await _evaluateQuietly(controller, iosWhatsAppWebProbeScript);
+    if (!injected) return false;
+    return await _pingBridge(controller) == iosWhatsAppBridgeVersion;
+  }
+
+  Future<bool> _evaluateQuietly(
+    InAppWebViewController controller,
+    String source,
+  ) async {
+    try {
+      await controller
+          .evaluateJavascript(source: source)
+          .timeout(const Duration(seconds: 6));
+      return true;
+    } on Object catch (error) {
+      _log('evaluateJavascript failed: ${error.runtimeType}');
+      return false;
+    }
+  }
+
+  /// The refresh action. Escalates only as far as the failure requires:
+  /// re-inject → reload → recreate the platform view.
+  ///
+  /// [rendererGone] skips straight to the reload. When WebKit has already told
+  /// us the content process died, probing the bridge can only burn its
+  /// timeouts — roughly twenty seconds of the user watching a spinner.
+  Future<void> _recoverWhatsAppStatus({bool rendererGone = false}) async {
+    if (_recovering) return;
+    _recovering = true;
+    if (mounted) setState(() => _loading = true);
+    try {
+      final controller = _controller;
+      if (controller == null) {
+        _recreateWebView(reason: 'no controller');
+        return;
+      }
+
+      if (!rendererGone && await _ensureBridgeAlive(reason: 'refresh')) {
+        _clearRenderFailure();
+        await _evaluateQuietly(
+          controller,
+          'window.__apexloadRecoverStatus?.();',
+        );
+        return;
+      }
+
+      _log('bridge unreachable; escalating to reload');
+      if (await _reloadAndWaitForBridge(controller)) {
+        _clearRenderFailure();
+        return;
+      }
+
+      _recreateWebView(reason: 'reload did not restore the bridge');
+    } finally {
+      _recovering = false;
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Forces WhatsApp Web to reconnect and re-request its data. Used both by the
+  /// explicit resync action and as the first recovery step after a render
+  /// failure. Reloading keeps the linked session: WhatsApp Web stores its
+  /// credentials in IndexedDB, which a reload does not touch.
+  Future<bool> _reloadAndWaitForBridge(
+    InAppWebViewController controller,
+  ) async {
+    try {
+      await controller.reload().timeout(const Duration(seconds: 8));
+    } on Object catch (error) {
+      _log('reload failed: ${error.runtimeType}');
+      return false;
+    }
+    for (var attempt = 0; attempt < 20; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return false;
+      if (await _pingBridge(controller) == iosWhatsAppBridgeVersion) {
+        _log('bridge restored after reload');
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Last resort for an unrecoverable WebView. Rebuilding the widget with a new
+  /// key disposes the broken platform view and creates a fresh one against the
+  /// same WebKit data store, so no re-linking or QR scan is required.
+  void _recreateWebView({required String reason}) {
+    if (!mounted) return;
+    final lastRebuild = _lastWebViewRebuildAt;
+    if (lastRebuild != null &&
+        DateTime.now().difference(lastRebuild) > _webViewRebuildBudgetWindow) {
+      _webViewRebuilds = 0;
+    }
+    if (_webViewRebuilds >= _maxWebViewRebuilds) {
+      _log('rebuild limit reached; leaving manual retry to the user');
+      setState(() {
+        _renderFailed = true;
+        _loading = false;
+      });
+      return;
+    }
+    _webViewRebuilds++;
+    _lastWebViewRebuildAt = DateTime.now();
+    _log('recreating WebView ($reason), attempt $_webViewRebuilds');
+    setState(() {
+      _controller = null;
+      _webViewGeneration++;
+      _renderFailed = false;
+      _loading = true;
+      _statusOpen = false;
+      _mediaKind = '';
+      _syncing = false;
+    });
+  }
+
+  void _clearRenderFailure() {
+    if (!mounted || !_renderFailed) return;
+    setState(() => _renderFailed = false);
+  }
+
+  /// iOS terminated the WebContent process (typically memory pressure while
+  /// re-rasterising the desktop-width layout). The platform view keeps its
+  /// frame but renders nothing, which is what surfaced as a permanent blue
+  /// screen — the ApexLoad gradient showing through an empty WebView.
+  void _handleWebContentTerminated() {
+    _log('WebContent process terminated');
+    if (!mounted) return;
+    setState(() {
+      _renderFailed = true;
+      _loading = true;
+      _statusOpen = false;
+      _mediaKind = '';
+      _syncing = false;
+    });
+    // Say why the page jumped. Being bounced back to the list with no
+    // explanation reads like a bug rather than a recovery.
+    AppNotification.info(context, message: _t('iosWhatsappRecovered'));
+    unawaited(_recoverWhatsAppStatus(rendererGone: true));
+  }
+
+  Future<void> _resyncWhatsAppWeb() async {
+    if (_recovering) return;
+    final controller = _controller;
+    if (controller == null) return;
+    _recovering = true;
+    if (mounted) setState(() => _loading = true);
+    try {
+      _log('manual resync requested');
+      if (!await _reloadAndWaitForBridge(controller)) {
+        _recreateWebView(reason: 'resync could not restore the bridge');
+        return;
+      }
+      _clearRenderFailure();
+      if (mounted) {
+        AppNotification.info(context, message: _t('iosWhatsappResyncStarted'));
+      }
+    } finally {
+      _recovering = false;
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   dynamic _handleWhatsAppState(List<dynamic> arguments) {
     if (arguments.isEmpty || arguments.first is! Map || !mounted) return null;
     final state = arguments.first as Map;
+    final connectedNow = state['connected'] == true;
+    final qrVisibleNow = state['qrVisible'] == true;
     setState(() {
-      _connected = state['connected'] == true;
-      _qrVisible = state['qrVisible'] == true;
+      // WhatsApp can briefly replace its authenticated pane while loading.
+      // Do not present that transient DOM state as a logged-out session.
+      _connected = connectedNow || (_connected && !qrVisibleNow);
+      _qrVisible = qrVisibleNow;
+      _syncing = state['syncing'] == true;
       _statusOpen = state['statusOpen'] == true;
       _mediaKind = '${state['mediaKind'] ?? ''}';
+      // A page that can talk to us is by definition rendering again.
+      _renderFailed = false;
     });
-    if (state['connected'] == true) {
+    if (connectedNow) {
       unawaited(_markConnectionComplete());
     }
     return {'received': true};
@@ -577,17 +833,71 @@ class _IosWhatsAppStatusScreenState
   }
 }
 
+/// Shown over the WebView when WebKit stops rendering, so an empty platform
+/// view can never present itself as a dead-end blue screen.
+class _RenderRecoveryOverlay extends StatelessWidget {
+  const _RenderRecoveryOverlay({required this.busy, required this.onRetry});
+
+  final bool busy;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return ColoredBox(
+      color: AppTone.card(context),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.refresh_rounded, size: 44),
+              const SizedBox(height: 14),
+              Text(
+                strings.t('iosWhatsappRenderFailedTitle'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                strings.t('iosWhatsappRenderFailedMessage'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTone.textSecondary(context)),
+              ),
+              const SizedBox(height: 18),
+              if (busy)
+                const CircularProgressIndicator()
+              else
+                FilledButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text(strings.t('iosWhatsappRenderFailedRetry')),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ConnectionBar extends StatelessWidget {
   const _ConnectionBar({
     required this.loading,
     required this.connected,
     required this.qrVisible,
+    required this.syncing,
     required this.statusOpen,
   });
 
   final bool loading;
   final bool connected;
   final bool qrVisible;
+  final bool syncing;
   final bool statusOpen;
 
   @override
@@ -598,6 +908,12 @@ class _ConnectionBar extends StatelessWidget {
             Icons.visibility_rounded,
             strings.t('iosWhatsappStatusDetected'),
             AppColors.primaryEnd,
+          )
+        : syncing
+        ? (
+            Icons.sync_rounded,
+            strings.t('iosWhatsappSyncing'),
+            AppColors.premiumGold,
           )
         : connected
         ? (
