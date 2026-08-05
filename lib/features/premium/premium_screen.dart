@@ -1,4 +1,5 @@
 import 'package:apexload/core/constants/app_constants.dart';
+import 'package:apexload/core/constants/app_config.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
@@ -25,10 +26,6 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     await ref
         .read(subscriptionStoreControllerProvider.notifier)
         .purchase(PremiumPlan.fromKey(_selectedPlan));
-  }
-
-  Future<void> _restore() {
-    return ref.read(subscriptionStoreControllerProvider.notifier).restore();
   }
 
   Future<void> _retryStore() {
@@ -91,6 +88,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
       _handleStoreState,
     );
     final l = AppLocalizations.of(context);
+    const testerPremium = AppConfig.testerPremiumEnabled;
     final selectedPlan = PremiumPlan.fromKey(_selectedPlan);
     final selectedProductAvailable = store.products.containsKey(selectedPlan);
     final catalogComplete =
@@ -193,69 +191,32 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            l.t('choosePlan'),
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 10),
-          _PricingCard(
-            title: l.t('yearly'),
-            price: store.priceFor(PremiumPlan.yearly) ?? l.t('yearlyPrice'),
-            selected: _selectedPlan == 'yearly',
-            bestValue: true,
-            onTap: active || store.isBusy
-                ? null
-                : () => setState(() => _selectedPlan = 'yearly'),
-          ),
-          const SizedBox(height: 10),
-          _PricingCard(
-            title: l.t('monthly'),
-            price: store.priceFor(PremiumPlan.monthly) ?? l.t('monthlyPrice'),
-            selected: _selectedPlan == 'monthly',
-            bestValue: false,
-            onTap: active || store.isBusy
-                ? null
-                : () => setState(() => _selectedPlan = 'monthly'),
-          ),
-          if (!active &&
-              store.phase != StorePurchasePhase.loading &&
-              (!store.storeAvailable || !catalogComplete)) ...[
-            const SizedBox(height: 12),
+          if (testerPremium) ...[
+            const SizedBox(height: 20),
             GlassCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: AppTone.textSecondary(context),
+                  const Icon(
+                    Icons.verified_rounded,
+                    color: AppColors.premiumGold,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          store.storeAvailable
-                              ? l.t('subscriptionProductsUnavailable')
-                              : l.t('storeUnavailable'),
-                          style: TextStyle(
-                            color: AppTone.textSecondary(context),
-                            height: 1.35,
-                          ),
+                          l.t('testerPremiumTitle'),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
                         ),
-                        const SizedBox(height: 6),
-                        TextButton.icon(
-                          onPressed: store.isBusy ? null : _retryStore,
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 0,
-                              vertical: 8,
-                            ),
-                          ),
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: Text(l.t('retryAppStore')),
+                        const SizedBox(height: 4),
+                        Text(
+                          l.t('testerPremiumMessage'),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppTone.textSecondary(context)),
                         ),
                       ],
                     ),
@@ -263,41 +224,114 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          PrimaryGradientButton(
-            label: active ? l.t('premiumActiveButton') : l.t('subscribeNow'),
-            icon: active
-                ? Icons.verified_rounded
-                : Icons.workspace_premium_rounded,
-            isLoading:
-                store.phase == StorePurchasePhase.loading ||
-                store.phase == StorePurchasePhase.purchasing ||
-                store.phase == StorePurchasePhase.pending,
-            onPressed:
-                active ||
-                    store.isBusy ||
-                    !store.storeAvailable ||
-                    !selectedProductAvailable
-                ? null
-                : _continue,
-          ),
-          const SizedBox(height: 6),
-          TextButton.icon(
-            onPressed: store.storeAvailable && !store.isBusy ? _restore : null,
-            icon: store.phase == StorePurchasePhase.restoring
-                ? const SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.restore_rounded),
-            label: Text(
-              store.phase == StorePurchasePhase.restoring
-                  ? l.t('restoringPurchases')
-                  : l.t('restorePurchases'),
+            const SizedBox(height: 22),
+          ] else ...[
+            const SizedBox(height: 20),
+            Text(
+              l.t('choosePlan'),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          ),
-          const SizedBox(height: 22),
+            const SizedBox(height: 10),
+            _PricingCard(
+              title: l.t('yearly'),
+              price: store.priceFor(PremiumPlan.yearly) ?? l.t('yearlyPrice'),
+              selected: _selectedPlan == 'yearly',
+              bestValue: true,
+              onTap: active || store.isBusy
+                  ? null
+                  : () => setState(() => _selectedPlan = 'yearly'),
+            ),
+            const SizedBox(height: 10),
+            _PricingCard(
+              title: l.t('monthly'),
+              price: store.priceFor(PremiumPlan.monthly) ?? l.t('monthlyPrice'),
+              selected: _selectedPlan == 'monthly',
+              bestValue: false,
+              onTap: active || store.isBusy
+                  ? null
+                  : () => setState(() => _selectedPlan = 'monthly'),
+            ),
+            if (!active &&
+                store.phase != StorePurchasePhase.loading &&
+                (!store.storeAvailable || !catalogComplete)) ...[
+              const SizedBox(height: 12),
+              GlassCard(
+                padding: const EdgeInsets.all(14),
+                // Tapping retries the catalog. Recovery stays available
+                // without exposing a developer-style retry button.
+                onTap: store.isBusy ? null : _retryStore,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: AppTone.textSecondary(context),
+                    ),
+                    const SizedBox(width: 10),
+                    // Plain-language only: the diagnostic support code and the
+                    // manual retry button were developer-facing. A short
+                    // explanation still has to stay, otherwise a disabled
+                    // Subscribe button looks like a broken screen.
+                    Expanded(
+                      child: Text(
+                        l.t('subscriptionTemporarilyUnavailable'),
+                        style: TextStyle(
+                          color: AppTone.textSecondary(context),
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            PrimaryGradientButton(
+              label: active ? l.t('premiumActiveButton') : l.t('subscribeNow'),
+              icon: active
+                  ? Icons.verified_rounded
+                  : Icons.workspace_premium_rounded,
+              isLoading:
+                  store.phase == StorePurchasePhase.loading ||
+                  store.phase == StorePurchasePhase.purchasing ||
+                  store.phase == StorePurchasePhase.pending,
+              onPressed:
+                  active ||
+                      store.isBusy ||
+                      !store.storeAvailable ||
+                      !selectedProductAvailable
+                  ? null
+                  : _continue,
+            ),
+            // Subscription terms sit directly under the purchase control.
+            // App Review guideline 3.1.2 expects the length, price and the
+            // Terms of Use / Privacy Policy links to be visible at the point
+            // of purchase, not buried below the feature list.
+            const SizedBox(height: 12),
+            Text(
+              l.t('premiumLegalNotice'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTone.textSecondary(context),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => context.push('/terms'),
+                  child: Text(l.t('termsOfUse')),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/privacy'),
+                  child: Text(l.t('privacyPolicy')),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           Text(
             l.t('premiumDownloads'),
             style: Theme.of(context).textTheme.titleLarge,
@@ -316,28 +350,6 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
-            l.t('premiumLegalNotice'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTone.textSecondary(context),
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-          Wrap(
-            alignment: WrapAlignment.center,
-            children: [
-              TextButton(
-                onPressed: () => context.push('/terms'),
-                child: Text(l.t('termsOfUse')),
-              ),
-              TextButton(
-                onPressed: () => context.push('/privacy'),
-                child: Text(l.t('privacyPolicy')),
-              ),
-            ],
-          ),
         ],
       ),
     );

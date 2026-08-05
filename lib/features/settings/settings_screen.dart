@@ -3,6 +3,7 @@ import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/services/platform_info_service.dart';
+import 'package:apexload/shared/services/store_subscription_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
@@ -124,6 +125,39 @@ class SettingsScreen extends ConsumerWidget {
                   l.t('upgradeToPremium'),
                   style: const TextStyle(color: AppColors.primaryEnd),
                 ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // App Review guideline 3.1.1 requires a restore path for
+        // auto-renewable subscriptions. It was moved off the Premium plans
+        // page, so it has to remain reachable here.
+        GlassCard(
+          onTap: () => _restorePurchases(context, ref),
+          child: Row(
+            children: [
+              const Icon(Icons.restore_rounded, color: AppColors.primaryEnd),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.t('restorePurchases'),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l.t('restorePurchasesSubtitle'),
+                      style: TextStyle(
+                        color: AppTone.textSecondary(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
             ],
           ),
         ),
@@ -467,6 +501,21 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _restorePurchases(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    final before = ref.read(subscriptionControllerProvider).isPremium;
+    await ref.read(subscriptionStoreControllerProvider.notifier).restore();
+    if (!context.mounted) return;
+    final restored = ref.read(subscriptionControllerProvider).isPremium;
+    if (restored && !before) {
+      AppNotification.success(context, message: l.t('restorePurchasesSuccess'));
+    } else if (restored) {
+      AppNotification.info(context, message: l.t('premiumAlreadyActive'));
+    } else {
+      AppNotification.info(context, message: l.t('nothingToRestore'));
+    }
   }
 
   Future<void> _clearCache(BuildContext context, WidgetRef ref) async {
