@@ -3,12 +3,14 @@ import 'package:apexload/core/constants/app_config.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/services/reviewer_access_service.dart';
 import 'package:apexload/shared/services/store_subscription_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
 import 'package:apexload/shared/widgets/gradient_scaffold.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,6 +34,20 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     return ref
         .read(subscriptionStoreControllerProvider.notifier)
         .refreshCatalog();
+  }
+
+  Future<void> _showReviewerAccess() async {
+    final activated = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _ReviewerAccessSheet(),
+    );
+    if (!mounted || activated != true) return;
+    AppNotification.success(
+      context,
+      message: AppLocalizations.of(context).t('reviewerAccessActivated'),
+    );
   }
 
   void _handleStoreState(
@@ -89,6 +105,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     );
     final l = AppLocalizations.of(context);
     const testerPremium = AppConfig.testerPremiumEnabled;
+    final showReviewerAccess =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final selectedPlan = PremiumPlan.fromKey(_selectedPlan);
     final selectedProductAvailable = store.products.containsKey(selectedPlan);
     final catalogComplete =
@@ -330,6 +348,17 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 ),
               ],
             ),
+            if (showReviewerAccess)
+              TextButton.icon(
+                key: const Key('reviewer_access_button'),
+                onPressed: _showReviewerAccess,
+                icon: const Icon(Icons.verified_user_outlined, size: 18),
+                label: Text(l.t('reviewerAccess')),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTone.textSecondary(context),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
             const SizedBox(height: 16),
           ],
           Text(
@@ -351,6 +380,183 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
           ),
           const SizedBox(height: 18),
         ],
+      ),
+    );
+  }
+}
+
+class _ReviewerAccessSheet extends ConsumerStatefulWidget {
+  const _ReviewerAccessSheet();
+
+  @override
+  ConsumerState<_ReviewerAccessSheet> createState() =>
+      _ReviewerAccessSheetState();
+}
+
+class _ReviewerAccessSheetState extends ConsumerState<_ReviewerAccessSheet> {
+  final _codeController = TextEditingController();
+  var _isValidating = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _activate() async {
+    if (_isValidating) return;
+    final l = AppLocalizations.of(context);
+    final code = _codeController.text;
+    if (code.trim().isEmpty) {
+      setState(() => _errorMessage = l.t('invalidReviewerAccessCode'));
+      return;
+    }
+
+    setState(() {
+      _isValidating = true;
+      _errorMessage = null;
+    });
+
+    final result = await ref.read(reviewerAccessServiceProvider).verify(code);
+    if (!mounted) return;
+
+    switch (result) {
+      case ReviewerAccessValidation.verified:
+        await ref
+            .read(subscriptionControllerProvider.notifier)
+            .activateReviewerEntitlement();
+        if (!mounted) return;
+        if (ref.read(subscriptionControllerProvider).isPremium) {
+          Navigator.of(context).pop(true);
+          return;
+        }
+        setState(() {
+          _isValidating = false;
+          _errorMessage = l.t('reviewerAccessUnavailable');
+        });
+      case ReviewerAccessValidation.invalid:
+        setState(() {
+          _isValidating = false;
+          _errorMessage = l.t('invalidReviewerAccessCode');
+        });
+      case ReviewerAccessValidation.unavailable:
+        setState(() {
+          _isValidating = false;
+          _errorMessage = l.t('reviewerAccessUnavailable');
+        });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return SafeArea(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppTone.card(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: AppTone.border(context))),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTone.textSecondary(
+                      context,
+                    ).withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.premiumGold.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(19),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user_rounded,
+                    color: AppColors.premiumGold,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  l.t('reviewerAccess'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l.t('reviewerAccessExplanation'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTone.textSecondary(context),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                TextField(
+                  key: const Key('reviewer_access_code_field'),
+                  controller: _codeController,
+                  enabled: !_isValidating,
+                  obscureText: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  enableIMEPersonalizedLearning: false,
+                  smartDashesType: SmartDashesType.disabled,
+                  smartQuotesType: SmartQuotesType.disabled,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
+                  maxLength: 256,
+                  buildCounter:
+                      (
+                        context, {
+                        required currentLength,
+                        required isFocused,
+                        required maxLength,
+                      }) => null,
+                  decoration: InputDecoration(
+                    labelText: l.t('reviewerAccessCode'),
+                    prefixIcon: const Icon(Icons.key_rounded),
+                    errorText: _errorMessage,
+                  ),
+                  onSubmitted: (_) => _activate(),
+                ),
+                const SizedBox(height: 18),
+                PrimaryGradientButton(
+                  key: const Key('activate_reviewer_access_button'),
+                  label: l.t('activateReviewerAccess'),
+                  icon: Icons.lock_open_rounded,
+                  isLoading: _isValidating,
+                  onPressed: _isValidating ? null : _activate,
+                ),
+                const SizedBox(height: 4),
+                TextButton(
+                  onPressed: _isValidating
+                      ? null
+                      : () => Navigator.of(context).pop(false),
+                  child: Text(l.t('cancel')),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

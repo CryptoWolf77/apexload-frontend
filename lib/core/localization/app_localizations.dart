@@ -279,6 +279,16 @@ class AppLocalizations {
       'platformReddit': 'Reddit',
       'platformSnapchat': 'Snapchat',
       'unlockPremiumTitle': 'Unlock ApexLoad Premium',
+      'reviewerAccess': 'Reviewer Access',
+      'reviewerAccessExplanation':
+          'This access is intended only for authorized app review.',
+      'reviewerAccessCode': 'Reviewer access code',
+      'activateReviewerAccess': 'Activate Reviewer Access',
+      'reviewerAccessActivated':
+          'Reviewer access activated. All Premium features are now available.',
+      'invalidReviewerAccessCode': 'Invalid reviewer access code.',
+      'reviewerAccessUnavailable':
+          'Reviewer access is temporarily unavailable. Please try again.',
       'premiumSubtitle': 'More speed. More quality. No limits.',
       'premiumDownloads': 'Premium Downloads',
       'premiumCreatorTools': 'Premium Creator Tools',
@@ -1177,6 +1187,16 @@ class AppLocalizations {
       'platformReddit': 'ريديت',
       'platformSnapchat': 'سناب شات',
       'unlockPremiumTitle': 'افتح ApexLoad بريميوم',
+      'reviewerAccess': 'وصول المراجع',
+      'reviewerAccessExplanation':
+          'هذا الوصول مخصص فقط لمراجعة التطبيق من قِبل المراجعين المصرّح لهم.',
+      'reviewerAccessCode': 'رمز وصول المراجع',
+      'activateReviewerAccess': 'تفعيل وصول المراجع',
+      'reviewerAccessActivated':
+          'تم تفعيل وصول المراجع. جميع ميزات بريميوم متاحة الآن.',
+      'invalidReviewerAccessCode': 'رمز وصول المراجع غير صالح.',
+      'reviewerAccessUnavailable':
+          'وصول المراجع غير متاح مؤقتًا. يرجى المحاولة مرة أخرى.',
       'premiumSubtitle': 'سرعة أكثر. جودة أعلى. بدون حدود.',
       'premiumDownloads': 'تحميلات بريميوم',
       'premiumCreatorTools': 'أدوات صناع المحتوى',

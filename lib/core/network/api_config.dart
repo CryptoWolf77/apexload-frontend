@@ -9,6 +9,7 @@ class ApiConfig {
   );
 
   static const healthPath = '/api/health';
+  static const reviewerAccessPath = '/api/reviewer-access/verify';
   static const analyzePath = '/api/analyze';
   static const downloadPath = '/api/download';
   static String downloadStatusPath(String jobId) =>

@@ -89,6 +89,65 @@ void main() {
     }
   });
 
+  test(
+    'reviewer entitlement persists and survives an empty store result',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+
+      final controller = container.read(
+        subscriptionControllerProvider.notifier,
+      );
+      await controller.activateReviewerEntitlement();
+
+      var subscription = container.read(subscriptionControllerProvider);
+      expect(subscription.isPremium, isTrue);
+      expect(subscription.planName, 'Google Play Reviewer');
+      expect(subscription.premiumActivatedMock, isTrue);
+      expect(subscription.isStoreManagedPremium, isFalse);
+      expect(subscription.expiresAt?.year, 2099);
+
+      await controller.clearStoreEntitlement();
+      subscription = container.read(subscriptionControllerProvider);
+      expect(subscription.isPremium, isTrue);
+      expect(subscription.planName, 'Google Play Reviewer');
+
+      container.dispose();
+      final restored = ProviderContainer();
+      addTearDown(restored.dispose);
+      await restored
+          .read(subscriptionControllerProvider.notifier)
+          .checkDownloadAllowance();
+
+      subscription = restored.read(subscriptionControllerProvider);
+      expect(subscription.isPremium, isTrue);
+      expect(subscription.planName, 'Google Play Reviewer');
+      expect(subscription.premiumActivatedMock, isTrue);
+      expect(subscription.expiresAt?.year, 2099);
+    },
+  );
+
+  test('reviewer activation does not replace a store entitlement', () async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final controller = container.read(subscriptionControllerProvider.notifier);
+    final storeExpiry = DateTime.now().add(const Duration(days: 365));
+
+    await controller.activateStoreEntitlement(
+      plan: PremiumPlan.yearly,
+      expiresAt: storeExpiry,
+    );
+    await controller.activateReviewerEntitlement();
+
+    final subscription = container.read(subscriptionControllerProvider);
+    expect(subscription.isPremium, isTrue);
+    expect(subscription.planName, 'Yearly');
+    expect(subscription.premiumActivatedMock, isFalse);
+    expect(subscription.isStoreManagedPremium, isTrue);
+    expect(subscription.expiresAt, storeExpiry);
+  });
+
   test('expired store entitlement returns the user to the free plan', () async {
     SharedPreferences.setMockInitialValues({
       'subscription_is_premium': true,

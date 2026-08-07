@@ -193,6 +193,21 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     await _save();
   }
 
+  Future<void> activateReviewerEntitlement() async {
+    await _ensureLoaded();
+    if (AppConfig.testerPremiumEnabled) {
+      state = _testerPremiumEntitlement();
+      return;
+    }
+    if (state.isStoreManagedPremium) return;
+    state = UserSubscriptionModel.premium(
+      planName: 'Google Play Reviewer',
+      expiresAt: DateTime(2099, 1, 1),
+      premiumActivatedMock: true,
+    );
+    await _save();
+  }
+
   Future<void> clearStoreEntitlement() async {
     await _ensureLoaded();
     if (AppConfig.testerPremiumEnabled) {
