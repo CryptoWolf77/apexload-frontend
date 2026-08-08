@@ -1,4 +1,5 @@
 import 'package:apexload/app.dart';
+import 'package:apexload/shared/services/store_subscription_service.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets('ApexLoad starts at splash', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const ProviderScope(child: ApexLoadApp()));
+    await tester.pumpWidget(_testApp());
     await tester.pump();
 
     expect(find.text('ApexLoad'), findsOneWidget);
@@ -23,7 +24,7 @@ void main() {
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const ProviderScope(child: ApexLoadApp()));
+    await tester.pumpWidget(_testApp());
     await tester.pump();
 
     await tester.pump(const Duration(seconds: 3));
@@ -66,7 +67,7 @@ void main() {
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const ProviderScope(child: ApexLoadApp()));
+    await tester.pumpWidget(_testApp());
     await tester.pump();
 
     await tester.pump(const Duration(seconds: 3));
@@ -89,7 +90,7 @@ void main() {
       'responsible_use_agreement_v1': true,
       'has_seen_onboarding': true,
     });
-    await tester.pumpWidget(const ProviderScope(child: ApexLoadApp()));
+    await tester.pumpWidget(_testApp());
     await tester.pump();
 
     await tester.pump(const Duration(seconds: 3));
@@ -105,3 +106,12 @@ void main() {
     expect(find.text('Batch downloads'), findsNothing);
   });
 }
+
+Widget _testApp() => ProviderScope(
+  overrides: [
+    subscriptionStoreProvider.overrideWithValue(
+      const UnavailableSubscriptionStore(),
+    ),
+  ],
+  child: const ApexLoadApp(),
+);

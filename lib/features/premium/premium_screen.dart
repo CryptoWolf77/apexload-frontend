@@ -72,7 +72,14 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
       case StorePurchasePhase.restoreNotFound:
         AppNotification.info(context, message: l.t('nothingToRestore'));
       case StorePurchasePhase.pending:
-        AppNotification.info(context, message: l.t('purchasePending'));
+        AppNotification.info(
+          context,
+          message: l.t(
+            !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+                ? 'purchasePendingGooglePlay'
+                : 'purchasePending',
+          ),
+        );
       case StorePurchasePhase.canceled:
         AppNotification.info(context, message: l.t('purchaseCancelled'));
       case StorePurchasePhase.error:
@@ -97,7 +104,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final active = ref.watch(subscriptionControllerProvider).isPremium;
+    final subscription = ref.watch(subscriptionControllerProvider);
+    final active = subscription.isPremium;
     final store = ref.watch(subscriptionStoreControllerProvider);
     ref.listen<SubscriptionStoreState>(
       subscriptionStoreControllerProvider,
@@ -109,6 +117,14 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final selectedPlan = PremiumPlan.fromKey(_selectedPlan);
     final selectedProductAvailable = store.products.containsKey(selectedPlan);
+    final canSwitchPlan =
+        active &&
+        subscription.isStoreManagedPremium &&
+        store.supportsPlanChanges;
+    final selectedPlanIsDifferent =
+        store.activePlan == null || store.activePlan != selectedPlan;
+    final purchaseEnabled =
+        !active || (canSwitchPlan && selectedPlanIsDifferent);
     final catalogComplete =
         store.products.containsKey(PremiumPlan.monthly) &&
         store.products.containsKey(PremiumPlan.yearly);
@@ -255,7 +271,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               price: store.priceFor(PremiumPlan.yearly) ?? l.t('yearlyPrice'),
               selected: _selectedPlan == 'yearly',
               bestValue: true,
-              onTap: active || store.isBusy
+              onTap: (active && !canSwitchPlan) || store.isBusy
                   ? null
                   : () => setState(() => _selectedPlan = 'yearly'),
             ),
@@ -265,7 +281,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               price: store.priceFor(PremiumPlan.monthly) ?? l.t('monthlyPrice'),
               selected: _selectedPlan == 'monthly',
               bestValue: false,
-              onTap: active || store.isBusy
+              onTap: (active && !canSwitchPlan) || store.isBusy
                   ? null
                   : () => setState(() => _selectedPlan = 'monthly'),
             ),
@@ -305,8 +321,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             ],
             const SizedBox(height: 16),
             PrimaryGradientButton(
-              label: active ? l.t('premiumActiveButton') : l.t('subscribeNow'),
-              icon: active
+              label: canSwitchPlan
+                  ? l.t('changePlan')
+                  : active
+                  ? l.t('premiumActiveButton')
+                  : l.t('subscribeNow'),
+              icon: active && !canSwitchPlan
                   ? Icons.verified_rounded
                   : Icons.workspace_premium_rounded,
               isLoading:
@@ -314,7 +334,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                   store.phase == StorePurchasePhase.purchasing ||
                   store.phase == StorePurchasePhase.pending,
               onPressed:
-                  active ||
+                  !purchaseEnabled ||
                       store.isBusy ||
                       !store.storeAvailable ||
                       !selectedProductAvailable
@@ -327,7 +347,11 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             // of purchase, not buried below the feature list.
             const SizedBox(height: 12),
             Text(
-              l.t('premiumLegalNotice'),
+              l.t(
+                !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+                    ? 'premiumLegalNoticeGooglePlay'
+                    : 'premiumLegalNotice',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppTone.textSecondary(context),

@@ -155,6 +155,8 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
   static const _lastResetDateKey = 'subscription_last_reset_date';
   static const _premiumActivatedMockKey = 'subscription_premium_mock';
   static const _expiresAtKey = 'subscription_expires_at';
+  static const _storeRevalidationRequiredKey =
+      'subscription_store_revalidation_required';
 
   SharedPreferences? _prefs;
   Future<void>? _loadFuture;
@@ -178,17 +180,27 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
   }
 
   Future<void> activateStoreEntitlement({
-    required PremiumPlan plan,
-    required DateTime expiresAt,
+    PremiumPlan? plan,
+    String? planName,
+    DateTime? expiresAt,
+    bool storeRevalidationRequired = false,
   }) async {
     await _ensureLoaded();
     if (AppConfig.testerPremiumEnabled) {
       state = _testerPremiumEntitlement();
       return;
     }
+    final cachedStorePlanName =
+        state.isStoreManagedPremium &&
+            PremiumPlan.values.any(
+              (candidate) => candidate.label == state.planName,
+            )
+        ? state.planName
+        : null;
     state = UserSubscriptionModel.premium(
-      planName: plan.label,
+      planName: plan?.label ?? cachedStorePlanName ?? planName ?? 'Store',
       expiresAt: expiresAt,
+      storeRevalidationRequired: storeRevalidationRequired,
     );
     await _save();
   }
@@ -269,14 +281,19 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     final resetDate = DateTime.tryParse(resetText ?? '') ?? now;
     final premiumMock = prefs.getBool(_premiumActivatedMockKey) ?? false;
     final expiresAt = DateTime.tryParse(prefs.getString(_expiresAtKey) ?? '');
+    final storeRevalidationRequired =
+        prefs.getBool(_storeRevalidationRequiredKey) ?? false;
 
     if (isPremium &&
-        (premiumMock || (expiresAt != null && expiresAt.isAfter(now)))) {
+        (premiumMock ||
+            storeRevalidationRequired ||
+            (expiresAt != null && expiresAt.isAfter(now)))) {
       state = UserSubscriptionModel.premium(
         planName: planName,
         now: now,
         expiresAt: premiumMock ? DateTime(2099, 1, 1) : expiresAt,
         premiumActivatedMock: premiumMock,
+        storeRevalidationRequired: storeRevalidationRequired,
       );
       return;
     }
@@ -312,6 +329,10 @@ class SubscriptionController extends Notifier<UserSubscriptionModel> {
     await prefs.setBool(
       _premiumActivatedMockKey,
       snapshot.premiumActivatedMock,
+    );
+    await prefs.setBool(
+      _storeRevalidationRequiredKey,
+      snapshot.storeRevalidationRequired,
     );
     final expiresAt = snapshot.expiresAt;
     if (expiresAt == null) {

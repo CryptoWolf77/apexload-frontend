@@ -327,6 +327,7 @@ class AppLocalizations {
       'premiumActivatedDemo': 'Premium is active.',
       'premiumActiveButton': 'Premium Active',
       'subscribeNow': 'Subscribe',
+      'changePlan': 'Change Plan',
       'restorePurchases': 'Restore Purchases',
       'restorePurchasesSubtitle':
           'Already subscribed? Bring your Premium plan back to this device.',
@@ -339,6 +340,8 @@ class AppLocalizations {
       'nothingToRestore': 'No active Premium subscription was found.',
       'purchasePending':
           'Your purchase is pending approval. Premium will activate after Apple confirms it.',
+      'purchasePendingGooglePlay':
+          'Your purchase is pending approval. Premium will activate after Google Play confirms it.',
       'purchaseCancelled': 'Purchase cancelled.',
       'purchaseFailed':
           'The purchase could not be completed. Please try again.',
@@ -350,6 +353,8 @@ class AppLocalizations {
       'retryAppStore': 'Retry App Store',
       'premiumLegalNotice':
           'Payment is charged to your Apple ID at confirmation. Subscriptions renew automatically unless cancelled at least 24 hours before the current period ends. Manage or cancel in your App Store account settings. By subscribing, you agree to the Terms of Use and Privacy Policy.',
+      'premiumLegalNoticeGooglePlay':
+          'Payment is charged through Google Play at confirmation. Subscriptions renew automatically unless cancelled. Manage or cancel in your Google Play account settings. By subscribing, you agree to the Terms of Use and Privacy Policy.',
       'downloadOptions': 'Download options',
       'chooseFormat': 'Choose format',
       'customFilename': 'Custom filename',
@@ -1233,6 +1238,7 @@ class AppLocalizations {
       'premiumActivatedDemo': 'اشتراك بريميوم نشط.',
       'premiumActiveButton': 'الاشتراك المميز نشط',
       'subscribeNow': 'اشترك الآن',
+      'changePlan': 'تغيير الخطة',
       'restorePurchases': 'استعادة المشتريات',
       'restorePurchasesSubtitle':
           'هل سبق أن اشتركت؟ استعد خطة بريميوم على هذا الجهاز.',
@@ -1245,6 +1251,8 @@ class AppLocalizations {
       'nothingToRestore': 'لم يتم العثور على اشتراك بريميوم نشط.',
       'purchasePending':
           'عملية الشراء بانتظار الموافقة. سيتم تفعيل بريميوم بعد تأكيد Apple.',
+      'purchasePendingGooglePlay':
+          'عملية الشراء بانتظار الموافقة. سيتم تفعيل بريميوم بعد تأكيد Google Play.',
       'purchaseCancelled': 'تم إلغاء عملية الشراء.',
       'purchaseFailed': 'تعذّر إكمال عملية الشراء. يرجى المحاولة مرة أخرى.',
       'storeUnavailable':
@@ -1255,6 +1263,8 @@ class AppLocalizations {
       'retryAppStore': 'إعادة المحاولة مع App Store',
       'premiumLegalNotice':
           'يتم خصم المبلغ من Apple ID عند التأكيد. تتجدد الاشتراكات تلقائيًا ما لم يتم إلغاؤها قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك الإدارة أو الإلغاء من إعدادات حساب App Store. بالاشتراك، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
+      'premiumLegalNoticeGooglePlay':
+          'يتم الدفع من خلال Google Play عند التأكيد. تتجدد الاشتراكات تلقائيًا ما لم يتم إلغاؤها. يمكنك الإدارة أو الإلغاء من إعدادات حساب Google Play. بالاشتراك، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
       'downloadOptions': 'خيارات التحميل',
       'chooseFormat': 'اختر الصيغة',
       'customFilename': 'اسم الملف المخصص',

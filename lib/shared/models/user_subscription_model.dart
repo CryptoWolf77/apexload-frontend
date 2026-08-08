@@ -6,6 +6,7 @@ class UserSubscriptionModel {
     required this.downloadsUsedToday,
     required this.lastResetDate,
     required this.premiumActivatedMock,
+    this.storeRevalidationRequired = false,
     this.expiresAt,
   });
 
@@ -15,6 +16,7 @@ class UserSubscriptionModel {
   final int downloadsUsedToday;
   final DateTime lastResetDate;
   final bool premiumActivatedMock;
+  final bool storeRevalidationRequired;
   final DateTime? expiresAt;
 
   bool get adsEnabled => !isPremium;
@@ -45,6 +47,7 @@ class UserSubscriptionModel {
     DateTime? now,
     DateTime? expiresAt,
     bool premiumActivatedMock = false,
+    bool storeRevalidationRequired = false,
   }) {
     final date = now ?? DateTime.now();
     return UserSubscriptionModel(
@@ -54,6 +57,7 @@ class UserSubscriptionModel {
       downloadsUsedToday: 0,
       lastResetDate: DateTime(date.year, date.month, date.day),
       premiumActivatedMock: premiumActivatedMock,
+      storeRevalidationRequired: storeRevalidationRequired,
       expiresAt: expiresAt,
     );
   }
@@ -65,6 +69,7 @@ class UserSubscriptionModel {
     int? downloadsUsedToday,
     DateTime? lastResetDate,
     bool? premiumActivatedMock,
+    bool? storeRevalidationRequired,
     DateTime? expiresAt,
   }) {
     return UserSubscriptionModel(
@@ -74,6 +79,8 @@ class UserSubscriptionModel {
       downloadsUsedToday: downloadsUsedToday ?? this.downloadsUsedToday,
       lastResetDate: lastResetDate ?? this.lastResetDate,
       premiumActivatedMock: premiumActivatedMock ?? this.premiumActivatedMock,
+      storeRevalidationRequired:
+          storeRevalidationRequired ?? this.storeRevalidationRequired,
       expiresAt: expiresAt ?? this.expiresAt,
     );
   }
