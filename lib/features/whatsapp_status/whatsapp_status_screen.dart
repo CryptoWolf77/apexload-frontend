@@ -290,7 +290,10 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
     }
   }
 
-  Future<void> _save(WhatsAppStatusItem item) async {
+  Future<void> _save(
+    WhatsAppStatusItem item, {
+    bool showSavedActions = true,
+  }) async {
     try {
       final saved = await ref
           .read(whatsappStatusServiceProvider)
@@ -301,7 +304,9 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
         context,
         message: AppLocalizations.of(context).t('statusSavedSuccess'),
       );
-      await _scan();
+      await _scan(showLoading: false);
+      if (!mounted || !showSavedActions) return;
+      await _showSavedActions();
     } on Object catch (error) {
       if (!mounted) return;
       final key = error.toString().contains('statusAlreadySaved')
@@ -314,12 +319,91 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
     }
   }
 
+  Future<void> _showSavedActions() async {
+    final l = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GlassCard(
+            key: const Key('android_status_saved_actions'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l.t('statusSavedActionsTitle'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l.t('statusSavedActionsDescription'),
+                  style: TextStyle(color: AppTone.textSecondary(context)),
+                ),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final keepBrowsing = OutlinedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: Text(l.t('statusKeepBrowsing')),
+                    );
+                    final goToDownloads = FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        context.go('/downloads');
+                      },
+                      icon: const Icon(Icons.download_done_rounded),
+                      label: Text(l.t('statusGoToDownloads')),
+                    );
+                    if (constraints.maxWidth < 360) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          keepBrowsing,
+                          const SizedBox(height: 10),
+                          goToDownloads,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: keepBrowsing),
+                        const SizedBox(width: 10),
+                        Expanded(child: goToDownloads),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveSelected() async {
     final selected = _items
         .where((item) => _selectedIds.contains(item.id))
         .toList();
     for (final item in selected) {
-      await _save(item);
+      await _save(item, showSavedActions: false);
     }
     setState(() => _selectedIds = {});
   }

@@ -801,6 +801,11 @@ class AppLocalizations {
           'Could not access the selected WhatsApp folder. Please connect it again.',
       'statusAlreadySaved': 'This status is already saved.',
       'statusSavedSuccess': 'Status saved to ApexLoad.',
+      'statusSavedActionsTitle': 'Status saved',
+      'statusSavedActionsDescription':
+          'The status was saved successfully. You can view it in Downloads or continue browsing statuses.',
+      'statusKeepBrowsing': 'Keep Browsing',
+      'statusGoToDownloads': 'Go to Downloads',
       'whatsappAutoDetected': 'WhatsApp statuses detected automatically.',
       'guidedPermissionText':
           'Use the How to use guide above, then connect the .Statuses folder. You only need to do this once.',
@@ -1697,6 +1702,11 @@ class AppLocalizations {
           'تعذّر الوصول إلى مجلد واتساب المحدد. يرجى ربطه مرة أخرى.',
       'statusAlreadySaved': 'تم حفظ هذه الحالة مسبقًا.',
       'statusSavedSuccess': 'تم حفظ الحالة في ApexLoad.',
+      'statusSavedActionsTitle': 'تم حفظ الحالة',
+      'statusSavedActionsDescription':
+          'تم حفظ الحالة بنجاح. يمكنك عرضها في التنزيلات أو متابعة تصفح الحالات.',
+      'statusKeepBrowsing': 'متابعة التصفح',
+      'statusGoToDownloads': 'الانتقال إلى التنزيلات',
       'whatsappAutoDetected': 'تم اكتشاف حالات واتساب تلقائيًا.',
       'guidedPermissionText':
           'استخدم دليل طريقة الاستخدام أعلاه، ثم اربط مجلد .Statuses. ستحتاج إلى تنفيذ هذه الخطوة مرة واحدة فقط.',
