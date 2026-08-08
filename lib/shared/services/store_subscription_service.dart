@@ -36,6 +36,11 @@ abstract final class GooglePlaySubscriptionProducts {
         annualBasePlan => PremiumPlan.yearly,
         _ => null,
       };
+
+  static String basePlanFor(PremiumPlan plan) => switch (plan) {
+    PremiumPlan.monthly => monthlyBasePlan,
+    PremiumPlan.yearly => annualBasePlan,
+  };
 }
 
 abstract final class SubscriptionCatalogSupportCodes {
@@ -177,6 +182,27 @@ class SubscriptionCatalog {
   final String? error;
 }
 
+enum StorePurchaseLaunchResult {
+  launched,
+  notLaunched,
+  unchanged,
+  currentPlanUnknown,
+}
+
+@visibleForTesting
+ReplacementMode googlePlayReplacementMode({
+  required PremiumPlan from,
+  required PremiumPlan to,
+}) {
+  return switch ((from, to)) {
+    (PremiumPlan.monthly, PremiumPlan.yearly) =>
+      ReplacementMode.chargeFullPrice,
+    (PremiumPlan.yearly, PremiumPlan.monthly) =>
+      ReplacementMode.withoutProration,
+    _ => throw StateError('A replacement mode requires two different plans.'),
+  };
+}
+
 abstract interface class SubscriptionStore {
   bool get isSupported;
   int get expectedPlanCount;
@@ -186,7 +212,10 @@ abstract interface class SubscriptionStore {
   bool supportsProductId(String productId);
   Future<SubscriptionCatalog> loadCatalog();
   Future<StoreEntitlement?> currentEntitlement();
-  Future<bool> purchase(ProductDetails product);
+  Future<StorePurchaseLaunchResult> purchase(
+    ProductDetails product, {
+    PremiumPlan? currentPlan,
+  });
   Future<void> restore();
   Future<void> complete(PurchaseDetails purchase);
   StoreEntitlement? fallbackEntitlement(PurchaseDetails purchase);
@@ -362,10 +391,16 @@ class AppleSubscriptionStore implements SubscriptionStore {
   }
 
   @override
-  Future<bool> purchase(ProductDetails product) {
-    return _inAppPurchase.buyNonConsumable(
+  Future<StorePurchaseLaunchResult> purchase(
+    ProductDetails product, {
+    PremiumPlan? currentPlan,
+  }) async {
+    final launched = await _inAppPurchase.buyNonConsumable(
       purchaseParam: PurchaseParam(productDetails: product),
     );
+    return launched
+        ? StorePurchaseLaunchResult.launched
+        : StorePurchaseLaunchResult.notLaunched;
   }
 
   @override
@@ -574,30 +609,60 @@ class GooglePlaySubscriptionStore implements SubscriptionStore {
   }
 
   @override
-  Future<bool> purchase(ProductDetails product) async {
+  Future<StorePurchaseLaunchResult> purchase(
+    ProductDetails product, {
+    PremiumPlan? currentPlan,
+  }) async {
     final selected = _offers.entries
         .where((entry) => identical(entry.value.productDetails, product))
         .firstOrNull;
     if (selected == null || product is! GooglePlayProductDetails) {
       throw StateError('The selected Google Play base plan is unavailable.');
     }
+    final activePurchase = await _activePurchase();
+    ChangeSubscriptionParam? changeSubscriptionParam;
+    if (activePurchase != null) {
+      if (currentPlan == null) {
+        return StorePurchaseLaunchResult.currentPlanUnknown;
+      }
+      if (currentPlan == selected.key) {
+        debugPrint(
+          'Google Play subscription change ignored: '
+          'from=${GooglePlaySubscriptionProducts.basePlanFor(currentPlan)} '
+          'to=${GooglePlaySubscriptionProducts.basePlanFor(selected.key)} '
+          'reason=samePlan',
+        );
+        return StorePurchaseLaunchResult.unchanged;
+      }
+      final replacementMode = googlePlayReplacementMode(
+        from: currentPlan,
+        to: selected.key,
+      );
+      debugPrint(
+        'Google Play subscription change: '
+        'from=${GooglePlaySubscriptionProducts.basePlanFor(currentPlan)} '
+        'to=${GooglePlaySubscriptionProducts.basePlanFor(selected.key)} '
+        'replacementMode=${replacementMode.name}',
+      );
+      changeSubscriptionParam = ChangeSubscriptionParam(
+        oldPurchaseDetails: activePurchase,
+        replacementMode: replacementMode,
+      );
+    }
+
     final previousPlan = _pendingPlan;
     _pendingPlan = selected.key;
-    final activePurchase = await _activePurchase();
     final launched = await _gateway.buyNonConsumable(
       GooglePlayPurchaseParam(
         productDetails: product,
         offerToken: selected.value.offerToken,
-        changeSubscriptionParam: activePurchase == null
-            ? null
-            : ChangeSubscriptionParam(
-                oldPurchaseDetails: activePurchase,
-                replacementMode: ReplacementMode.withTimeProration,
-              ),
+        changeSubscriptionParam: changeSubscriptionParam,
       ),
     );
     if (!launched) _pendingPlan = previousPlan;
-    return launched;
+    return launched
+        ? StorePurchaseLaunchResult.launched
+        : StorePurchaseLaunchResult.notLaunched;
   }
 
   @override
@@ -645,7 +710,10 @@ class UnavailableSubscriptionStore implements SubscriptionStore {
   Future<StoreEntitlement?> currentEntitlement() async => null;
 
   @override
-  Future<bool> purchase(ProductDetails product) async => false;
+  Future<StorePurchaseLaunchResult> purchase(
+    ProductDetails product, {
+    PremiumPlan? currentPlan,
+  }) async => StorePurchaseLaunchResult.notLaunched;
 
   @override
   Future<void> restore() async {}
@@ -838,12 +906,38 @@ class SubscriptionStoreController extends Notifier<SubscriptionStoreState> {
       clearError: true,
     );
     try {
-      final launched = await service.purchase(product);
-      if (!launched && ref.mounted) {
-        state = state.copyWith(
-          phase: StorePurchasePhase.error,
-          error: 'The store purchase sheet could not be opened.',
-        );
+      final subscription = ref.read(subscriptionControllerProvider);
+      final currentPlan =
+          state.activePlan ??
+          (subscription.isStoreManagedPremium
+              ? PremiumPlan.values
+                    .where(
+                      (candidate) => candidate.label == subscription.planName,
+                    )
+                    .firstOrNull
+              : null);
+      final result = await service.purchase(product, currentPlan: currentPlan);
+      if (!ref.mounted) return;
+      switch (result) {
+        case StorePurchaseLaunchResult.launched:
+          break;
+        case StorePurchaseLaunchResult.notLaunched:
+          state = state.copyWith(
+            phase: StorePurchasePhase.error,
+            error: 'The store purchase sheet could not be opened.',
+          );
+        case StorePurchaseLaunchResult.unchanged:
+          state = state.copyWith(
+            phase: StorePurchasePhase.ready,
+            clearError: true,
+          );
+        case StorePurchaseLaunchResult.currentPlanUnknown:
+          state = state.copyWith(
+            phase: StorePurchasePhase.error,
+            error:
+                'Your current Google Play plan could not be identified. '
+                'Restore purchases, then try again.',
+          );
       }
     } on Object catch (error, stackTrace) {
       debugPrint('ApexLoad subscription purchase failed: $error');

@@ -137,8 +137,11 @@ void main() {
     );
     final catalog = await store.loadCatalog();
 
-    await store.purchase(catalog.storeProducts[PremiumPlan.monthly]!);
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.monthly]!,
+    );
 
+    expect(result, StorePurchaseLaunchResult.launched);
     expect(gateway.lastPurchaseParam?.offerToken, 'monthly-token');
     expect(gateway.lastPurchaseParam?.changeSubscriptionParam, isNull);
   });
@@ -154,12 +157,16 @@ void main() {
     );
     final catalog = await store.loadCatalog();
 
-    await store.purchase(catalog.storeProducts[PremiumPlan.yearly]!);
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.yearly]!,
+    );
 
+    expect(result, StorePurchaseLaunchResult.launched);
     expect(gateway.lastPurchaseParam?.offerToken, 'annual-token');
+    expect(gateway.lastPurchaseParam?.changeSubscriptionParam, isNull);
   });
 
-  test('plan switch uses Google Play time-prorated replacement', () async {
+  test('monthly to annual charges the full annual price immediately', () async {
     final active = _googlePlayPurchase(token: 'old-token');
     final gateway = _FakeGooglePlayBillingGateway(
       productDetails: _googlePlayProducts(),
@@ -172,11 +179,123 @@ void main() {
     );
     final catalog = await store.loadCatalog();
 
-    await store.purchase(catalog.storeProducts[PremiumPlan.yearly]!);
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.yearly]!,
+      currentPlan: PremiumPlan.monthly,
+    );
 
     final replacement = gateway.lastPurchaseParam?.changeSubscriptionParam;
+    expect(result, StorePurchaseLaunchResult.launched);
+    expect(gateway.lastPurchaseParam?.offerToken, 'annual-token');
     expect(replacement?.oldPurchaseDetails, same(active));
-    expect(replacement?.replacementMode, ReplacementMode.withTimeProration);
+    expect(replacement?.replacementMode, ReplacementMode.chargeFullPrice);
+  });
+
+  test('annual to monthly changes without proration', () async {
+    final active = _googlePlayPurchase(token: 'old-token');
+    final gateway = _FakeGooglePlayBillingGateway(
+      productDetails: _googlePlayProducts(),
+      pastPurchases: [active],
+    );
+    addTearDown(gateway.dispose);
+    final store = GooglePlaySubscriptionStore(
+      gateway: gateway,
+      isSupportedOverride: true,
+    );
+    final catalog = await store.loadCatalog();
+
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.monthly]!,
+      currentPlan: PremiumPlan.yearly,
+    );
+
+    final replacement = gateway.lastPurchaseParam?.changeSubscriptionParam;
+    expect(result, StorePurchaseLaunchResult.launched);
+    expect(gateway.lastPurchaseParam?.offerToken, 'monthly-token');
+    expect(replacement?.oldPurchaseDetails, same(active));
+    expect(replacement?.replacementMode, ReplacementMode.withoutProration);
+  });
+
+  test('same monthly plan does not launch a Play purchase', () async {
+    final gateway = _FakeGooglePlayBillingGateway(
+      productDetails: _googlePlayProducts(),
+      pastPurchases: [_googlePlayPurchase()],
+    );
+    addTearDown(gateway.dispose);
+    final store = GooglePlaySubscriptionStore(
+      gateway: gateway,
+      isSupportedOverride: true,
+    );
+    final catalog = await store.loadCatalog();
+
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.monthly]!,
+      currentPlan: PremiumPlan.monthly,
+    );
+
+    expect(result, StorePurchaseLaunchResult.unchanged);
+    expect(gateway.purchaseLaunchCount, 0);
+    expect(gateway.lastPurchaseParam, isNull);
+  });
+
+  test('same annual plan does not launch a Play purchase', () async {
+    final gateway = _FakeGooglePlayBillingGateway(
+      productDetails: _googlePlayProducts(),
+      pastPurchases: [_googlePlayPurchase()],
+    );
+    addTearDown(gateway.dispose);
+    final store = GooglePlaySubscriptionStore(
+      gateway: gateway,
+      isSupportedOverride: true,
+    );
+    final catalog = await store.loadCatalog();
+
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.yearly]!,
+      currentPlan: PremiumPlan.yearly,
+    );
+
+    expect(result, StorePurchaseLaunchResult.unchanged);
+    expect(gateway.purchaseLaunchCount, 0);
+    expect(gateway.lastPurchaseParam, isNull);
+  });
+
+  test('active purchase with unknown current plan does not launch', () async {
+    final gateway = _FakeGooglePlayBillingGateway(
+      productDetails: _googlePlayProducts(),
+      pastPurchases: [_googlePlayPurchase()],
+    );
+    addTearDown(gateway.dispose);
+    final store = GooglePlaySubscriptionStore(
+      gateway: gateway,
+      isSupportedOverride: true,
+    );
+    final catalog = await store.loadCatalog();
+
+    final result = await store.purchase(
+      catalog.storeProducts[PremiumPlan.yearly]!,
+    );
+
+    expect(result, StorePurchaseLaunchResult.currentPlanUnknown);
+    expect(gateway.purchaseLaunchCount, 0);
+    expect(gateway.lastPurchaseParam, isNull);
+  });
+
+  test('Google Play plan changes never use time proration', () {
+    expect(
+      googlePlayReplacementMode(
+        from: PremiumPlan.monthly,
+        to: PremiumPlan.yearly,
+      ),
+      isNot(ReplacementMode.withTimeProration),
+    );
+    expect(
+      googlePlayReplacementMode(
+        from: PremiumPlan.yearly,
+        to: PremiumPlan.monthly,
+      ),
+      isNot(ReplacementMode.withTimeProration),
+    );
   });
 
   test(
@@ -578,6 +697,7 @@ class _FakeGooglePlayBillingGateway implements GooglePlayBillingGateway {
   final completedPurchases = <PurchaseDetails>[];
   final _updates = StreamController<List<PurchaseDetails>>.broadcast();
   GooglePlayPurchaseParam? lastPurchaseParam;
+  int purchaseLaunchCount = 0;
 
   @override
   Stream<List<PurchaseDetails>> get purchaseUpdates => _updates.stream;
@@ -603,6 +723,7 @@ class _FakeGooglePlayBillingGateway implements GooglePlayBillingGateway {
 
   @override
   Future<bool> buyNonConsumable(GooglePlayPurchaseParam purchaseParam) async {
+    purchaseLaunchCount++;
     lastPurchaseParam = purchaseParam;
     return true;
   }
