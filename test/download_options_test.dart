@@ -12,23 +12,62 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('video options show separate premium qualities and add-ons', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final media = _videoMedia();
+  testWidgets(
+    'Instagram video hides thumbnail and preserves video and audio options',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final media = _videoMedia();
 
-    await _pumpDownloadOptions(tester, media: media);
+      await _pumpDownloadOptions(tester, media: media);
 
-    expect(find.text('MP4 1080p'), findsOneWidget);
-    expect(find.text('MP4 2160p / 4K'), findsOneWidget);
-    expect(find.text('Not available on this clip'), findsOneWidget);
-    expect(find.text('MP3 Audio'), findsOneWidget);
-    expect(find.text('Thumbnail JPG'), findsOneWidget);
-    // Watermark removal was withdrawn for App Review guideline 5.2.3.
-    expect(find.text('No watermark when available'), findsNothing);
-    expect(find.text('No watermark applied when available'), findsNothing);
-  });
+      expect(find.text('MP4 480p'), findsOneWidget);
+      expect(find.text('MP4 720p'), findsOneWidget);
+      expect(find.text('MP4 1080p'), findsOneWidget);
+      expect(find.text('MP4 2160p / 4K'), findsOneWidget);
+      expect(find.text('Not available on this clip'), findsOneWidget);
+      expect(find.text('MP3 Audio'), findsOneWidget);
+      expect(find.text('Thumbnail JPG'), findsNothing);
+      // Watermark removal was withdrawn for App Review guideline 5.2.3.
+      expect(find.text('No watermark when available'), findsNothing);
+      expect(find.text('No watermark applied when available'), findsNothing);
+    },
+  );
+
+  for (final platform in [
+    'YouTube Shorts',
+    'Facebook',
+    'TikTok',
+    'X/Twitter',
+    'Snapchat',
+  ]) {
+    testWidgets('$platform keeps its Thumbnail JPG option', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+
+      await _pumpDownloadOptions(
+        tester,
+        media: _videoMedia(platform: platform),
+      );
+
+      expect(find.text('Thumbnail JPG'), findsOneWidget);
+      expect(find.text('MP4 720p'), findsOneWidget);
+      expect(find.text('MP3 Audio'), findsOneWidget);
+    });
+  }
+
+  testWidgets(
+    'Instagram image formats remain while only the separate thumbnail is hidden',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+
+      await _pumpDownloadOptions(tester, media: _instagramImageMedia());
+
+      expect(find.text('Choose image format'), findsOneWidget);
+      expect(find.text('Original Image'), findsOneWidget);
+      expect(find.text('JPG Image'), findsOneWidget);
+      expect(find.text('Carousel Image'), findsOneWidget);
+      expect(find.text('Thumbnail JPG'), findsNothing);
+    },
+  );
 
   testWidgets('image options do not show video or audio formats', (
     tester,
@@ -107,12 +146,12 @@ void main() {
   });
 }
 
-MediaInfoModel _videoMedia() {
-  return const MediaInfoModel(
+MediaInfoModel _videoMedia({String platform = 'Instagram'}) {
+  return MediaInfoModel(
     id: 'video_test',
     title: 'Creative reel with city lights',
     mediaType: MediaType.video,
-    platform: 'Instagram',
+    platform: platform,
     duration: '00:32',
     thumbnailUrl: '',
     sourceUrl: 'https://www.instagram.com/reel/demo',
@@ -158,6 +197,52 @@ MediaInfoModel _videoMedia() {
         type: DownloadType.audio,
         isPremium: true,
         sizeLabel: '4 MB',
+      ),
+      DownloadFormatModel(
+        id: 'thumbnail',
+        label: 'Thumbnail JPG',
+        extension: 'jpg',
+        type: DownloadType.image,
+        isPremium: false,
+        sizeLabel: '860 KB',
+      ),
+    ],
+  );
+}
+
+MediaInfoModel _instagramImageMedia() {
+  return const MediaInfoModel(
+    id: 'instagram_image_test',
+    title: 'Instagram image post',
+    mediaType: MediaType.image,
+    platform: 'Instagram',
+    duration: 'Image',
+    thumbnailUrl: '',
+    sourceUrl: 'https://www.instagram.com/p/demo-image',
+    formats: [
+      DownloadFormatModel(
+        id: 'original_image',
+        label: 'Original Image',
+        extension: 'jpg',
+        type: DownloadType.image,
+        isPremium: false,
+        sizeLabel: 'Best available quality',
+      ),
+      DownloadFormatModel(
+        id: 'jpg_image',
+        label: 'JPG Image',
+        extension: 'jpg',
+        type: DownloadType.image,
+        isPremium: false,
+        sizeLabel: 'Standard format',
+      ),
+      DownloadFormatModel(
+        id: 'carousel_image',
+        label: 'Carousel Image',
+        extension: 'jpg',
+        type: DownloadType.image,
+        isPremium: false,
+        sizeLabel: 'Carousel item',
       ),
       DownloadFormatModel(
         id: 'thumbnail',

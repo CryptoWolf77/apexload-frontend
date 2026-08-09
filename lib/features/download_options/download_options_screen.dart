@@ -30,15 +30,22 @@ class DownloadOptionsScreen extends ConsumerStatefulWidget {
 }
 
 class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
+  static const _instagramPlatform = 'Instagram';
+  static const _thumbnailFormatId = 'thumbnail';
+
   late final TextEditingController _fileController;
   DownloadFormatModel? _selectedFormat;
   var _creatingDownloadJob = false;
 
   bool get _isVideo => widget.media.mediaType == MediaType.video;
   bool get _isImage => widget.media.mediaType == MediaType.image;
+  bool get _isInstagram => widget.media.platform == _instagramPlatform;
+  List<DownloadFormatModel> get _visibleFormats => widget.media.formats
+      .where((format) => !_isInstagram || format.id != _thumbnailFormatId)
+      .toList(growable: false);
   bool get _allFormatsUnavailable =>
-      widget.media.formats.isNotEmpty &&
-      widget.media.formats.every((format) => !format.isAvailable);
+      _visibleFormats.isNotEmpty &&
+      _visibleFormats.every((format) => !format.isAvailable);
 
   List<DownloadFormatModel> get _selectedFormats {
     final selected = _selectedFormat;
@@ -48,7 +55,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   @override
   void initState() {
     super.initState();
-    final availableFormats = widget.media.formats.where(
+    final availableFormats = _visibleFormats.where(
       (format) => format.isAvailable && !format.isPremium,
     );
     _selectedFormat = availableFormats.isNotEmpty
@@ -60,7 +67,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   String get _defaultFileName {
     final selected = _selectedFormats.isNotEmpty
         ? _selectedFormats.first
-        : (widget.media.formats.isNotEmpty ? widget.media.formats.first : null);
+        : (_visibleFormats.isNotEmpty ? _visibleFormats.first : null);
     if (selected == null) return 'apexload_download';
     final safe = widget.media.title
         .toLowerCase()
@@ -313,8 +320,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
           // provides it.
           const SizedBox(height: 10),
           if (_isImage &&
-              (widget.media.platform == 'Instagram' ||
-                  widget.media.platform == 'Facebook') &&
+              (_isInstagram || widget.media.platform == 'Facebook') &&
               _allFormatsUnavailable) ...[
             GlassCard(
               padding: const EdgeInsets.all(12),
@@ -338,7 +344,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
             ),
             const SizedBox(height: 10),
           ],
-          for (final format in widget.media.formats) ...[
+          for (final format in _visibleFormats) ...[
             FormatOptionCard(
               format: format,
               selected: _selectedFormat?.id == format.id,
@@ -419,7 +425,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
   }
 
   String _allUnavailableReason(AppLocalizations l) {
-    for (final format in widget.media.formats) {
+    for (final format in _visibleFormats) {
       final reason = format.unavailableReasonKey;
       if (reason != null && reason.trim().isNotEmpty) {
         return l.t(reason);
