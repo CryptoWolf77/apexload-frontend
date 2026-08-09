@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+enum _StatusSavedAction { keepBrowsing, goToDownloads }
+
 class WhatsAppStatusScreen extends ConsumerStatefulWidget {
   const WhatsAppStatusScreen({super.key});
 
@@ -300,13 +302,22 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
           .saveStatus(item);
       ref.read(libraryControllerProvider.notifier).add(saved);
       if (!mounted) return;
-      AppNotification.success(
-        context,
-        message: AppLocalizations.of(context).t('statusSavedSuccess'),
-      );
+      if (!showSavedActions) {
+        AppNotification.success(
+          context,
+          message: AppLocalizations.of(context).t('statusSavedSuccess'),
+        );
+        await _scan(showLoading: false);
+        return;
+      }
+
+      final action = await _showSavedActions();
+      if (!mounted) return;
+      if (action == _StatusSavedAction.goToDownloads) {
+        context.go('/downloads');
+        return;
+      }
       await _scan(showLoading: false);
-      if (!mounted || !showSavedActions) return;
-      await _showSavedActions();
     } on Object catch (error) {
       if (!mounted) return;
       final key = error.toString().contains('statusAlreadySaved')
@@ -319,10 +330,11 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
     }
   }
 
-  Future<void> _showSavedActions() async {
+  Future<_StatusSavedAction?> _showSavedActions() {
     final l = AppLocalizations.of(context);
-    await showModalBottomSheet<void>(
+    return showModalBottomSheet<_StatusSavedAction>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -360,14 +372,15 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final keepBrowsing = OutlinedButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      onPressed: () => Navigator.of(
+                        sheetContext,
+                      ).pop(_StatusSavedAction.keepBrowsing),
                       child: Text(l.t('statusKeepBrowsing')),
                     );
                     final goToDownloads = FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(sheetContext).pop();
-                        context.go('/downloads');
-                      },
+                      onPressed: () => Navigator.of(
+                        sheetContext,
+                      ).pop(_StatusSavedAction.goToDownloads),
                       icon: const Icon(Icons.download_done_rounded),
                       label: Text(l.t('statusGoToDownloads')),
                     );

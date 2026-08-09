@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/whatsapp_status/whatsapp_status_models.dart';
 import 'package:apexload/features/whatsapp_status/whatsapp_status_screen.dart';
@@ -40,6 +42,7 @@ void main() {
             .join(' | '),
       );
       expect(find.text('Status saved'), findsOneWidget);
+      expect(find.text('Status saved to ApexLoad.'), findsNothing);
       expect(find.text('Keep Browsing'), findsOneWidget);
       expect(find.text('Go to Downloads'), findsOneWidget);
 
@@ -53,8 +56,40 @@ void main() {
       expect(find.byType(WhatsAppStatusScreen), findsOneWidget);
       expect(harness.router.routeInformationProvider.value.uri.path, '/status');
       expect(find.text('one.jpg'), findsOneWidget);
+      expect(service.scanCalls, 2);
     },
   );
+
+  testWidgets('post-save modal appears before a status rescan can finish', (
+    tester,
+  ) async {
+    final service = _FakeWhatsAppStatusService([
+      _status('one'),
+    ], blockRescans: true);
+    final harness = await _pumpStatusScreen(tester, service: service);
+    expect(service.scanCalls, 1);
+
+    await _tapTooltip(tester, 'Save');
+
+    expect(
+      harness.container.read(libraryControllerProvider),
+      contains(predicate<DownloadItemModel>((item) => item.id == 'saved_one')),
+    );
+    expect(
+      find.byKey(const Key('android_status_saved_actions')),
+      findsOneWidget,
+    );
+    expect(service.scanCalls, 1);
+
+    await tester.tap(find.text('Keep Browsing'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(service.scanCalls, 2);
+    service.releaseRescan();
+    await _pumpAsyncWork(tester);
+
+    expect(harness.router.routeInformationProvider.value.uri.path, '/status');
+  });
 
   testWidgets('Go to Downloads navigates only after library update', (
     tester,
@@ -75,6 +110,7 @@ void main() {
       harness.router.routeInformationProvider.value.uri.path,
       '/downloads',
     );
+    expect(service.scanCalls, 1);
     expect(find.text('Downloads destination'), findsOneWidget);
   });
 
@@ -132,6 +168,7 @@ void main() {
     expect(service.saveCalls, 2);
     expect(harness.container.read(libraryControllerProvider), hasLength(2));
     expect(find.byKey(const Key('android_status_saved_actions')), findsNothing);
+    expect(find.text('Status saved to ApexLoad.'), findsOneWidget);
   });
 
   testWidgets('existing View and Share card actions still delegate', (
@@ -275,12 +312,19 @@ WhatsAppStatusItem _status(String id) {
 }
 
 class _FakeWhatsAppStatusService extends WhatsAppStatusService {
-  _FakeWhatsAppStatusService(this.items, {this.saveErrorKey});
+  _FakeWhatsAppStatusService(
+    this.items, {
+    this.saveErrorKey,
+    this.blockRescans = false,
+  });
 
   final List<WhatsAppStatusItem> items;
   final String? saveErrorKey;
+  final bool blockRescans;
   final Set<String> _savedIds = {};
+  Completer<void>? _rescanGate;
   int saveCalls = 0;
+  int scanCalls = 0;
 
   @override
   Future<List<WhatsAppStatusSource>> detectSources() async => const [
@@ -295,10 +339,22 @@ class _FakeWhatsAppStatusService extends WhatsAppStatusService {
   ];
 
   @override
-  Future<List<WhatsAppStatusItem>> scan({bool business = false}) async => [
-    for (final item in items)
-      item.copyWith(isSaved: item.isSaved || _savedIds.contains(item.id)),
-  ];
+  Future<List<WhatsAppStatusItem>> scan({bool business = false}) async {
+    scanCalls++;
+    if (blockRescans && scanCalls > 1) {
+      _rescanGate ??= Completer<void>();
+      await _rescanGate!.future;
+    }
+    return [
+      for (final item in items)
+        item.copyWith(isSaved: item.isSaved || _savedIds.contains(item.id)),
+    ];
+  }
+
+  void releaseRescan() {
+    final gate = _rescanGate;
+    if (gate != null && !gate.isCompleted) gate.complete();
+  }
 
   @override
   Future<DownloadItemModel> saveStatus(WhatsAppStatusItem item) async {
