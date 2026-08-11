@@ -1901,13 +1901,13 @@ class _ReelsShortsCard extends StatelessWidget {
                 onTap: () => onPresetChanged('instagram'),
               ),
               _PlatformPresetCard(
-                selected: preset == 'youtube',
+                selected: preset == 'vertical',
                 icon: Icons.play_circle_fill_rounded,
-                title: l.t('youtubeShort'),
+                title: l.t('verticalShort'),
                 badge: l
                     .t('readyForPlatform')
-                    .replaceFirst('{platform}', 'YouTube'),
-                onTap: () => onPresetChanged('youtube'),
+                    .replaceFirst('{platform}', 'Vertical Short'),
+                onTap: () => onPresetChanged('vertical'),
               ),
               _PlatformPresetCard(
                 selected: preset == 'tiktok',
@@ -2001,7 +2001,7 @@ class _ReelsShortsCard extends StatelessWidget {
 
   String _createLabel(AppLocalizations l, String preset) {
     return switch (preset) {
-      'youtube' => l.t('createYouTubeShort'),
+      'vertical' => l.t('createVerticalShort'),
       'tiktok' => l.t('createTikTokVideo'),
       'snapchat' => l.t('createSnapchatSpotlight'),
       _ => l.t('createInstagramReel'),

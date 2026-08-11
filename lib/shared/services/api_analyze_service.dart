@@ -1,3 +1,4 @@
+import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/network/api_client.dart';
 import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
@@ -14,6 +15,9 @@ class ApiAnalyzeService {
   final MockAnalyzeService _mockAnalyzeService;
 
   Future<AnalyzeResult> analyze(String url) async {
+    if (AppConstants.isBlockedSource(url)) {
+      throw const AnalyzeException('This source is not supported.');
+    }
     try {
       if (kDebugMode) {
         debugPrint('ApexLoad analyze request URL: $url');

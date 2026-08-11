@@ -1,4 +1,5 @@
 # Miscellaneous
+.codex-tmp/
 *.class
 *.log
 *.pyc
@@ -6,7 +7,6 @@
 *.cookies
 cookies.txt
 instagram_cookies.txt
-youtube_cookies.txt
 secrets/
 apexload-backend/storage/downloads/
 .DS_Store

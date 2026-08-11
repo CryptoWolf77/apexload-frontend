@@ -304,24 +304,6 @@ class _DownloadProgressScreenState
         lower.contains('refresh instagram cookies')) {
       return AppLocalizations.of(context).t('instagramBlocked');
     }
-    if (lower.contains('youtube requires sign-in') ||
-        lower.contains('youtube requested sign-in') ||
-        lower.contains('not a bot') ||
-        lower.contains('refresh youtube cookies')) {
-      return AppLocalizations.of(context).t('youtubeRequiresAuth');
-    }
-    if (lower.contains('youtube format is not available') ||
-        lower.contains('requested format is not available')) {
-      return AppLocalizations.of(context).t('youtubeFormatUnavailable');
-    }
-    if (lower.contains('youtube video formats are temporarily unavailable') ||
-        lower.contains('only images are available') ||
-        lower.contains('challenge solver') ||
-        lower.contains('javascript runtime')) {
-      return AppLocalizations.of(
-        context,
-      ).t('youtubeFormatsTemporarilyUnavailable');
-    }
     return message;
   }
 

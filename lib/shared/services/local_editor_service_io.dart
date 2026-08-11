@@ -658,7 +658,7 @@ class LocalEditorService {
   String _platformFor(QuickEditorJob job, Map<String, Object?> options) {
     if (job.type != QuickEditorJobType.reelsShorts) return 'Editor';
     return switch (options['preset'] as String? ?? 'instagram') {
-      'youtube' => 'YouTube Short Creator',
+      'vertical' => 'Vertical Short Creator',
       'tiktok' => 'TikTok Creator',
       'snapchat' => 'Snapchat Spotlight Creator',
       _ => 'Instagram Reel Creator',
@@ -667,7 +667,7 @@ class LocalEditorService {
 
   String _reelsTitlePrefix(String? preset) {
     return switch (preset ?? 'instagram') {
-      'youtube' => 'YouTube Short',
+      'vertical' => 'Vertical Short',
       'tiktok' => 'TikTok Video',
       'snapchat' => 'Snapchat Spotlight',
       _ => 'Instagram Reel',

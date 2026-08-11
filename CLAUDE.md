@@ -66,10 +66,9 @@ Premium would ship free to everyone.
 Apple rejected 1.0.0 (14) under **5.2.3 (Audio/Video Downloading)**. Build 15
 resubmitted with compliance changes. **Never undo these on iOS:**
 
-- **No YouTube, anywhere.** `AppConstants.iosSupportedPlatforms` excludes it;
-  `AppConstants.isBlockedSource()` refuses YouTube URLs in `_analyze()` before
-  any network call. Android keeps all 8 platforms. Guarded by
-  `test/ios_source_policy_test.dart`.
+- **No YouTube downloading, on any build.** The shared supported-platform list
+  excludes it, and `AppConstants.isBlockedSource()` refuses those URLs before
+  any network call. Guarded by `test/youtube_source_policy_test.dart`.
 - **No watermark removal.** Feature, Premium bullet and marketing claims are
   gone; `noWatermark` is hard-coded `false`. Advertising removal of a
   platform's attribution mark is the single worst 5.2.3 signal.
@@ -86,7 +85,7 @@ saves third-party media.
   `git reset --hard`, never discard unrelated changes, never commit or push
   unless explicitly asked.
 - **The user runs all Coolify and server operations personally.** Do not deploy.
-- **Never commit cookies** (Instagram/YouTube `.txt` cookie files) or bake them
+- **Never commit cookies** (Instagram `.txt` cookie files) or bake them
   into Docker images. They are gitignored; keep it that way.
 - Run `flutter analyze` and `flutter test` before declaring work done.
 

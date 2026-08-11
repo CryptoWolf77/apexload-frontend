@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/features/quick_editor/quick_editor_models.dart';
 import 'package:apexload/shared/services/local_editor_service.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -74,5 +76,30 @@ void main() {
 
     expect(args, containsAllInOrder(['-preset', 'superfast']));
     expect(args.join(' '), contains('flags=bilinear'));
+  });
+
+  test('vertical short preset keeps the existing vertical export settings', () {
+    final args = arguments(
+      QuickEditorJobType.reelsShorts,
+      options: const {
+        'preset': 'vertical',
+        'resizeMode': 'smart_crop',
+        'quality': 'medium',
+      },
+    );
+
+    expect(args.join(' '), contains('scale=1080:1920'));
+    expect(args, containsAllInOrder(['-c:v', 'libx264']));
+    expect(args, containsAllInOrder(['-preset', 'superfast']));
+  });
+
+  test('vertical short branding is available in English and Arabic', () {
+    final english = AppLocalizations(const Locale('en'));
+    final arabic = AppLocalizations(const Locale('ar'));
+
+    expect(english.t('verticalShort'), 'Vertical Short');
+    expect(english.t('createVerticalShort'), 'Create Vertical Short');
+    expect(arabic.t('verticalShort'), 'Vertical Short');
+    expect(arabic.t('createVerticalShort'), 'إنشاء Vertical Short');
   });
 }

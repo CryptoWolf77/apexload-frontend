@@ -56,7 +56,8 @@ void main() {
       400,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Agree and Continue'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('responsible_use_agreement_v1'), isTrue);
@@ -94,7 +95,8 @@ void main() {
     await tester.pump();
 
     await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(PremiumBadge), findsOneWidget);
     await tester.tap(find.byType(PremiumBadge));
     await tester.pumpAndSettle();

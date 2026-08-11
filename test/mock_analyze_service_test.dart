@@ -85,7 +85,6 @@ void main() {
   test('common video keywords are treated as video mock data', () async {
     final urls = [
       'https://www.tiktok.com/@creator/video/123',
-      'https://www.youtube.com/shorts/abc',
       'https://example.com/watch/demo-video',
     ];
 

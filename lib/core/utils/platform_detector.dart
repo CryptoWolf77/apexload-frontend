@@ -1,28 +1,31 @@
 String detectPlatformName(String url) {
-  final value = url.toLowerCase();
-  if (value.contains('tiktok')) {
+  final value = url.trim().toLowerCase();
+  final uri = Uri.tryParse(value.contains('://') ? value : 'https://$value');
+  final host = uri?.host.toLowerCase() ?? '';
+  if (_hostMatches(host, const ['tiktok.com'])) {
     return 'TikTok';
   }
-  if (value.contains('instagram') || value.contains('instagr.am')) {
+  if (_hostMatches(host, const ['instagram.com', 'instagr.am'])) {
     return 'Instagram';
   }
-  if (value.contains('facebook') || value.contains('fb.watch')) {
+  if (_hostMatches(host, const ['facebook.com', 'fb.watch'])) {
     return 'Facebook';
   }
-  if (value.contains('twitter') || value.contains('x.com')) {
+  if (_hostMatches(host, const ['twitter.com', 'x.com'])) {
     return 'X/Twitter';
   }
-  if (value.contains('youtube') || value.contains('youtu.be')) {
-    return 'YouTube Shorts';
-  }
-  if (value.contains('pinterest')) {
+  if (_hostMatches(host, const ['pinterest.com', 'pin.it'])) {
     return 'Pinterest';
   }
-  if (value.contains('reddit')) {
+  if (_hostMatches(host, const ['reddit.com'])) {
     return 'Reddit';
   }
-  if (value.contains('snapchat.com') || value.contains('snap.com')) {
+  if (_hostMatches(host, const ['snapchat.com', 'snap.com'])) {
     return 'Snapchat';
   }
   return 'Auto detect';
+}
+
+bool _hostMatches(String host, List<String> domains) {
+  return domains.any((domain) => host == domain || host.endsWith('.$domain'));
 }

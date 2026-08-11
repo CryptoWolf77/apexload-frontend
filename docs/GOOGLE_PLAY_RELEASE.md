@@ -142,7 +142,8 @@ endorsed by, or sponsored by any social media platform.
 
 **Listing copy rules — these matter for policy review:**
 
-- Do **not** name YouTube anywhere in the listing, screenshots or graphics.
+- YouTube is unsupported; do **not** name it anywhere in the listing,
+  screenshots or graphics.
 - Do **not** advertise watermark removal. It is removed from the product and
   advertising it is the strongest policy signal against a downloader app.
 - Do **not** use any platform's logo, wordmark or brand colours in the icon,
@@ -243,39 +244,25 @@ license tester, or contact us and we will provide a promo code.
 Do **not** upload a build with `APEXLOAD_TESTER_PREMIUM=true` to give reviewers
 access. That ships Premium free to every user.
 
-### 8. Closed testing requirement
+### 8. Closed testing requirement — DOES NOT APPLY
 
-Individual (personal) developer accounts created after November 2023 must run a
-**closed test with at least 12 testers who stay opted in for 14 continuous
-days** before production access is granted. Organisation accounts are exempt.
+Google requires a closed test with 12+ testers opted in for 14 continuous days
+only for **personal accounts created after 13 November 2023**.
 
-Plan for this: it is a two-week floor on the launch date, not a formality. Start
-the closed test as early as possible.
+This account is a personal account created in **2021**, so it is exempt and
+already has production access. There is no mandatory two-week waiting period —
+the release can go straight to the production track once the listing is
+complete.
+
+A short internal test track run is still worth doing voluntarily to catch
+install-time problems on real devices, but nothing gates the submission on it.
 
 ## Policy risk — read before submitting
 
-ApexLoad on Android currently offers all 8 platforms, including
-`YouTube Shorts` (`AppConstants.supportedPlatforms`).
-
-Google Play's **Device and Network Abuse** policy prohibits apps that facilitate
-downloading YouTube content in violation of YouTube's terms. This is the single
-most common reason downloader apps are removed from Play. Apple already required
-this cut on iOS under guideline 5.2.3, which is why
-`AppConstants.iosSupportedPlatforms` excludes it.
-
-The owner has decided to submit **with** YouTube support and see how review
-goes. That is a deliberate, informed choice.
-
-If review flags it, the fix is small and already designed — the iOS path does
-exactly this:
-
-1. Remove `'YouTube Shorts'` from `AppConstants.supportedPlatforms`.
-2. Make `AppConstants.isBlockedSource()` return true for YouTube URLs on all
-   platforms, not just iOS (drop the `if (!isIosBuild) return false;` guard).
-3. Update `test/ios_source_policy_test.dart` to cover Android too.
-
-Repeat violations can escalate from app removal to developer-account
-termination, so if it is flagged once, fix it rather than resubmitting as-is.
+ApexLoad does not support YouTube media downloading on any Flutter build.
+YouTube hosts are absent from the shared platform list and are rejected locally
+before an analyze request. The backend independently rejects them as unsupported
+for both analyze and download requests.
 
 ## Pre-submission checklist
 
@@ -284,13 +271,13 @@ termination, so if it is flagged once, fix it rather than resubmitting as-is.
 - [ ] `key.properties` present so the bundle is upload-key signed
 - [x] Privacy policy live at `https://apexload.org/privacy` (verified 2026-08-06)
 - [x] Terms live at `https://apexload.org/terms` (verified 2026-08-06)
-- [ ] Feature graphic created
-- [ ] Screenshots captured (no platform logos visible)
+- [x] Feature graphic created — `store_assets/google_play/feature_graphic_1024x500.png`
+- [ ] Screenshots captured (no platform logos visible, 2:1 aspect cap)
 - [ ] Both subscription products created with exact IDs
 - [ ] Data safety form submitted
 - [ ] Content rating questionnaire completed
 - [ ] App access notes filled in for reviewers
-- [ ] Closed test started (individual accounts)
+- [x] Closed test — not required (account predates the Nov 2023 rule)
 
 ## Deferred / optional improvements
 

@@ -74,9 +74,6 @@ class PlatformChip extends StatelessWidget {
     if (lower.contains('audio')) {
       return Icons.music_note_rounded;
     }
-    if (lower.contains('youtube')) {
-      return Icons.play_circle_fill_rounded;
-    }
     if (lower.contains('instagram')) {
       return Icons.camera_alt_rounded;
     }
@@ -111,9 +108,6 @@ class PlatformChip extends StatelessWidget {
     }
     if (lower.contains('x/') || lower.contains('twitter')) {
       return const Color(0xFF38BDF8);
-    }
-    if (lower.contains('youtube')) {
-      return const Color(0xFFFF3B30);
     }
     if (lower.contains('pinterest')) {
       return const Color(0xFFE60023);

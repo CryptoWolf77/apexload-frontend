@@ -33,13 +33,7 @@ void main() {
     },
   );
 
-  for (final platform in [
-    'YouTube Shorts',
-    'Facebook',
-    'TikTok',
-    'X/Twitter',
-    'Snapchat',
-  ]) {
+  for (final platform in ['Facebook', 'TikTok', 'X/Twitter', 'Snapchat']) {
     testWidgets('$platform keeps its Thumbnail JPG option', (tester) async {
       SharedPreferences.setMockInitialValues({});
 

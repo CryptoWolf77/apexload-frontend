@@ -61,12 +61,6 @@ class AppLocalizations {
           'Instagram blocked this request. Please refresh Instagram cookies and try again.',
       'facebookPhotoUnavailable':
           'Facebook photo posts are not available for this link. Try a video link.',
-      'youtubeRequiresAuth':
-          'YouTube requires sign-in verification. Please refresh YouTube cookies from the admin panel.',
-      'youtubeFormatUnavailable':
-          'This YouTube format is not available. Try another quality or link.',
-      'youtubeFormatsTemporarilyUnavailable':
-          'YouTube video formats are temporarily unavailable. Please try another link.',
       'connectionProblem': 'Connection problem. Please try again.',
       'serverConnectionProblem':
           'Could not connect to the server. Please check your internet connection and try again.',
@@ -274,7 +268,6 @@ class AppLocalizations {
       'platformInstagram': 'Instagram',
       'platformFacebook': 'Facebook',
       'platformXTwitter': 'X/Twitter',
-      'platformYouTubeShorts': 'YouTube Shorts',
       'platformPinterest': 'Pinterest',
       'platformReddit': 'Reddit',
       'platformSnapchat': 'Snapchat',
@@ -647,7 +640,7 @@ class AppLocalizations {
       'goToConvertMp4': 'Convert to MP4',
       'choosePlatform': 'Choose Platform',
       'instagramReel': 'Instagram Reel',
-      'youtubeShort': 'YouTube Short',
+      'verticalShort': 'Vertical Short',
       'tiktokVideo': 'TikTok Video',
       'snapchatSpotlight': 'Snapchat Spotlight',
       'readyForPlatform': 'Ready for {platform}',
@@ -661,7 +654,7 @@ class AppLocalizations {
       'platformPresetHelp':
           'Choose a platform preset and ApexLoad will prepare a vertical MP4.',
       'createInstagramReel': 'Create Instagram Reel',
-      'createYouTubeShort': 'Create YouTube Short',
+      'createVerticalShort': 'Create Vertical Short',
       'createTikTokVideo': 'Create TikTok Video',
       'createSnapchatSpotlight': 'Create Snapchat Spotlight',
       'videoStep': 'Video',
@@ -985,12 +978,6 @@ class AppLocalizations {
           'حظر Instagram هذا الطلب. حدّث ملفات تعريف الارتباط وجرب مرة أخرى.',
       'facebookPhotoUnavailable':
           'منشورات صور فيسبوك غير متاحة لهذا الرابط. جرّب رابط فيديو.',
-      'youtubeRequiresAuth':
-          'يتطلب يوتيوب التحقق من تسجيل الدخول. يرجى تحديث ملفات تعريف ارتباط يوتيوب من لوحة الإدارة.',
-      'youtubeFormatUnavailable':
-          'صيغة يوتيوب هذه غير متاحة. جرّب جودة أو رابطًا آخر.',
-      'youtubeFormatsTemporarilyUnavailable':
-          'صيغ فيديو يوتيوب غير متاحة مؤقتًا. يرجى تجربة رابط آخر.',
       'connectionProblem': 'مشكلة في الاتصال. حاول مرة أخرى.',
       'serverConnectionProblem':
           'تعذّر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
@@ -1192,7 +1179,6 @@ class AppLocalizations {
       'platformInstagram': 'إنستغرام',
       'platformFacebook': 'فيسبوك',
       'platformXTwitter': 'إكس/تويتر',
-      'platformYouTubeShorts': 'يوتيوب شورتس',
       'platformPinterest': 'بنترست',
       'platformReddit': 'ريديت',
       'platformSnapchat': 'سناب شات',
@@ -1555,7 +1541,7 @@ class AppLocalizations {
       'goToConvertMp4': 'تحويل إلى MP4',
       'choosePlatform': 'اختر المنصة',
       'instagramReel': 'Instagram Reel',
-      'youtubeShort': 'YouTube Short',
+      'verticalShort': 'Vertical Short',
       'tiktokVideo': 'TikTok Video',
       'snapchatSpotlight': 'Snapchat Spotlight',
       'readyForPlatform': 'جاهز لـ {platform}',
@@ -1567,7 +1553,7 @@ class AppLocalizations {
       'platformPresetHelp':
           'اختر منصة وسيجهز ApexLoad فيديو MP4 عموديًا مناسبًا.',
       'createInstagramReel': 'إنشاء Instagram Reel',
-      'createYouTubeShort': 'إنشاء YouTube Short',
+      'createVerticalShort': 'إنشاء Vertical Short',
       'createTikTokVideo': 'إنشاء TikTok Video',
       'createSnapchatSpotlight': 'إنشاء Snapchat Spotlight',
       'videoStep': 'الفيديو',
@@ -1859,7 +1845,6 @@ class AppLocalizations {
       'Instagram' => t('platformInstagram'),
       'Facebook' => t('platformFacebook'),
       'X/Twitter' => t('platformXTwitter'),
-      'YouTube Shorts' => t('platformYouTubeShorts'),
       'Pinterest' => t('platformPinterest'),
       'Reddit' => t('platformReddit'),
       'Snapchat' => t('platformSnapchat'),

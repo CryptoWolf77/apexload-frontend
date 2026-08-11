@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AppConstants {
@@ -16,45 +15,29 @@ class AppConstants {
   static const supportedPlatforms = [
     'TikTok',
     'Instagram',
-    'Facebook',
+    'Snapchat',
     'X/Twitter',
-    'YouTube Shorts',
+    'Facebook',
     'Pinterest',
     'Reddit',
-    'Snapchat',
   ];
 
-  /// YouTube's Terms of Service prohibit saving its media, and App Review
-  /// guideline 5.2.3 names YouTube explicitly. The iOS build therefore offers
-  /// no YouTube support at all — it is not listed, not detected, and URLs are
-  /// refused before any request leaves the device.
-  static const iosSupportedPlatforms = [
-    'TikTok',
-    'Instagram',
-    'Facebook',
-    'X/Twitter',
-    'Pinterest',
-    'Reddit',
-    'Snapchat',
-  ];
-
-  static const unsupportedOnIosPlatform = 'YouTube Shorts';
-
-  static bool get isIosBuild =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
-
-  /// Platforms this build is allowed to offer.
-  static List<String> get availablePlatforms =>
-      isIosBuild ? iosSupportedPlatforms : supportedPlatforms;
+  /// Platforms offered consistently on every Flutter target.
+  static const availablePlatforms = supportedPlatforms;
 
   /// True when the link points at a source this build must not handle.
   static bool isBlockedSource(String url) {
-    if (!isIosBuild) return false;
-    final value = url.toLowerCase();
-    return value.contains('youtube.') ||
-        value.contains('youtu.be') ||
-        value.contains('//youtube') ||
-        value.contains('m.youtube');
+    final value = url.trim().toLowerCase();
+    if (value.isEmpty) return false;
+
+    final uri = Uri.tryParse(value.contains('://') ? value : 'https://$value');
+    final host = uri?.host.toLowerCase() ?? '';
+    return host == 'youtube.com' ||
+        host.endsWith('.youtube.com') ||
+        host == 'youtu.be' ||
+        host.endsWith('.youtu.be') ||
+        host == 'youtube-nocookie.com' ||
+        host.endsWith('.youtube-nocookie.com');
   }
 }
 

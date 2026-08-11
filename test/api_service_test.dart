@@ -68,6 +68,41 @@ void main() {
     );
   });
 
+  test('ApiAnalyzeService rejects YouTube hosts before posting', () async {
+    for (final url in [
+      'https://youtube.com/watch?v=abc',
+      'https://youtu.be/abc',
+      'https://m.youtube.com/shorts/abc',
+    ]) {
+      final client = _FakeApiClient(postData: _videoAnalyzeResponse);
+      final service = ApiAnalyzeService(client: client);
+
+      await expectLater(service.analyze(url), throwsA(isA<AnalyzeException>()));
+      expect(client.lastPostPath, isNull, reason: url);
+      expect(client.lastPostData, isNull, reason: url);
+    }
+  });
+
+  test('ApiAnalyzeService still posts remaining supported platforms', () async {
+    for (final url in [
+      'https://www.tiktok.com/@creator/video/1',
+      'https://www.instagram.com/reel/example/',
+      'https://www.snapchat.com/spotlight/example',
+      'https://x.com/creator/status/1',
+      'https://www.facebook.com/watch/?v=1',
+      'https://www.pinterest.com/pin/1/',
+      'https://www.reddit.com/r/videos/comments/example/',
+    ]) {
+      final client = _FakeApiClient(postData: _videoAnalyzeResponse);
+      final service = ApiAnalyzeService(client: client);
+
+      await service.analyze(url);
+
+      expect(client.lastPostPath, ApiConfig.analyzePath, reason: url);
+      expect(client.lastPostData?['url'], url, reason: url);
+    }
+  });
+
   test(
     'ApiDownloadService sends backend skeleton payload and reads status',
     () async {

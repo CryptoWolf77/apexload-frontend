@@ -16,7 +16,6 @@ class MockAnalyzeService {
       'Instagram' when isImage => 'Creative Instagram photo post',
       'Snapchat' when isImage => 'Snapchat image story',
       'Instagram' => 'Creative reel with city lights',
-      'YouTube Shorts' => 'Quick tutorial highlight',
       'Snapchat' => 'Behind-the-scenes snap story',
       _ => 'Amazing travel sunset video',
     };
@@ -60,9 +59,6 @@ class MockAnalyzeService {
       'reel',
       'reels',
       'tiktok',
-      'youtube',
-      'shorts',
-      'watch',
       'instagram.com/reel/',
       '/reel/',
       '/reels/',

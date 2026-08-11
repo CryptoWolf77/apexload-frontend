@@ -41,7 +41,7 @@ class Shot:
         self.blur_regions = blur_regions
 
 
-# Captures are taken against the 5.2.3-compliant build: no YouTube anywhere,
+# Captures are taken against the 5.2.3-compliant build with unsupported sources excluded,
 # no watermark option, "Video Saver & Editor" subtitle, ownership notice shown.
 SCREENSHOTS = [
     Shot(

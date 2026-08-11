@@ -12,6 +12,7 @@ import 'package:apexload/shared/widgets/legal_notice_card.dart';
 import 'package:apexload/shared/widgets/platform_chip.dart';
 import 'package:apexload/shared/widgets/premium_badge.dart';
 import 'package:apexload/shared/widgets/primary_gradient_button.dart';
+import 'package:apexload/shared/widgets/supported_platforms_carousel.dart';
 import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -131,12 +132,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 lower.contains('cookies-from-browser') ||
                 lower.contains('login required')))) {
       return l.t('facebookPhotoUnavailable');
-    }
-    if (lower.contains('youtube requires sign-in') ||
-        lower.contains('youtube requested sign-in') ||
-        lower.contains('not a bot') ||
-        lower.contains('refresh youtube cookies')) {
-      return l.t('youtubeRequiresAuth');
     }
     return message.isEmpty ? l.t('analyzeFailed') : message;
   }
@@ -270,7 +265,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   prefixIcon: const Icon(Icons.link_rounded),
                   suffixIcon: ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _urlController,
-                    builder: (_, value, __) {
+                    builder: (_, value, _) {
                       final hasLink = value.text.trim().isNotEmpty;
                       return IconButton(
                         tooltip: hasLink
@@ -310,16 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 42,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (context, index) =>
-                PlatformChip(label: AppConstants.availablePlatforms[index]),
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemCount: AppConstants.availablePlatforms.length,
-          ),
-        ),
+        const SupportedPlatformsCarousel(),
         const SizedBox(height: 10),
         // Non-affiliation and ownership notice, matching the disclaimer
         // pattern used by comparable apps that pass App Review.
