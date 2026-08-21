@@ -17,6 +17,16 @@ import 'package:apexload/shared/widgets/yahyaz_lab_signature.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const yahyazLabWebsiteUrl = 'https://yahyazlab.com';
+
+typedef YahyazLabUrlLauncher = Future<bool> Function(Uri uri, LaunchMode mode);
+
+final yahyazLabUrlLauncherProvider = Provider<YahyazLabUrlLauncher>(
+  (ref) =>
+      (uri, mode) => launchUrl(uri, mode: mode),
+);
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -115,6 +125,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       AppNotification.error(
         context,
         message: AppLocalizations.of(context).t('connectionProblem'),
+      );
+    }
+  }
+
+  Future<void> _openYahyazLabWebsite() async {
+    var opened = false;
+    try {
+      opened = await ref.read(yahyazLabUrlLauncherProvider)(
+        Uri.parse(yahyazLabWebsiteUrl),
+        LaunchMode.externalApplication,
+      );
+    } on Object {
+      // An unavailable browser must never interrupt the Home screen.
+    }
+    if (!opened && mounted) {
+      AppNotification.error(
+        context,
+        message: AppLocalizations.of(context).t('couldNotOpenLink'),
       );
     }
   }
@@ -394,7 +422,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SizedBox(height: 14),
         const LegalNoticeCard(compact: true),
         const SizedBox(height: 22),
-        const YahyazLabSignature(compact: true),
+        YahyazLabSignature(
+          compact: true,
+          onTap: _openYahyazLabWebsite,
+          semanticLabel: l.t('visitYahyazLabWebsite'),
+        ),
       ],
     );
   }

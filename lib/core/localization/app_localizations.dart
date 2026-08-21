@@ -935,6 +935,7 @@ class AppLocalizations {
           'After the confirmation appears, tap Downloads to view the saved file.',
       'iosWhatsappGotIt': 'Got it',
       'madeBy': 'Made by',
+      'visitYahyazLabWebsite': 'Visit YahyazLab website',
     },
     'ar': {
       'home': 'الرئيسية',
@@ -1829,6 +1830,7 @@ class AppLocalizations {
       'keepScreenAwakeDuringDownloadsSubtitle':
           'يمنع إطفاء الشاشة أثناء تنزيل أو حفظ أو تصدير الوسائط.',
       'madeBy': 'صنع بواسطة',
+      'visitYahyazLabWebsite': 'زيارة موقع YahyazLab الإلكتروني',
     },
   };
 
