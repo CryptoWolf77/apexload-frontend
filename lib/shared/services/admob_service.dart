@@ -10,6 +10,8 @@ enum DownloadAdOutcome { successful, failed, cancelled }
 
 enum InterstitialShowResult { dismissed, failed }
 
+enum AdMobPrivacyOptionsRequirement { unknown, notRequired, required }
+
 abstract interface class AdMobInterstitial {
   Future<InterstitialShowResult> show();
 
@@ -18,6 +20,12 @@ abstract interface class AdMobInterstitial {
 
 abstract interface class AdMobGateway {
   Future<bool> gatherConsent();
+
+  Future<bool> canRequestAds();
+
+  Future<AdMobPrivacyOptionsRequirement> getPrivacyOptionsRequirementStatus();
+
+  Future<void> showPrivacyOptionsForm();
 
   Future<void> initialize();
 
@@ -54,6 +62,9 @@ class GoogleMobileAdsGateway implements AdMobGateway {
   const GoogleMobileAdsGateway();
 
   @override
+  Future<bool> canRequestAds() => ConsentInformation.instance.canRequestAds();
+
+  @override
   Future<bool> gatherConsent() async {
     final updateCompleted = Completer<void>();
 
@@ -78,6 +89,21 @@ class GoogleMobileAdsGateway implements AdMobGateway {
 
     await updateCompleted.future;
     return ConsentInformation.instance.canRequestAds();
+  }
+
+  @override
+  Future<AdMobPrivacyOptionsRequirement>
+  getPrivacyOptionsRequirementStatus() async {
+    final status = await ConsentInformation.instance
+        .getPrivacyOptionsRequirementStatus();
+    return switch (status) {
+      PrivacyOptionsRequirementStatus.required =>
+        AdMobPrivacyOptionsRequirement.required,
+      PrivacyOptionsRequirementStatus.notRequired =>
+        AdMobPrivacyOptionsRequirement.notRequired,
+      PrivacyOptionsRequirementStatus.unknown =>
+        AdMobPrivacyOptionsRequirement.unknown,
+    };
   }
 
   @override
@@ -107,6 +133,17 @@ class GoogleMobileAdsGateway implements AdMobGateway {
       if (!loaded.isCompleted) loaded.completeError(error, stackTrace);
     }
     return loaded.future;
+  }
+
+  @override
+  Future<void> showPrivacyOptionsForm() async {
+    FormError? dismissalError;
+    await ConsentForm.showPrivacyOptionsForm((error) {
+      dismissalError = error;
+    });
+    if (dismissalError != null) {
+      throw StateError('Privacy options form unavailable');
+    }
   }
 }
 
@@ -172,15 +209,25 @@ class AdMobService {
   final AdSuccessCounterStore _counterStore;
   final bool _isAndroid;
   final String _adUnitId;
+  final ValueNotifier<AdMobPrivacyOptionsRequirement>
+  _privacyOptionsRequirement = ValueNotifier(
+    AdMobPrivacyOptionsRequirement.unknown,
+  );
 
   Future<void>? _initialization;
   AdMobInterstitial? _interstitial;
   var _adsReady = false;
+  var _sdkInitialized = false;
   var _loading = false;
   var _showing = false;
   var _disposed = false;
 
   bool get hasLoadedInterstitial => _interstitial != null;
+
+  bool get supportsPrivacyOptions => _isAndroid && !_disposed;
+
+  ValueListenable<AdMobPrivacyOptionsRequirement>
+  get privacyOptionsRequirement => _privacyOptionsRequirement;
 
   Future<void> initialize() {
     if (!_isAndroid || _disposed) return Future<void>.value();
@@ -188,14 +235,81 @@ class AdMobService {
   }
 
   Future<void> _initializeSafely() async {
+    var canRequestAds = false;
     try {
-      final canRequestAds = await _gateway.gatherConsent();
-      if (!canRequestAds || _disposed) return;
-      await _gateway.initialize();
-      if (_disposed) return;
-      _adsReady = true;
-      if (!_isPremium()) await _preload();
+      canRequestAds = await _gateway.gatherConsent();
     } on Object {
+      _debugLog('initialization unavailable');
+    }
+    await _refreshPrivacyOptionsRequirement();
+    if (!canRequestAds || _disposed) return;
+    await _enableAdsAndPreload();
+  }
+
+  Future<bool> showPrivacyOptions() async {
+    if (!supportsPrivacyOptions ||
+        _privacyOptionsRequirement.value !=
+            AdMobPrivacyOptionsRequirement.required) {
+      return false;
+    }
+
+    var shown = false;
+    try {
+      await _gateway.showPrivacyOptionsForm();
+      shown = true;
+    } on Object {
+      _debugLog('privacy options unavailable');
+    }
+
+    await _reconcileConsentAfterPrivacyOptions();
+    return shown;
+  }
+
+  Future<void> _reconcileConsentAfterPrivacyOptions() async {
+    var canRequestAds = false;
+    try {
+      canRequestAds = await _gateway.canRequestAds();
+    } on Object {
+      _debugLog('consent status unavailable');
+    }
+    await _refreshPrivacyOptionsRequirement();
+    if (_disposed) return;
+
+    if (!canRequestAds) {
+      _adsReady = false;
+      await _clearLoadedInterstitial();
+      return;
+    }
+    await _enableAdsAndPreload();
+  }
+
+  Future<void> _refreshPrivacyOptionsRequirement() async {
+    var requirement = AdMobPrivacyOptionsRequirement.unknown;
+    try {
+      requirement = await _gateway.getPrivacyOptionsRequirementStatus();
+    } on Object {
+      _debugLog('privacy options status unavailable');
+    }
+    if (!_disposed && _privacyOptionsRequirement.value != requirement) {
+      _privacyOptionsRequirement.value = requirement;
+    }
+  }
+
+  Future<void> _enableAdsAndPreload() async {
+    try {
+      if (!_sdkInitialized) {
+        await _gateway.initialize();
+        if (_disposed) return;
+        _sdkInitialized = true;
+      }
+      _adsReady = true;
+      if (_isPremium()) {
+        await _clearLoadedInterstitial();
+      } else {
+        await _preload();
+      }
+    } on Object {
+      _adsReady = false;
       _debugLog('initialization unavailable');
     }
   }
@@ -280,7 +394,7 @@ class AdMobService {
         _debugLog('interstitial load unavailable');
         return;
       }
-      if (_disposed || _isPremium() || _interstitial != null) {
+      if (!_adsReady || _disposed || _isPremium() || _interstitial != null) {
         await _disposeAd(ad);
         return;
       }
@@ -300,12 +414,17 @@ class AdMobService {
     }
   }
 
-  Future<void> dispose() async {
-    if (_disposed) return;
-    _disposed = true;
+  Future<void> _clearLoadedInterstitial() async {
     final ad = _interstitial;
     _interstitial = null;
     if (ad != null) await _disposeAd(ad);
+  }
+
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    await _clearLoadedInterstitial();
+    _privacyOptionsRequirement.dispose();
   }
 
   void _debugLog(String message) {

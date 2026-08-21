@@ -569,6 +569,10 @@ class AppLocalizations {
       'cacheClearFailed': 'Could not clear temporary files. Please try again.',
       'privacyPolicy': 'Privacy Policy',
       'privacyPolicySubtitle': 'How ApexLoad handles data and permissions',
+      'privacyChoices': 'Privacy choices',
+      'privacyChoicesSubtitle': 'Manage advertising and privacy consent',
+      'privacyChoicesUnavailable':
+          'Privacy options are temporarily unavailable. Please try again later.',
       'termsOfUse': 'Terms of Use',
       'termsOfUseSubtitle': 'Rules for responsible use of ApexLoad',
       'contactSupport': 'Contact Support',
@@ -1471,6 +1475,10 @@ class AppLocalizations {
       'cacheClearFailed': 'تعذّر مسح الملفات المؤقتة. يرجى المحاولة مرة أخرى.',
       'privacyPolicy': 'سياسة الخصوصية',
       'privacyPolicySubtitle': 'كيفية تعامل ApexLoad مع البيانات والأذونات',
+      'privacyChoices': 'خيارات الخصوصية',
+      'privacyChoicesSubtitle': 'إدارة موافقات الإعلانات والخصوصية',
+      'privacyChoicesUnavailable':
+          'خيارات الخصوصية غير متاحة مؤقتًا. يرجى المحاولة مرة أخرى لاحقًا.',
       'termsOfUse': 'شروط الاستخدام',
       'termsOfUseSubtitle': 'قواعد الاستخدام المسؤول لتطبيق ApexLoad',
       'contactSupport': 'التواصل مع الدعم',

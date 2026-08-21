@@ -389,6 +389,14 @@ class _FakeGateway implements AdMobGateway {
   }
 
   @override
+  Future<bool> canRequestAds() async => consentAllowed;
+
+  @override
+  Future<AdMobPrivacyOptionsRequirement>
+  getPrivacyOptionsRequirementStatus() async =>
+      AdMobPrivacyOptionsRequirement.notRequired;
+
+  @override
   Future<void> initialize() async {
     initializeCalls += 1;
   }
@@ -400,6 +408,9 @@ class _FakeGateway implements AdMobGateway {
     if (_loads.isEmpty) return null;
     return _loads.removeAt(0);
   }
+
+  @override
+  Future<void> showPrivacyOptionsForm() async {}
 }
 
 class _FakeInterstitial implements AdMobInterstitial {

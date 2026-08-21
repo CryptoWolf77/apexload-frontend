@@ -1,6 +1,7 @@
 import 'package:apexload/core/constants/app_config.dart';
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
+import 'package:apexload/shared/services/admob_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/services/platform_info_service.dart';
 import 'package:apexload/shared/services/store_subscription_service.dart';
@@ -14,6 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+const privacyChoicesSettingsTileKey = ValueKey('privacy-choices-settings-tile');
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -26,6 +29,7 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeControllerProvider);
     final autoSaveToGallery = ref.watch(autoSaveToGalleryControllerProvider);
     final keepScreenAwake = ref.watch(keepScreenAwakeControllerProvider);
+    final adMobService = ref.watch(adMobServiceProvider);
     final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     final galleryPublishingSupported =
         !kIsWeb &&
@@ -304,6 +308,27 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: l.t('privacyPolicySubtitle'),
                 onTap: () => context.push('/privacy'),
               ),
+              ValueListenableBuilder<AdMobPrivacyOptionsRequirement>(
+                valueListenable: adMobService.privacyOptionsRequirement,
+                builder: (context, requirement, child) {
+                  if (!adMobService.supportsPrivacyOptions ||
+                      requirement != AdMobPrivacyOptionsRequirement.required) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    children: [
+                      Divider(height: 1, color: AppTone.border(context)),
+                      _SettingsTile(
+                        key: privacyChoicesSettingsTileKey,
+                        icon: Icons.privacy_tip_outlined,
+                        title: l.t('privacyChoices'),
+                        subtitle: l.t('privacyChoicesSubtitle'),
+                        onTap: () => _showPrivacyOptions(context, ref),
+                      ),
+                    ],
+                  );
+                },
+              ),
               Divider(height: 1, color: AppTone.border(context)),
               _SettingsTile(
                 icon: Icons.article_rounded,
@@ -516,6 +541,15 @@ class SettingsScreen extends ConsumerWidget {
     } else {
       AppNotification.info(context, message: l.t('nothingToRestore'));
     }
+  }
+
+  Future<void> _showPrivacyOptions(BuildContext context, WidgetRef ref) async {
+    final shown = await ref.read(adMobServiceProvider).showPrivacyOptions();
+    if (shown || !context.mounted) return;
+    AppNotification.error(
+      context,
+      message: AppLocalizations.of(context).t('privacyChoicesUnavailable'),
+    );
   }
 
   Future<void> _clearCache(BuildContext context, WidgetRef ref) async {
@@ -789,6 +823,7 @@ class _LocationFolderRow extends StatelessWidget {
 
 class _SettingsTile extends StatelessWidget {
   const _SettingsTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
