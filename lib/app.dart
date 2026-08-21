@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/core/routing/app_router.dart';
 import 'package:apexload/core/theme/app_theme.dart';
@@ -15,7 +17,14 @@ class ApexLoadApp extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
     final router = ref.watch(appRouterProvider);
+    ref.watch(subscriptionControllerProvider);
     ref.watch(subscriptionStoreControllerProvider);
+    ref.watch(adMobInitializationProvider);
+    ref.listen(subscriptionControllerProvider, (_, next) {
+      unawaited(
+        ref.read(adMobServiceProvider).updatePremiumStatus(next.isPremium),
+      );
+    });
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

@@ -3,6 +3,21 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('Android manifest contains the ApexLoad AdMob application ID', () {
+    final manifest = File(
+      'android/app/src/main/AndroidManifest.xml',
+    ).readAsStringSync();
+
+    expect(
+      manifest,
+      contains('android:name="com.google.android.gms.ads.APPLICATION_ID"'),
+    );
+    expect(
+      manifest,
+      contains('android:value="ca-app-pub-8135847965072867~3244534997"'),
+    );
+  });
+
   test('Android manifest removes dependency-injected broad media access', () {
     final manifest = File(
       'android/app/src/main/AndroidManifest.xml',

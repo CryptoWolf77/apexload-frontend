@@ -7,6 +7,7 @@ import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
+import 'package:apexload/shared/services/admob_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
@@ -280,6 +281,14 @@ class _DownloadProgressScreenState
       'total save stage completed in: ${saveStageWatch.elapsedMilliseconds} ms',
     );
     AppNotification.success(context, message: l.t('downloadSavedToLibrary'));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        ref
+            .read(adMobServiceProvider)
+            .handleDownloadOperation(DownloadAdOutcome.successful),
+      );
+    });
   }
 
   String _friendlyFailureMessage(String message) {

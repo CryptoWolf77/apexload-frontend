@@ -5,6 +5,7 @@ import 'package:apexload/core/constants/app_config.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/user_subscription_model.dart';
 import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
+import 'package:apexload/shared/services/admob_service.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/clipboard_helper_service.dart';
@@ -61,6 +62,16 @@ final subscriptionControllerProvider =
     NotifierProvider<SubscriptionController, UserSubscriptionModel>(
       SubscriptionController.new,
     );
+final adMobServiceProvider = Provider<AdMobService>((ref) {
+  final service = AdMobService(
+    isPremium: () => ref.read(subscriptionControllerProvider).isPremium,
+  );
+  ref.onDispose(() => unawaited(service.dispose()));
+  return service;
+});
+final adMobInitializationProvider = FutureProvider<void>((ref) async {
+  await ref.watch(adMobServiceProvider).initialize();
+});
 final libraryControllerProvider =
     NotifierProvider<LibraryController, List<DownloadItemModel>>(
       LibraryController.new,
