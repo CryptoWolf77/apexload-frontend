@@ -1,0 +1,2 @@
+// Share extension needs Flutter's version settings, but no Flutter/Pods linkage.
+#include "../Flutter/Generated.xcconfig"

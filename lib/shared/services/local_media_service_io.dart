@@ -53,8 +53,6 @@ class LocalMediaService {
   static Future<Directory>? _rootDirectoryFuture;
   static const _androidParallelDownloadThresholdBytes = 32 * 1024 * 1024;
   static const _androidFourPartDownloadThresholdBytes = 96 * 1024 * 1024;
-  static const _iosParallelDownloadThresholdBytes = 8 * 1024 * 1024;
-  static const _iosFourPartDownloadThresholdBytes = 32 * 1024 * 1024;
   final Dio _dio;
   final ActiveOperationWakelockService? _wakelockService;
   static const _androidChannel = MethodChannel('apexload/android');
@@ -140,7 +138,7 @@ class LocalMediaService {
     _logIosSave('Directory exists: ${folder.existsSync()}');
     final downloadWatch = Stopwatch()..start();
     try {
-      await _downloadToFile(
+      await _downloadToFileWithRetry(
         url: url,
         file: file,
         expectedSizeBytes: expectedSizeBytes,
@@ -319,6 +317,50 @@ class LocalMediaService {
     return convertedFile;
   }
 
+  Future<void> _downloadToFileWithRetry({
+    required String url,
+    required File file,
+    int? expectedSizeBytes,
+    void Function(double progress)? onProgress,
+    VoidCallback? onIndeterminateProgress,
+  }) async {
+    if (Platform.isIOS) {
+      // URLSession owns the transfer while iOS suspends the Flutter engine.
+      await const MethodChannel(
+        'apexload/background',
+      ).invokeMethod<void>('downloadFile', {'url': url, 'path': file.path});
+      onProgress?.call(1);
+      return;
+    }
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await _downloadToFile(
+          url: url,
+          file: file,
+          expectedSizeBytes: expectedSizeBytes,
+          onProgress: onProgress,
+          onIndeterminateProgress: onIndeterminateProgress,
+        );
+        return;
+      } on DioException catch (error) {
+        final status = error.response?.statusCode;
+        final retryable =
+            error.type == DioExceptionType.connectionError ||
+            error.type == DioExceptionType.connectionTimeout ||
+            error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.sendTimeout ||
+            (error.type == DioExceptionType.unknown &&
+                error.response == null) ||
+            status == 408 ||
+            status == 429 ||
+            (status != null && status >= 500);
+        if (!retryable || attempt >= 4) rethrow;
+        onIndeterminateProgress?.call();
+        await Future<void>.delayed(Duration(seconds: 2 << attempt));
+      }
+    }
+  }
+
   Future<void> _downloadToFile({
     required String url,
     required File file,
@@ -326,22 +368,17 @@ class LocalMediaService {
     void Function(double progress)? onProgress,
     VoidCallback? onIndeterminateProgress,
   }) async {
-    final supportsParallelDownload = Platform.isAndroid || Platform.isIOS;
-    final parallelThreshold = Platform.isIOS
-        ? _iosParallelDownloadThresholdBytes
-        : _androidParallelDownloadThresholdBytes;
-    final shouldProbeForParallelDownload = Platform.isIOS
-        ? expectedSizeBytes != null && expectedSizeBytes >= parallelThreshold
-        : expectedSizeBytes == null || expectedSizeBytes >= parallelThreshold;
+    final supportsParallelDownload = Platform.isAndroid;
+    const parallelThreshold = _androidParallelDownloadThresholdBytes;
+    final shouldProbeForParallelDownload =
+        expectedSizeBytes == null || expectedSizeBytes >= parallelThreshold;
     if (supportsParallelDownload && shouldProbeForParallelDownload) {
       try {
         final downloadedInParallel = await _tryParallelDownload(
           url: url,
           file: file,
           parallelThresholdBytes: parallelThreshold,
-          fourPartThresholdBytes: Platform.isIOS
-              ? _iosFourPartDownloadThresholdBytes
-              : _androidFourPartDownloadThresholdBytes,
+          fourPartThresholdBytes: _androidFourPartDownloadThresholdBytes,
           onProgress: onProgress,
         );
         if (downloadedInParallel) return;

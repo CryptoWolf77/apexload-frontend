@@ -146,25 +146,44 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
       await legalConsent.confirmDownloadRights();
       if (!mounted) return;
     }
-    String? apiJobId;
+    final fileName = _fileController.text.trim().isEmpty
+        ? _defaultFileName
+        : _fileController.text.trim();
+    final saveToGallery =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS) &&
+        ref.read(autoSaveToGalleryControllerProvider);
+    final background = ref.read(backgroundDownloadServiceProvider);
+    final wakelock = ref.read(activeOperationWakelockServiceProvider);
+    final downloads = ref.read(apiDownloadServiceProvider);
+    final coordinator = ref.read(downloadCoordinatorProvider);
     setState(() => _creatingDownloadJob = true);
     try {
-      final job = await ref
-          .read(activeOperationWakelockServiceProvider)
-          .runWithWakelock(
-            () => ref
-                .read(apiDownloadServiceProvider)
-                .startDownload(
-                  url: widget.media.sourceUrl,
-                  selectedFormats: selected,
-                  premium: false,
-                  noWatermark: false,
-                ),
-            reason: 'create download job',
-          );
-      apiJobId = job.jobId.isEmpty ? null : job.jobId;
+      final args = await background.run(() async {
+        final job = await wakelock.runWithWakelock(
+          () => downloads.startDownload(
+            url: widget.media.sourceUrl,
+            selectedFormats: selected,
+            premium: false,
+            noWatermark: false,
+          ),
+          reason: 'create download job',
+        );
+        final args = DownloadProgressArgs(
+          media: widget.media,
+          formats: selected,
+          fileName: fileName,
+          saveToGallery: saveToGallery,
+          apiJobId: job.jobId,
+        );
+        // Start before navigating; a share or app switch may have removed this UI.
+        coordinator.taskFor(args, l);
+        return args;
+      });
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
+      context.push('/download-progress', extra: args);
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _creatingDownloadJob = false);
@@ -172,24 +191,7 @@ class _DownloadOptionsScreenState extends ConsumerState<DownloadOptionsScreen> {
         context,
         message: _friendlyDownloadError(l, error.toString()),
       );
-      return;
     }
-    context.push(
-      '/download-progress',
-      extra: DownloadProgressArgs(
-        media: widget.media,
-        formats: selected,
-        fileName: _fileController.text.trim().isEmpty
-            ? _defaultFileName
-            : _fileController.text.trim(),
-        saveToGallery:
-            !kIsWeb &&
-            (defaultTargetPlatform == TargetPlatform.android ||
-                defaultTargetPlatform == TargetPlatform.iOS) &&
-            ref.read(autoSaveToGalleryControllerProvider),
-        apiJobId: apiJobId,
-      ),
-    );
   }
 
   String _premiumLockTitle(AppLocalizations l, DownloadFormatModel format) {

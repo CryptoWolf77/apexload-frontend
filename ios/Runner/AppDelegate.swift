@@ -5,6 +5,8 @@ import UIKit
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var galleryChannel: FlutterMethodChannel?
+  private var backgroundChannel: FlutterMethodChannel?
+  private var shareChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -34,6 +36,43 @@ import UIKit
       self?.publishToPhotos(call: call, result: result)
     }
     galleryChannel = channel
+    let background = FlutterMethodChannel(name: "apexload/background", binaryMessenger: registrar.messenger())
+    background.setMethodCallHandler { call, result in
+      BackgroundTransfers.shared.handle(call, result: result)
+    }
+    backgroundChannel = background
+    BackgroundTransfers.shared.reconnect()
+    let shares = FlutterMethodChannel(name: "apexload/share", binaryMessenger: registrar.messenger())
+    shares.setMethodCallHandler { call, result in
+      guard let defaults = UserDefaults(suiteName: "group.com.yahyazlab.apexload") else {
+        result(FlutterError(code: "share_group_unavailable", message: "Share container is unavailable.", details: nil))
+        return
+      }
+      switch call.method {
+      case "takeSharedText":
+        let text = defaults.string(forKey: "pendingSharedText")
+        defaults.removeObject(forKey: "pendingSharedText")
+        result(text)
+      case "setShareConsent":
+        if let args = call.arguments as? [String: Any] {
+          defaults.set(args["accepted"] as? Bool ?? false, forKey: "responsibleUseAcceptedV1")
+          defaults.set(args["analyzeUrl"] as? String, forKey: "analyzeUrl")
+        }
+        result(nil)
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
+    shareChannel = shares
+  }
+
+  override func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
+                            completionHandler: @escaping () -> Void) {
+    if identifier == BackgroundTransfers.identifier {
+      BackgroundTransfers.shared.completionHandler = completionHandler
+      BackgroundTransfers.shared.reconnect()
+    } else {
+      super.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
+    }
   }
 
   private func publishToPhotos(call: FlutterMethodCall, result: @escaping FlutterResult) {

@@ -48,13 +48,19 @@ void main() {
     expect(find.text('Quick Editor'), findsWidgets);
     expect(tester.takeException(), isNull);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -650));
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -650),
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('Choose new audio'), findsOneWidget);
     expect(find.text('Choose audio file'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -650));
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -650),
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
@@ -102,7 +108,10 @@ void main() {
     expect(find.text('Quick Editor'), findsWidgets);
     expect(tester.takeException(), isNull);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -650));
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -650),
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

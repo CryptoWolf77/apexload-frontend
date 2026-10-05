@@ -301,10 +301,15 @@ void main() {
     final source = File(
       'lib/features/download_progress/download_progress_screen.dart',
     ).readAsStringSync();
-    final completedState = source.indexOf("_status = 'completed';");
+    final coordinator = File(
+      'lib/shared/services/download_coordinator.dart',
+    ).readAsStringSync();
+    expect(coordinator, contains("_status = 'completed';"));
+    final completedState = source.indexOf('if (_saved && !_notified)');
     final successNotification = source.indexOf('AppNotification.success');
     final postFrame = source.indexOf(
       'WidgetsBinding.instance.addPostFrameCallback',
+      successNotification,
     );
     final adHook = source.indexOf(
       '.handleDownloadOperation(DownloadAdOutcome.successful)',
@@ -314,7 +319,10 @@ void main() {
     expect(successNotification, greaterThan(completedState));
     expect(postFrame, greaterThan(successNotification));
     expect(adHook, greaterThan(postFrame));
-    expect(source, contains('.recordSuccessfulDownload(count: items.length)'));
+    expect(
+      coordinator,
+      contains('.recordSuccessfulDownload(count: items.length)'),
+    );
   });
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:apexload/core/constants/app_constants.dart';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/core/utils/platform_detector.dart';
@@ -5,6 +7,7 @@ import 'package:apexload/features/quick_editor/quick_editor_gate.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/services/incoming_share_service.dart';
 import 'package:apexload/shared/widgets/app_notification.dart';
 import 'package:apexload/shared/widgets/download_item_card.dart';
 import 'package:apexload/shared/widgets/glass_card.dart';
@@ -39,10 +42,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _urlController = TextEditingController();
   var _platform = 'Auto detect';
   var _loading = false;
+  int _analysisGeneration = 0;
+  late IncomingShareService _shares;
 
   @override
   void initState() {
     super.initState();
+    _shares = ref.read(incomingShareServiceProvider);
+    _shares.pendingText.addListener(_scheduleSharedLink);
+    _scheduleSharedLink();
     _urlController.addListener(() {
       final text = _urlController.text;
       // Never surface a platform this build does not support.
@@ -55,8 +63,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    _analysisGeneration++;
+    _shares.pendingText.removeListener(_scheduleSharedLink);
     _urlController.dispose();
     super.dispose();
+  }
+
+  void _scheduleSharedLink() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_consumeSharedLink());
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<void> _consumeSharedLink() async {
+    final text = _shares.pendingText.value;
+    if (text == null) return;
+    final url = extractSharedVideoUrl(text);
+    if (url == null) {
+      _shares.clear();
+      AppNotification.info(
+        context,
+        message: AppLocalizations.of(context).t('sharedLinkMissing'),
+      );
+      return;
+    }
+    final accepted = await ref
+        .read(legalConsentServiceProvider)
+        .hasAcceptedResponsibleUse();
+    if (!mounted || text != _shares.pendingText.value) return;
+    _urlController.text = url;
+    if (!accepted) {
+      context.go('/responsible-use');
+      return;
+    }
+    _shares.clear();
+    await _analyze();
   }
 
   Future<void> _paste() async {
@@ -73,6 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _analyze() async {
+    final generation = ++_analysisGeneration;
     final l = AppLocalizations.of(context);
     final url = _urlController.text.trim();
     if (url.isEmpty) {
@@ -81,13 +124,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     // Refuse unsupported sources before anything leaves the device.
     if (AppConstants.isBlockedSource(url)) {
+      setState(() => _loading = false);
       AppNotification.info(context, message: l.t('sourceNotSupported'));
       return;
     }
     final accepted = await ref
         .read(legalConsentServiceProvider)
         .hasAcceptedResponsibleUse();
-    if (!mounted) return;
+    if (!mounted || generation != _analysisGeneration) return;
     if (!accepted) {
       context.push('/responsible-use');
       return;
@@ -100,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             () => ref.read(analyzeServiceProvider).analyze(url),
             reason: 'analyze link',
           );
-      if (!mounted) return;
+      if (!mounted || generation != _analysisGeneration) return;
       setState(() => _loading = false);
       if (result.usedMockFallback) {
         AppNotification.info(
@@ -110,7 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       context.push('/download-options', extra: result.media);
     } on AnalyzeException catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _analysisGeneration) return;
       setState(() => _loading = false);
       AppNotification.error(
         context,
@@ -120,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
     } on Object {
-      if (!mounted) return;
+      if (!mounted || generation != _analysisGeneration) return;
       setState(() => _loading = false);
       AppNotification.error(
         context,

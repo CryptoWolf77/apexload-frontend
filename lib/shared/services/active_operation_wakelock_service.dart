@@ -35,6 +35,7 @@ class ActiveOperationWakelockService with WidgetsBindingObserver {
   var _userEnabled = true;
   var _wakeLockHeld = false;
   var _disposed = false;
+  var _foreground = true;
 
   int get activeOperationCount => _activeOperationCount;
   bool get userEnabled => _userEnabled;
@@ -76,6 +77,7 @@ class ActiveOperationWakelockService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_disposed) return;
     if (state == AppLifecycleState.resumed) {
+      _foreground = true;
       unawaited(_syncWakelock(reason: 'app resumed'));
       return;
     }
@@ -83,6 +85,7 @@ class ActiveOperationWakelockService with WidgetsBindingObserver {
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.hidden) {
+      _foreground = false;
       unawaited(_release(reason: 'app lifecycle $state'));
     }
   }
@@ -102,7 +105,7 @@ class ActiveOperationWakelockService with WidgetsBindingObserver {
 
   Future<void> _syncWakelock({required String reason}) async {
     if (_disposed) return;
-    final shouldHold = _userEnabled && _activeOperationCount > 0;
+    final shouldHold = _foreground && _userEnabled && _activeOperationCount > 0;
     if (shouldHold) {
       await _acquire(reason: reason);
     } else {

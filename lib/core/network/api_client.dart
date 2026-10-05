@@ -83,7 +83,7 @@ class ApiClient {
 }
 
 class ApiClientException implements Exception {
-  const ApiClientException(this.message);
+  const ApiClientException(this.message, {this.retryable = false});
 
   factory ApiClientException.fromDio(DioException error) {
     if (kDebugMode) {
@@ -101,10 +101,23 @@ class ApiClientException implements Exception {
         'Could not connect to the server. Please check your internet connection and try again.',
       _ => 'API request failed',
     };
-    return ApiClientException(type);
+    final statusCode = error.response?.statusCode;
+    return ApiClientException(
+      type,
+      retryable:
+          error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.connectionError ||
+          (error.type == DioExceptionType.unknown && error.response == null) ||
+          statusCode == 408 ||
+          statusCode == 429 ||
+          (statusCode != null && statusCode >= 500),
+    );
   }
 
   final String message;
+  final bool retryable;
 
   @override
   String toString() => message;

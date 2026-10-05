@@ -3,6 +3,7 @@ import 'package:apexload/core/network/api_config.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/services/file_download_helper.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 class ApiDownloadService {
   ApiDownloadService({ApiClient? client}) : _client = client ?? ApiClient();
@@ -69,7 +70,27 @@ class ApiDownloadService {
     if (kDebugMode) {
       debugPrint('ApexLoad download status request: $jobId');
     }
-    final data = await _client.get(ApiConfig.downloadStatusPath(jobId));
+    final Map<String, dynamic> data;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final response = await const MethodChannel('apexload/background')
+            .invokeMapMethod<String, dynamic>('waitForJob', {
+              'url':
+                  '${ApiConfig.baseUrl}${ApiConfig.downloadStatusPath(jobId)}',
+            });
+        if (response == null) {
+          throw const ApiDownloadException('No download status returned.');
+        }
+        data = response;
+      } on PlatformException catch (error) {
+        throw ApiClientException(
+          error.message ?? 'Download connection interrupted.',
+          retryable: error.code == 'connection_interrupted',
+        );
+      }
+    } else {
+      data = await _client.get(ApiConfig.downloadStatusPath(jobId));
+    }
     if (kDebugMode) {
       debugPrint('ApexLoad download status response: $data');
     }

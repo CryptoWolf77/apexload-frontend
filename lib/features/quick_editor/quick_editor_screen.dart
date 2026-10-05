@@ -1889,7 +1889,8 @@ class _ReelsShortsCard extends StatelessWidget {
             crossAxisSpacing: 8,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 0.92,
+            mainAxisExtent:
+                170 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
             children: [
               _PlatformPresetCard(
                 selected: preset == 'instagram',
@@ -2191,38 +2192,52 @@ class _SourcePickerRow extends StatelessWidget {
         border: Border.all(color: AppTone.border(context)),
         color: AppTone.card(context).withValues(alpha: 0.36),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.video_file_rounded, color: AppColors.primaryEnd),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  localFilePath.trim().isEmpty
-                      ? l.t('fileMustBeSavedBeforeEdit')
-                      : sourceName,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppTone.textSecondary(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          OutlinedButton.icon(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stackButton =
+              constraints.maxWidth < 360 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.15;
+          final button = OutlinedButton.icon(
             onPressed: onPickVideo,
             icon: const Icon(Icons.folder_open_rounded),
             label: Text(l.t('chooseVideo')),
-          ),
-        ],
+          );
+          final header = Row(
+            children: [
+              const Icon(Icons.video_file_rounded, color: AppColors.primaryEnd),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      localFilePath.trim().isEmpty
+                          ? l.t('fileMustBeSavedBeforeEdit')
+                          : sourceName,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppTone.textSecondary(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!stackButton) button,
+            ],
+          );
+          return stackButton
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [header, const SizedBox(height: 8), button],
+                )
+              : header;
+        },
       ),
     );
   }

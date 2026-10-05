@@ -1,0 +1,5 @@
+<resources>
+    <string name="download_channel_name">التنزيلات</string>
+    <string name="download_notification_title">ApexLoad ينزّل الملف</string>
+    <string name="download_notification_message">يستمر تنزيل الملف في الخلفية.</string>
+</resources>

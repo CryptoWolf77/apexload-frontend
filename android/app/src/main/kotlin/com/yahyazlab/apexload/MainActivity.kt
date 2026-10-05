@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.ContentValues
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.DocumentsContract
 import io.flutter.embedding.android.FlutterActivity
@@ -14,9 +15,62 @@ import java.io.File
 
 class MainActivity : FlutterActivity() {
     private var pendingTreeResult: MethodChannel.Result? = null
+    private var shareChannel: MethodChannel? = null
+    private var pendingSharedText: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        pendingSharedText = sharedText(intent)
+        super.onCreate(savedInstanceState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val text = sharedText(intent) ?: return
+        // Keep it until Dart acknowledges receipt, including engine startup.
+        pendingSharedText = text
+        shareChannel?.invokeMethod("sharedTextAvailable", null)
+    }
+
+    private fun sharedText(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_SEND) return null
+        if (intent.type != "text/plain" && intent.type != "text/html") return null
+        return intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+            ?: intent.clipData?.let { if (it.itemCount > 0) it.getItemAt(0).text?.toString() else null }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        shareChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "apexload/share")
+        shareChannel?.setMethodCallHandler { call, result ->
+            if (call.method == "takeSharedText") {
+                result.success(pendingSharedText)
+                pendingSharedText = null
+                // Do not replay the original ACTION_SEND after an activity recreation.
+                intent?.removeExtra(Intent.EXTRA_TEXT)
+                intent?.action = Intent.ACTION_MAIN
+            } else result.notImplemented()
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "apexload/background")
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "begin" -> {
+                            val service = Intent(this, DownloadForegroundService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service)
+                            else startService(service)
+                            result.success(null)
+                        }
+                        "end" -> {
+                            stopService(Intent(this, DownloadForegroundService::class.java))
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                } catch (error: Exception) {
+                    result.error("background_unavailable", error.message, null)
+                }
+            }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "apexload/android"

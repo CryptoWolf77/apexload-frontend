@@ -1,4 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:apexload/core/network/api_config.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 class LegalConsentService {
   const LegalConsentService();
@@ -19,6 +22,20 @@ class LegalConsentService {
   Future<void> acceptResponsibleUse({int? version}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_responsibleUseKey(version), true);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        await const MethodChannel(
+          'apexload/share',
+        ).invokeMethod<void>('setShareConsent', {
+          'accepted': true,
+          'analyzeUrl': '${ApiConfig.baseUrl}${ApiConfig.analyzePath}',
+        });
+      } on MissingPluginException {
+        // An older native host can still store the app's consent.
+      } on PlatformException {
+        // Sync again when the app next resumes.
+      }
+    }
   }
 
   Future<bool> hasConfirmedDownloadRights({int? version}) async {

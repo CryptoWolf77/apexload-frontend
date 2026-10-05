@@ -62,6 +62,9 @@ class AppLocalizations {
       'facebookPhotoUnavailable':
           'Facebook photo posts are not available for this link. Try a video link.',
       'connectionProblem': 'Connection problem. Please try again.',
+      'downloadReconnecting': 'Connection interrupted. Reconnecting automatically...',
+      'backgroundDownloadNote': 'Your download continues while you use other apps.',
+      'sharedLinkMissing': 'No video link was found in the shared text.',
       'serverConnectionProblem':
           'Could not connect to the server. Please check your internet connection and try again.',
       'queued': 'Queued',
@@ -984,6 +987,9 @@ class AppLocalizations {
       'facebookPhotoUnavailable':
           'منشورات صور فيسبوك غير متاحة لهذا الرابط. جرّب رابط فيديو.',
       'connectionProblem': 'مشكلة في الاتصال. حاول مرة أخرى.',
+      'downloadReconnecting': 'انقطع الاتصال. جارٍ إعادة الاتصال تلقائياً...',
+      'backgroundDownloadNote': 'يستمر التنزيل أثناء استخدام التطبيقات الأخرى.',
+      'sharedLinkMissing': 'لم يتم العثور على رابط فيديو في النص المُشارَك.',
       'serverConnectionProblem':
           'تعذّر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
       'queued': 'في الانتظار',

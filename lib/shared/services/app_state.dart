@@ -8,6 +8,9 @@ import 'package:apexload/shared/services/active_operation_wakelock_service.dart'
 import 'package:apexload/shared/services/admob_service.dart';
 import 'package:apexload/shared/services/api_analyze_service.dart';
 import 'package:apexload/shared/services/api_download_service.dart';
+import 'package:apexload/shared/services/background_download_service.dart';
+import 'package:apexload/shared/services/download_coordinator.dart';
+import 'package:apexload/shared/services/incoming_share_service.dart';
 import 'package:apexload/shared/services/clipboard_helper_service.dart';
 import 'package:apexload/shared/services/legal_consent_service.dart';
 import 'package:apexload/shared/services/local_editor_service.dart';
@@ -20,6 +23,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final analyzeServiceProvider = Provider((ref) => ApiAnalyzeService());
 final apiDownloadServiceProvider = Provider((ref) => ApiDownloadService());
+final incomingShareServiceProvider = Provider((ref) {
+  final service = IncomingShareService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+final backgroundDownloadServiceProvider = Provider((ref) {
+  final service = BackgroundDownloadService();
+  ref.onDispose(() => unawaited(service.dispose()));
+  return service;
+});
+final downloadCoordinatorProvider = Provider((ref) {
+  final coordinator = DownloadCoordinator(ref);
+  ref.onDispose(coordinator.dispose);
+  return coordinator;
+});
 final activeOperationWakelockServiceProvider =
     Provider<ActiveOperationWakelockService>((ref) {
       final service = ActiveOperationWakelockService();
