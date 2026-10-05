@@ -2,6 +2,10 @@
 
 [Watch the recording](apexload-foreground-service-demo.mp4).
 
+The unlisted [YahyazLab YouTube recording](https://youtube.com/shorts/ibR7jmZIozw)
+was published on 2026-10-05 and submitted with Google Play's data-sync
+foreground-service declaration. Playback was verified in the browser.
+
 Recorded on an Android Pixel_10 emulator on 2026-10-05 using ApexLoad 1.0.2
 and a controlled local test server. The server supplies a real 4.8 MB MP4 over
 about 32 seconds, exercising ApexLoad's native transfer and dataSync foreground
