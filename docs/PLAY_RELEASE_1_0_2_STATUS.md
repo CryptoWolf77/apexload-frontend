@@ -63,9 +63,10 @@ Prepared releases, all containing version 26 and excluding the previous build:
 
 With the user's explicit approval, a Google Play Support ticket was submitted
 requesting retirement of version 23 or unblocking its replacement without
-disabling validation. Console confirms **Ticket submitted**, **Pending**, and
-**Case ID pending**. Google says replies will be sent by email; no response or
-resolution has been received yet.
+disabling validation. Console confirmed **Ticket submitted** and **Pending**.
+The acknowledgement email supplied by the user confirms case
+**8-678900041484**. Google says replies will be sent by email; no resolution
+has been received yet.
 
 Once Google resolves the validation block, preview and publish the compliant
 testing replacements as needed, then submit the production draft with the
