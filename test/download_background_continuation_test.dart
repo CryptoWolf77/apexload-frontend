@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:apexload/core/localization/app_localizations.dart';
 import 'package:apexload/core/network/api_client.dart';
 import 'package:apexload/core/routing/app_router.dart';
+import 'package:apexload/features/download_progress/download_progress_screen.dart';
 import 'package:apexload/shared/models/download_format_model.dart';
 import 'package:apexload/shared/models/download_item_model.dart';
 import 'package:apexload/shared/models/media_info_model.dart';
@@ -10,6 +11,7 @@ import 'package:apexload/shared/services/api_download_service.dart';
 import 'package:apexload/shared/services/background_download_service.dart';
 import 'package:apexload/shared/services/active_operation_wakelock_service.dart';
 import 'package:apexload/shared/services/app_state.dart';
+import 'package:apexload/shared/services/admob_service.dart';
 import 'package:apexload/shared/services/local_media_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,7 +125,80 @@ class _Wakelock implements WakelockAdapter {
   Future<void> disable() async {}
 }
 
+class _Ads extends AdMobService {
+  _Ads() : super(isPremium: () => false);
+  int completions = 0;
+  @override
+  Future<void> handleDownloadOperation(DownloadAdOutcome outcome) async {
+    if (outcome == DownloadAdOutcome.successful) completions++;
+  }
+}
+
 void main() {
+  testWidgets('background completion waits for resume and counts only once', (
+    tester,
+  ) async {
+    final api = _Api()..polls = 1;
+    final media = _Media();
+    final ads = _Ads();
+    final wakelock = ActiveOperationWakelockService(adapter: _Wakelock());
+    addTearDown(wakelock.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        backgroundDownloadServiceProvider.overrideWithValue(_Background()),
+        activeOperationWakelockServiceProvider.overrideWithValue(wakelock),
+        apiDownloadServiceProvider.overrideWithValue(api),
+        localMediaServiceProvider.overrideWithValue(media),
+        libraryControllerProvider.overrideWith(_Library.new),
+        subscriptionControllerProvider.overrideWith(_Subscription.new),
+        adMobServiceProvider.overrideWithValue(ads),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          localizationsDelegates: [AppLocalizations.delegate],
+          home: DownloadProgressScreen(args: _args),
+        ),
+      ),
+    );
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    media.save.complete(
+      const LocalMediaSaveResult(
+        localFilePath: '/downloads/video.mp4',
+        thumbnailPath: '',
+        fileName: 'video.mp4',
+        sizeLabel: '1 MB',
+      ),
+    );
+    await tester.pump();
+    expect(container.read(libraryControllerProvider), hasLength(1));
+    expect(ads.completions, 0);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(ads.completions, 1);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    // Reopening the same task must not create another advertising operation.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          localizationsDelegates: [AppLocalizations.delegate],
+          home: DownloadProgressScreen(args: _args),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(ads.completions, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets(
     'resume retries the same job and a detached UI still saves exactly once',
     (tester) async {

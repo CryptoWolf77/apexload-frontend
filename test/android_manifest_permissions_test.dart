@@ -16,6 +16,10 @@ void main() {
       manifest,
       contains('android:value="ca-app-pub-8135847965072867~3244534997"'),
     );
+    expect(
+      manifest,
+      contains('android:name="com.google.android.gms.permission.AD_ID"'),
+    );
   });
 
   test('Android manifest removes dependency-injected broad media access', () {
@@ -52,7 +56,6 @@ void main() {
       'android.permission.MANAGE_EXTERNAL_STORAGE',
       'android.permission.ACCESS_MEDIA_LOCATION',
       'android.permission.READ_MEDIA_VISUAL_USER_SELECTED',
-      'com.google.android.gms.permission.AD_ID',
     ]) {
       expect(
         manifest,

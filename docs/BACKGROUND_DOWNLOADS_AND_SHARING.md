@@ -1,6 +1,6 @@
 # Background downloads and shared links
 
-Version 1.0.2 (25) moves backend polling, saving, and library insertion into
+Version 1.0.2 moves backend polling, saving, and library insertion into
 app-owned download tasks. Navigation away from the progress screen leaves the
 task running. Transient polling failures retry the existing backend job with
 backoff; explicit backend failures and permanent API errors remain failures.
@@ -63,10 +63,24 @@ returning to ApexLoad, and the foreground service had stopped afterward. This
 checks the native share/transfer lifecycle independently of social-site extraction.
 Warm sharing to the already-open activity also triggered analysis successfully.
 
-Final validation passed: `flutter analyze` reported no issues, all 183 Flutter
+The [foreground-service demonstration](release_media/README.md) records a real
+4.8 MB controlled MP4 transfer while Android Settings is foreground, followed
+by a successful device save. Build 26 explicitly enables live Android AdMob
+through `tool/build_play_bundle.ps1` and declares AD_ID in the source manifest.
+Eligible completion ads wait until the progress screen is foreground and count
+each task once, including after background completion or reopening that task.
+
+Initial validation passed: `flutter analyze` reported no issues, all 183 Flutter
 tests passed, and `flutter build appbundle --release --no-pub` produced the
 signed version 1.0.2 (25) bundle using the production API and normal store
 subscription settings.
+
+Build 26 validation passed on 2026-10-05: analysis reported no issues, all 184
+tests passed, and the release script produced the signed 169.0 MB bundle. The
+merged manifest has versionCode 26 and AD_ID, FOREGROUND_SERVICE,
+FOREGROUND_SERVICE_DATA_SYNC, and WAKE_LOCK. The added lifecycle test verifies
+that background completion counts no ad operation before resume, counts one
+after resume, and never counts that same task again when reopened.
 
 Existing Quick Editor phone-viewport tests also exposed overflow in its source
 picker and platform preset cards; their layouts now reserve room for the action

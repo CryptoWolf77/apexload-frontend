@@ -1,11 +1,11 @@
 # ApexLoad — Google Play release guide
 
-Last updated: 2026-08-06
-App: `com.yahyazlab.apexload` · version `1.0.0+15`
+Last updated: 2026-10-05
+App: `com.yahyazlab.apexload` · version `1.0.2+26`
 
 Companion to `CLAUDE.md` (project guide) and `MAC_CODEX_HANDOFF.md` (iOS work).
 
-## Build status
+## Earlier build reference (1.0.0+15)
 
 The signed release bundle is produced and verified:
 
@@ -44,9 +44,32 @@ noticing after launch is not. Back it up.
 
 ### Release build command
 
-```bash
-flutter build appbundle --release --dart-define=ANDROID_STORE_URL=https://play.google.com/store/apps/details?id=com.yahyazlab.apexload
+```powershell
+./tool/build_play_bundle.ps1 -FlutterExecutable C:/flutter/bin/flutter.bat
 ```
+
+This release script requires upload signing and explicitly selects the production
+API, live AdMob interstitial, normal store subscriptions, and no mock analysis
+fallback. It also applies the Windows JVM socket workaround below. Add `-NoPub`
+only when dependencies have already been resolved.
+
+For another host, the equivalent Flutter command is:
+
+```bash
+flutter build appbundle --release --dart-define=APEXLOAD_ADMOB_LIVE=true --dart-define=APEXLOAD_API_BASE_URL=https://api.apexload.org --dart-define=APEXLOAD_TESTER_PREMIUM=false --dart-define=APEXLOAD_ENABLE_MOCK_ANALYZE_FALLBACK=false --dart-define=ANDROID_STORE_URL=https://play.google.com/store/apps/details?id=com.yahyazlab.apexload
+```
+
+Omitting `APEXLOAD_ADMOB_LIVE=true` intentionally selects Google's test ad unit.
+The Android app ID is `ca-app-pub-8135847965072867~3244534997`; its production
+interstitial is `ca-app-pub-8135847965072867/5643467625`. Both were checked against
+AdMob on 2026-10-05. AdMob reports the app as verified and approval as "Getting
+ready"; delivery can remain limited while Google reviews it.
+
+The current manifest explicitly declares `com.google.android.gms.permission.AD_ID`
+and the `dataSync` foreground-service permissions. Inspect the merged release
+manifest, including SDK contributions. Keep Play's advertising-ID declaration
+set to Yes and its missing-permission release checks enabled. Older active test
+builds without AD_ID need replacement with the current bundle.
 
 The `ANDROID_STORE_URL` define makes Settings → Rate app open the Play listing.
 Without it the app shows "rating available after release" — harmless, but the
@@ -164,9 +187,14 @@ picker, Quick Editor trim view, Library, Premium plans, Settings.
 
 ### 5. Data safety form
 
-Verified against the source — the app has no analytics SDK, no crash reporting,
-no advertising ID, no account system, and the API client sends only an
-`Accept: application/json` header.
+The app uses Google Mobile Ads and UMP consent. The earlier statement that the
+app had no advertising ID is obsolete. Account for SDK data collection as well
+as the app/backend when checking Play disclosures and the published privacy
+policy. Google's [Mobile Ads data disclosure documentation](https://developers.google.com/admob/android/privacy/play-data-disclosure)
+describes IP addresses (including estimated general location), product
+interactions, diagnostics, and device/account identifiers collected and shared
+for advertising, analytics, and fraud prevention. Validate those categories
+against the SDK version and configuration shipped by this project.
 
 | Question | Answer |
 | --- | --- |
@@ -210,9 +238,10 @@ Declare:
   route described in the policy, which is ordinary email rather than in-app
   collection. Declare it only if you consider the support flow part of the app.
 
-Do **not** declare: name, phone, location, contacts, photos read from the device
-library, or financial info. Subscription payments are handled entirely by Google
-Play and are not declared as your own collection.
+The app does not request name, phone, contacts, precise location, or broad device
+media access. Approximate location inferred from IP addresses and SDK identifiers
+still need consideration in the form. Subscription payments are handled by
+Google Play; assess disclosures against the actual billing integration.
 
 Media the user saves stays on the device and is never uploaded — the policy says
 the same, so the two are consistent.

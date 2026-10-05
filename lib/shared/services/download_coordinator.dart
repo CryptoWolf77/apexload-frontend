@@ -64,6 +64,14 @@ class DownloadTask extends ChangeNotifier {
   List<ApiDownloadFile> get latestFiles => _latestFiles;
   DateTime? _retryAt;
   int _consecutiveErrors = 0;
+  bool _completionAdClaimed = false;
+
+  /// Multiple progress screens can observe one task; count its completion once.
+  bool claimCompletionAdOpportunity() {
+    if (!_saved || _failed || _completionAdClaimed) return false;
+    _completionAdClaimed = true;
+    return true;
+  }
 
   void _update(VoidCallback update) {
     if (_disposed) return;

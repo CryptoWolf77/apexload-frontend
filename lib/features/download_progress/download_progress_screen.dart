@@ -29,8 +29,8 @@ class DownloadProgressScreen extends ConsumerStatefulWidget {
       _DownloadProgressScreenState();
 }
 
-class _DownloadProgressScreenState
-    extends ConsumerState<DownloadProgressScreen> {
+class _DownloadProgressScreenState extends ConsumerState<DownloadProgressScreen>
+    with WidgetsBindingObserver {
   late DownloadTask _task;
   bool _attached = false;
   double get _progress => _task.progress;
@@ -50,6 +50,7 @@ class _DownloadProgressScreenState
     super.didChangeDependencies();
     if (_attached) return;
     _attached = true;
+    WidgetsBinding.instance.addObserver(this);
     _task = ref
         .read(downloadCoordinatorProvider)
         .taskFor(widget.args, AppLocalizations.of(context));
@@ -71,24 +72,37 @@ class _DownloadProgressScreenState
           context,
           message: AppLocalizations.of(context).t('downloadSavedToLibrary'),
         );
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final lifecycle = WidgetsBinding.instance.lifecycleState;
-          if (lifecycle != null && lifecycle != AppLifecycleState.resumed) {
-            return;
-          }
-          unawaited(
-            ref
-                .read(adMobServiceProvider)
-                .handleDownloadOperation(DownloadAdOutcome.successful),
-          );
-        });
+        _queueCompletionAd();
       }
+    }
+  }
+
+  void _queueCompletionAd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_saved || _failed) return;
+      final lifecycle = WidgetsBinding.instance.lifecycleState;
+      if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      if (!_task.claimCompletionAdOpportunity()) return;
+      unawaited(
+        ref
+            .read(adMobServiceProvider)
+            .handleDownloadOperation(DownloadAdOutcome.successful),
+      );
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _attached && _saved && !_failed) {
+      _queueCompletionAd();
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_attached) _task.removeListener(_onChanged);
     super.dispose();
   }
